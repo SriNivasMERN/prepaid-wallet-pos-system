@@ -1,0 +1,21 @@
+{
+  "name": "prepaid-wallet-pos-system-client",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Frontend application for the Prepaid Wallet POS System.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-router-dom": "^7.4.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^5.0.4",
+    "vite": "^7.1.7"
+  }
+}
