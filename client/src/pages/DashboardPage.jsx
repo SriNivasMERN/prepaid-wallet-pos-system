@@ -1,10 +1,11 @@
 /**
  * Module: Dashboard Page
  * File: DashboardPage.jsx
- * Purpose: Provides the Day 1 operational layout with module navigation and screen structure.
+ * Purpose: Provides the authenticated operational layout with module navigation and logout control.
  */
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import SectionCard from "../components/common/SectionCard";
 import {
@@ -186,10 +187,19 @@ function ModuleField({ field }) {
 /**
  * Displays the dashboard shell with module-focused UI sections.
  */
-function DashboardPage() {
+function DashboardPage({ currentStaff, onLogout }) {
+  const navigate = useNavigate();
   const [activeModule, setActiveModule] = useState("Billing");
 
-  const activeScreen = useMemo(() => moduleScreens[activeModule], [activeModule]);
+  const activeScreen = moduleScreens[activeModule];
+
+  /**
+   * Clears the authenticated session and returns to login.
+   */
+  const handleLogout = () => {
+    onLogout?.();
+    navigate("/login", { replace: true });
+  };
 
   return (
     <div className="app-shell">
@@ -198,7 +208,7 @@ function DashboardPage() {
           <span className="brand-badge">POS</span>
           <div>
             <h1>{APP_NAME}</h1>
-            <span>Super Admin</span>
+            <span>{currentStaff?.role || "Staff"}</span>
           </div>
         </div>
 
@@ -222,11 +232,11 @@ function DashboardPage() {
         <header className="page-header">
           <div>
             <h2>{activeScreen.title}</h2>
-            <span>29 Mar 2026</span>
+            <span>{currentStaff?.fullName || "Staff Session"}</span>
           </div>
           <div className="header-actions">
-            <button type="button" className="secondary-button">
-              Export
+            <button type="button" className="secondary-button" onClick={handleLogout}>
+              Logout
             </button>
             <button type="button" className="primary-button">
               New Entry
@@ -308,7 +318,7 @@ function DashboardPage() {
                             {rowIndex === 3 ? "Inactive" : "Active"}
                           </span>
                         ) : column === "Amount" || column.includes("Price") ? (
-                          `? ${rowIndex * 120}`
+                          `Rs ${rowIndex * 120}`
                         ) : (
                           `${column} ${rowIndex}`
                         )}

@@ -2,9 +2,7 @@ node_modules/
 dist/
 build/
 coverage/
-.env
-server/.env
-client/.env
+.env*
 *.log
 .DS_Store
 Thumbs.db

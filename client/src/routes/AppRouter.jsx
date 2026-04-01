@@ -31,6 +31,17 @@ function SetupGuard({ isSetupComplete, allowWhenSetupComplete, children }) {
 }
 
 /**
+ * Redirects authenticated users away from the login screen.
+ */
+function LoginRedirectGuard({ isAuthenticated, children }) {
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return children;
+}
+
+/**
  * Protects app routes until first-time setup has been completed.
  */
 function SetupCompletionGuard({ isSetupComplete, children }) {
@@ -53,9 +64,9 @@ function AuthGuard({ isAuthenticated, children }) {
 }
 
 /**
- * Displays a minimal loading state while setup status is being fetched.
+ * Displays a minimal loading state while auth state is being fetched.
  */
-function SetupStatusLoader() {
+function AppLoader() {
   return <div className="app-loader">Loading</div>;
 }
 
@@ -63,11 +74,24 @@ function SetupStatusLoader() {
  * Declares the route structure used by the app.
  */
 function AppRouter() {
-  const { isLoading, isSetupComplete, refreshSetupStatus } = useSetupStatus();
-  const { isAuthenticated, updateSession } = useAuthSession();
+  const {
+    isLoading: isSetupLoading,
+    isSetupComplete,
+    refreshSetupStatus
+  } = useSetupStatus();
+  const {
+    session,
+    isLoading: isAuthLoading,
+    isAuthenticated,
+    updateSession,
+    removeSession
+  } = useAuthSession({
+    isSetupReady: !isSetupLoading,
+    isSetupComplete
+  });
 
-  if (isLoading) {
-    return <SetupStatusLoader />;
+  if (isSetupLoading || isAuthLoading) {
+    return <AppLoader />;
   }
 
   return (
@@ -77,7 +101,9 @@ function AppRouter() {
           path="/login"
           element={
             <SetupGuard isSetupComplete={isSetupComplete} allowWhenSetupComplete>
-              <LoginPage onLogin={updateSession} />
+              <LoginRedirectGuard isAuthenticated={isAuthenticated}>
+                <LoginPage onLogin={updateSession} />
+              </LoginRedirectGuard>
             </SetupGuard>
           }
         />
@@ -95,7 +121,7 @@ function AppRouter() {
         element={
           <SetupCompletionGuard isSetupComplete={isSetupComplete}>
             <AuthGuard isAuthenticated={isAuthenticated}>
-              <DashboardPage />
+              <DashboardPage currentStaff={session?.staff} onLogout={removeSession} />
             </AuthGuard>
           </SetupCompletionGuard>
         }
@@ -103,7 +129,14 @@ function AppRouter() {
       <Route path="/unauthorized" element={<UnauthorizedPage />} />
       <Route
         path="/"
-        element={<Navigate to={isSetupComplete ? "/login" : "/setup"} replace />}
+        element={
+          <Navigate
+            to={
+              isSetupComplete ? (isAuthenticated ? "/dashboard" : "/login") : "/setup"
+            }
+            replace
+          />
+        }
       />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>

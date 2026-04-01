@@ -11,7 +11,7 @@ const CLIENT_ORIGIN_FALLBACK = process.env.CLIENT_URL || "http://localhost:5173"
 const REQUEST_BODY_LIMIT = "1mb";
 const DATABASE_URI =
   process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/prepaid-wallet-pos-system";
-const JWT_SECRET = process.env.JWT_SECRET || "prepaid-wallet-pos-system-dev-secret";
+const JWT_SECRET = process.env.JWT_SECRET || "";
 const JWT_EXPIRES_IN = "8h";
 
 const STAFF_ROLES = {
