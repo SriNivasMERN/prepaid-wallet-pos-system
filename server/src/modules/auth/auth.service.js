@@ -1,0 +1,230 @@
+/**
+ * Module: Auth Service
+ * File: auth.service.js
+ * Purpose: Handles first-time setup status checks, Super Admin creation, and login.
+ */
+
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+
+const {
+  JWT_EXPIRES_IN,
+  JWT_SECRET,
+  RECORD_STATUS,
+  STAFF_ROLES
+} = require("../../constants/appConstants");
+const { Staff } = require("../staff/staff.model");
+const { validateLoginPayload, validateSetupPayload } = require("./auth.validation");
+
+/**
+ * Reads whether the initial Super Admin account already exists.
+ */
+const getSetupStatus = async () => {
+  const existingSuperAdmin = await Staff.exists({
+    role: STAFF_ROLES.SUPER_ADMIN,
+    isDeleted: false
+  });
+
+  return {
+    isSetupComplete: Boolean(existingSuperAdmin)
+  };
+};
+
+/**
+ * Creates a standard conflict error for setup collisions.
+ */
+const createConflictError = (field, message, topMessage) => {
+  const error = new Error(topMessage);
+  error.statusCode = 409;
+  error.errors = [
+    {
+      field,
+      message
+    }
+  ];
+  return error;
+};
+
+/**
+ * Creates a standard auth error for login failures.
+ */
+const createAuthError = (field, message, topMessage = "Login could not be completed.") => {
+  const error = new Error(topMessage);
+  error.statusCode = 401;
+  error.errors = [
+    {
+      field,
+      message
+    }
+  ];
+  return error;
+};
+
+/**
+ * Builds the token and staff session payload used by the client.
+ */
+const buildSessionPayload = (staff) => {
+  const token = jwt.sign(
+    {
+      staffId: staff._id,
+      role: staff.role,
+      username: staff.username
+    },
+    JWT_SECRET,
+    {
+      expiresIn: JWT_EXPIRES_IN
+    }
+  );
+
+  return {
+    token,
+    staff: {
+      id: staff._id,
+      fullName: staff.fullName,
+      username: staff.username,
+      role: staff.role,
+      status: staff.status
+    }
+  };
+};
+
+/**
+ * Creates the first and only Super Admin account.
+ */
+const createInitialSuperAdmin = async (payload) => {
+  const { errors, values } = validateSetupPayload(payload);
+
+  if (errors.length > 0) {
+    const error = new Error("Setup validation failed.");
+    error.statusCode = 400;
+    error.errors = errors;
+    throw error;
+  }
+
+  const setupStatus = await getSetupStatus();
+
+  if (setupStatus.isSetupComplete) {
+    throw createConflictError(
+      "setup",
+      "Super Admin already exists.",
+      "First-time setup has already been completed."
+    );
+  }
+
+  const existingUsername = await Staff.exists({ username: values.username });
+
+  if (existingUsername) {
+    throw createConflictError(
+      "username",
+      "Choose a different username.",
+      "Username is already in use."
+    );
+  }
+
+  const passwordHash = await bcrypt.hash(values.password, 10);
+
+  try {
+    const createdSuperAdmin = await Staff.create({
+      fullName: values.fullName,
+      username: values.username,
+      passwordHash,
+      role: STAFF_ROLES.SUPER_ADMIN,
+      status: RECORD_STATUS.ACTIVE,
+      createdBy: null,
+      updatedBy: null
+    });
+
+    return {
+      id: createdSuperAdmin._id,
+      fullName: createdSuperAdmin.fullName,
+      username: createdSuperAdmin.username,
+      role: createdSuperAdmin.role,
+      status: createdSuperAdmin.status,
+      createdAt: createdSuperAdmin.createdAt
+    };
+  } catch (error) {
+    if (error?.code === 11000) {
+      if (error.keyPattern?.role) {
+        throw createConflictError(
+          "setup",
+          "Super Admin already exists.",
+          "First-time setup has already been completed."
+        );
+      }
+
+      if (error.keyPattern?.username) {
+        throw createConflictError(
+          "username",
+          "Choose a different username.",
+          "Username is already in use."
+        );
+      }
+    }
+
+    throw error;
+  }
+};
+
+/**
+ * Verifies staff credentials and returns an authenticated session.
+ */
+const loginStaff = async (payload) => {
+  const { errors, values } = validateLoginPayload(payload);
+
+  if (errors.length > 0) {
+    const error = new Error("Login validation failed.");
+    error.statusCode = 400;
+    error.errors = errors;
+    throw error;
+  }
+
+  const staff = await Staff.findOne({
+    username: values.username,
+    isDeleted: false
+  }).select("+passwordHash");
+
+  if (!staff) {
+    throw createAuthError("username", "Username or password is incorrect.");
+  }
+
+  if (staff.status !== RECORD_STATUS.ACTIVE) {
+    throw createAuthError("username", "This account is inactive.", "Login is not allowed.");
+  }
+
+  const isPasswordValid = await bcrypt.compare(values.password, staff.passwordHash);
+
+  if (!isPasswordValid) {
+    throw createAuthError("password", "Username or password is incorrect.");
+  }
+
+  return buildSessionPayload(staff);
+};
+
+/**
+ * Returns the authenticated staff profile from the token payload.
+ */
+const getCurrentStaff = async (staffId) => {
+  const staff = await Staff.findOne({
+    _id: staffId,
+    isDeleted: false
+  });
+
+  if (!staff || staff.status !== RECORD_STATUS.ACTIVE) {
+    throw createAuthError("authorization", "Login again to continue.", "Session is not valid.");
+  }
+
+  return {
+    id: staff._id,
+    fullName: staff.fullName,
+    username: staff.username,
+    role: staff.role,
+    status: staff.status
+  };
+};
+
+module.exports = {
+  getSetupStatus,
+  createInitialSuperAdmin,
+  loginStaff,
+  getCurrentStaff
+};

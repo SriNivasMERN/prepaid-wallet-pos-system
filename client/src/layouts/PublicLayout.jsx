@@ -11,7 +11,7 @@ import { APP_NAME } from "../constants/appConstants";
 /**
  * Builds a consistent frame for authentication-related pages.
  */
-function PublicLayout() {
+function PublicLayout({ isSetupComplete = false }) {
   const location = useLocation();
   const isLoginPage = location.pathname === "/login";
 
@@ -21,18 +21,18 @@ function PublicLayout() {
         <span className="brand-badge">POS</span>
         <h1>{APP_NAME}</h1>
         <div className="public-shell__switcher">
-          <Link
-            className={`switcher-link ${isLoginPage ? "is-active" : ""}`}
-            to="/login"
-          >
-            Login
-          </Link>
-          <Link
-            className={`switcher-link ${!isLoginPage ? "is-active" : ""}`}
-            to="/setup"
-          >
-            First-Time Setup
-          </Link>
+          {isSetupComplete ? (
+            <Link
+              className={`switcher-link ${isLoginPage ? "is-active" : ""}`}
+              to="/login"
+            >
+              Login
+            </Link>
+          ) : (
+            <Link className="switcher-link is-active" to="/setup">
+              First-Time Setup
+            </Link>
+          )}
         </div>
       </aside>
 

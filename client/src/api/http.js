@@ -10,14 +10,20 @@ import { API_BASE_URL } from "../constants/appConstants";
  * Sends an API request and returns parsed JSON when available.
  */
 export async function httpRequest(path, options = {}) {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const requestOptions = {
+    ...options,
     headers: {
-      "Content-Type": "application/json",
       ...(options.headers || {})
-    },
-    ...options
-  });
+    }
+  };
 
+  if (requestOptions.body && !(requestOptions.body instanceof FormData)) {
+    requestOptions.headers["Content-Type"] =
+      requestOptions.headers["Content-Type"] || "application/json";
+    requestOptions.body = JSON.stringify(requestOptions.body);
+  }
+
+  const response = await fetch(`${API_BASE_URL}${path}`, requestOptions);
   const contentType = response.headers.get("content-type") || "";
   const responseData = contentType.includes("application/json")
     ? await response.json()

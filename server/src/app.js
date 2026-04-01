@@ -14,9 +14,10 @@ const {
   CLIENT_ORIGIN_FALLBACK,
   REQUEST_BODY_LIMIT
 } = require("./constants/appConstants");
-const { buildApiResponse } = require("./utils/apiResponse");
-const { notFoundHandler } = require("./middlewares/notFoundHandler");
 const { errorHandler } = require("./middlewares/errorHandler");
+const { notFoundHandler } = require("./middlewares/notFoundHandler");
+const { authRouter } = require("./modules/auth/auth.routes");
+const { buildApiResponse } = require("./utils/apiResponse");
 
 const app = express();
 const allowCredentials = CLIENT_ORIGIN_FALLBACK !== "*";
@@ -44,6 +45,8 @@ app.get(`${API_PREFIX}/health`, (request, response) => {
     })
   );
 });
+
+app.use(`${API_PREFIX}/auth`, authRouter);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
