@@ -67,7 +67,6 @@ const staffSchema = new mongoose.Schema(
   }
 );
 
-staffSchema.index({ username: 1 }, { unique: true });
 staffSchema.index(
   { role: 1 },
   {

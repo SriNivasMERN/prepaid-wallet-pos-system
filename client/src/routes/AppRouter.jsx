@@ -6,6 +6,7 @@
 
 import { Navigate, Route, Routes } from "react-router-dom";
 
+import { hasRecognizedRole } from "../constants/accessControl";
 import { useAuthSession } from "../hooks/useAuthSession";
 import { useSetupStatus } from "../hooks/useSetupStatus";
 import PublicLayout from "../layouts/PublicLayout";
@@ -58,6 +59,17 @@ function SetupCompletionGuard({ isSetupComplete, children }) {
 function AuthGuard({ isAuthenticated, children }) {
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+
+  return children;
+}
+
+/**
+ * Protects app routes until the logged-in role is recognized by access rules.
+ */
+function AuthorizationGuard({ currentStaff, children }) {
+  if (!hasRecognizedRole(currentStaff?.role)) {
+    return <Navigate to="/unauthorized" replace />;
   }
 
   return children;
@@ -121,7 +133,9 @@ function AppRouter() {
         element={
           <SetupCompletionGuard isSetupComplete={isSetupComplete}>
             <AuthGuard isAuthenticated={isAuthenticated}>
-              <DashboardPage currentStaff={session?.staff} onLogout={removeSession} />
+              <AuthorizationGuard currentStaff={session?.staff}>
+                <DashboardPage currentStaff={session?.staff} onLogout={removeSession} />
+              </AuthorizationGuard>
             </AuthGuard>
           </SetupCompletionGuard>
         }

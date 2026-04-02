@@ -14,8 +14,11 @@ import SectionCard from "../components/common/SectionCard";
 function UnauthorizedPage() {
   return (
     <div className="feedback-page">
-      <SectionCard title="Unauthorized">
+      <SectionCard title="Unauthorized Access">
         <div className="feedback-actions">
+          <Link to="/dashboard" className="secondary-button">
+            Back to Dashboard
+          </Link>
           <Link to="/login" className="primary-button">
             Return to Login
           </Link>

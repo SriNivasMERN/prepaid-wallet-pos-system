@@ -6,6 +6,7 @@
 
 const jwt = require("jsonwebtoken");
 
+const { buildAccessProfile } = require("../constants/accessControl");
 const { JWT_SECRET, RECORD_STATUS } = require("../constants/appConstants");
 const { Staff } = require("../modules/staff/staff.model");
 const { buildApiResponse } = require("../utils/apiResponse");
@@ -59,7 +60,8 @@ const requireAuth = async (request, response, next) => {
       role: staff.role,
       username: staff.username,
       fullName: staff.fullName,
-      status: staff.status
+      status: staff.status,
+      ...buildAccessProfile(staff.role)
     };
     next();
   } catch (error) {
@@ -78,6 +80,31 @@ const requireAuth = async (request, response, next) => {
   }
 };
 
+/**
+ * Restricts route access to the supplied staff roles.
+ */
+const requireRoles = (...allowedRoles) => {
+  return (request, response, next) => {
+    if (!allowedRoles.includes(request.auth?.role)) {
+      return response.status(403).json(
+        buildApiResponse({
+          success: false,
+          message: "You do not have access to this resource.",
+          errors: [
+            {
+              field: "role",
+              message: "Your staff role is not allowed for this action."
+            }
+          ]
+        })
+      );
+    }
+
+    next();
+  };
+};
+
 module.exports = {
-  requireAuth
+  requireAuth,
+  requireRoles
 };

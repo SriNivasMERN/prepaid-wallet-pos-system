@@ -4,15 +4,18 @@
  * Purpose: Provides the authenticated operational layout with module navigation and logout control.
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import SectionCard from "../components/common/SectionCard";
 import {
-  APP_MODULES,
   APP_NAME,
   DASHBOARD_METRICS
 } from "../constants/appConstants";
+import {
+  getAllowedModulesForRole,
+  getAllowedPermissionsForRole
+} from "../constants/accessControl";
 
 const moduleScreens = {
   Staff: {
@@ -189,9 +192,29 @@ function ModuleField({ field }) {
  */
 function DashboardPage({ currentStaff, onLogout }) {
   const navigate = useNavigate();
-  const [activeModule, setActiveModule] = useState("Billing");
+  const allowedModules = currentStaff?.allowedModules?.length
+    ? currentStaff.allowedModules
+    : getAllowedModulesForRole(currentStaff?.role);
+  const allowedPermissions = currentStaff?.allowedPermissions?.length
+    ? currentStaff.allowedPermissions
+    : getAllowedPermissionsForRole(currentStaff?.role);
+  const [activeModule, setActiveModule] = useState(
+    allowedModules.includes("Billing") ? "Billing" : allowedModules[0] || ""
+  );
+
+  useEffect(() => {
+    if (!allowedModules.length) {
+      navigate("/unauthorized", { replace: true });
+      return;
+    }
+
+    if (!allowedModules.includes(activeModule)) {
+      setActiveModule(allowedModules.includes("Billing") ? "Billing" : allowedModules[0]);
+    }
+  }, [activeModule, allowedModules, navigate]);
 
   const activeScreen = moduleScreens[activeModule];
+  const canCreateEntries = allowedPermissions.length > 0;
 
   /**
    * Clears the authenticated session and returns to login.
@@ -200,6 +223,10 @@ function DashboardPage({ currentStaff, onLogout }) {
     onLogout?.();
     navigate("/login", { replace: true });
   };
+
+  if (!activeScreen) {
+    return null;
+  }
 
   return (
     <div className="app-shell">
@@ -213,7 +240,7 @@ function DashboardPage({ currentStaff, onLogout }) {
         </div>
 
         <nav className="sidebar-nav">
-          {APP_MODULES.map((moduleName) => (
+          {allowedModules.map((moduleName) => (
             <button
               key={moduleName}
               type="button"
@@ -238,7 +265,7 @@ function DashboardPage({ currentStaff, onLogout }) {
             <button type="button" className="secondary-button" onClick={handleLogout}>
               Logout
             </button>
-            <button type="button" className="primary-button">
+            <button type="button" className="primary-button" disabled={!canCreateEntries}>
               New Entry
             </button>
           </div>
@@ -258,6 +285,23 @@ function DashboardPage({ currentStaff, onLogout }) {
             </button>
           ))}
         </section>
+
+        <SectionCard title="Access Summary">
+          <div className="filter-grid">
+            <label className="field-group">
+              <span>Role</span>
+              <input type="text" value={currentStaff?.role || ""} readOnly />
+            </label>
+            <label className="field-group">
+              <span>Allowed Modules</span>
+              <input type="text" value={String(allowedModules.length)} readOnly />
+            </label>
+            <label className="field-group">
+              <span>Allowed Permissions</span>
+              <input type="text" value={String(allowedPermissions.length)} readOnly />
+            </label>
+          </div>
+        </SectionCard>
 
         <SectionCard title={activeScreen.title}>
           <form className="module-form-grid" onSubmit={(event) => event.preventDefault()}>

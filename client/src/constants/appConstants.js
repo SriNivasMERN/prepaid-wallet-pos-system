@@ -7,6 +7,12 @@
 export const APP_NAME = "Prepaid Wallet POS System";
 export const API_BASE_URL = "http://localhost:5000/api/v1";
 
+export const STAFF_ROLES = {
+  SUPER_ADMIN: "Super Admin",
+  ADMIN: "Admin",
+  CASHIER: "Cashier"
+};
+
 export const APP_MODULES = [
   "Staff",
   "Members",

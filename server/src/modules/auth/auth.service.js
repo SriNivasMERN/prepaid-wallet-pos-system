@@ -7,6 +7,7 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
+const { buildAccessProfile } = require("../../constants/accessControl");
 const {
   JWT_EXPIRES_IN,
   JWT_SECRET,
@@ -83,7 +84,8 @@ const buildSessionPayload = (staff) => {
       fullName: staff.fullName,
       username: staff.username,
       role: staff.role,
-      status: staff.status
+      status: staff.status,
+      ...buildAccessProfile(staff.role)
     }
   };
 };
@@ -218,7 +220,8 @@ const getCurrentStaff = async (staffId) => {
     fullName: staff.fullName,
     username: staff.username,
     role: staff.role,
-    status: staff.status
+    status: staff.status,
+    ...buildAccessProfile(staff.role)
   };
 };
 
