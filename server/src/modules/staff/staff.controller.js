@@ -12,7 +12,7 @@ const { createStaff, getStaffList } = require("./staff.service");
  */
 const getStaffListHandler = async (request, response, next) => {
   try {
-    const data = await getStaffList();
+    const data = await getStaffList(request.auth);
 
     response.status(200).json(
       buildApiResponse({
@@ -30,7 +30,7 @@ const getStaffListHandler = async (request, response, next) => {
  */
 const createStaffHandler = async (request, response, next) => {
   try {
-    const data = await createStaff(request.body, request.auth.staffId);
+    const data = await createStaff(request.body, request.auth);
 
     response.status(201).json(
       buildApiResponse({

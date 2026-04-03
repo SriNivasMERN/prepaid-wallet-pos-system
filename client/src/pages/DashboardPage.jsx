@@ -8,10 +8,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import SectionCard from "../components/common/SectionCard";
-import {
-  APP_NAME,
-  DASHBOARD_METRICS
-} from "../constants/appConstants";
+import { APP_NAME, DASHBOARD_METRICS } from "../constants/appConstants";
 import {
   getAllowedModulesForRole,
   getAllowedPermissionsForRole
@@ -183,6 +180,7 @@ function ModuleField({ field }) {
         type={field.type === "search" ? "search" : field.type}
         placeholder={field.label}
         readOnly={field.readOnly}
+        autoComplete={field.type === "password" ? "new-password" : "off"}
       />
     </label>
   );
@@ -218,6 +216,14 @@ function validateStaffForm(formData) {
   return nextErrors;
 }
 
+function getStaffRoleOptions(role) {
+  if (role === "Admin") {
+    return ["Cashier"];
+  }
+
+  return ["Admin", "Cashier"];
+}
+
 function DashboardPage({ currentStaff, authToken, onLogout }) {
   const navigate = useNavigate();
   const allowedModules = currentStaff?.allowedModules?.length
@@ -229,7 +235,11 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
   const [activeModule, setActiveModule] = useState(
     allowedModules.includes("Billing") ? "Billing" : allowedModules[0] || ""
   );
-  const [staffForm, setStaffForm] = useState(staffInitialForm);
+  const roleOptions = getStaffRoleOptions(currentStaff?.role);
+  const [staffForm, setStaffForm] = useState({
+    ...staffInitialForm,
+    role: roleOptions[0] || staffInitialForm.role
+  });
   const [staffFormErrors, setStaffFormErrors] = useState({});
   const [staffRequestError, setStaffRequestError] = useState("");
   const [staffSuccessMessage, setStaffSuccessMessage] = useState("");
@@ -247,6 +257,13 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
       setActiveModule(allowedModules.includes("Billing") ? "Billing" : allowedModules[0]);
     }
   }, [activeModule, allowedModules, navigate]);
+
+  useEffect(() => {
+    setStaffForm((currentState) => ({
+      ...currentState,
+      role: roleOptions.includes(currentState.role) ? currentState.role : roleOptions[0] || ""
+    }));
+  }, [currentStaff?.role]);
 
   useEffect(() => {
     const loadStaff = async () => {
@@ -276,6 +293,16 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
     active: staffRecords.filter((staff) => staff.status === "Active").length,
     admins: staffRecords.filter((staff) => staff.role === "Admin").length,
     cashiers: staffRecords.filter((staff) => staff.role === "Cashier").length
+  };
+
+  const resetStaffForm = () => {
+    setStaffForm({
+      ...staffInitialForm,
+      role: roleOptions[0] || staffInitialForm.role
+    });
+    setStaffFormErrors({});
+    setStaffRequestError("");
+    setStaffSuccessMessage("");
   };
 
   const handleLogout = () => {
@@ -323,19 +350,8 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
         authToken
       );
 
-      setStaffRecords((currentList) => [
-        {
-          ...response.data,
-          createdBy: {
-            id: currentStaff?.id,
-            fullName: currentStaff?.fullName,
-            username: currentStaff?.username,
-            role: currentStaff?.role
-          }
-        },
-        ...currentList
-      ]);
-      setStaffForm(staffInitialForm);
+      setStaffRecords((currentList) => [response.data, ...currentList]);
+      resetStaffForm();
       setStaffSuccessMessage("Staff account created successfully.");
     } catch (error) {
       setStaffRequestError(getApiErrorMessage(error));
@@ -485,9 +501,17 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
 
                 <label className="field-group">
                   <span>Role</span>
-                  <select name="role" value={staffForm.role} onChange={handleStaffInputChange} autoComplete="off">
-                    <option value="Admin">Admin</option>
-                    <option value="Cashier">Cashier</option>
+                  <select
+                    name="role"
+                    value={staffForm.role}
+                    onChange={handleStaffInputChange}
+                    autoComplete="off"
+                  >
+                    {roleOptions.map((role) => (
+                      <option key={role} value={role}>
+                        {role}
+                      </option>
+                    ))}
                   </select>
                   {staffFormErrors.role ? (
                     <small className="field-error">{staffFormErrors.role}</small>
@@ -512,16 +536,7 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
                   <button type="submit" className="primary-button" disabled={isCreatingStaff}>
                     {isCreatingStaff ? "Creating..." : "Create Staff"}
                   </button>
-                  <button
-                    type="button"
-                    className="secondary-button"
-                    onClick={() => {
-                      setStaffForm(staffInitialForm);
-                      setStaffFormErrors({});
-                      setStaffRequestError("");
-                      setStaffSuccessMessage("");
-                    }}
-                  >
+                  <button type="button" className="secondary-button" onClick={resetStaffForm}>
                     Reset
                   </button>
                 </div>
@@ -596,6 +611,7 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
                             : "search"
                       }
                       placeholder={filter}
+                      autoComplete="off"
                     />
                   </label>
                 ))}
@@ -645,6 +661,3 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
 }
 
 export default DashboardPage;
-
-
-

@@ -8,17 +8,7 @@ import { APP_MODULES, STAFF_ROLES } from "./appConstants";
 
 export const MODULE_ACCESS_BY_ROLE = {
   [STAFF_ROLES.SUPER_ADMIN]: APP_MODULES,
-  [STAFF_ROLES.ADMIN]: [
-    "Members",
-    "Cards",
-    "Wallets",
-    "Recharges",
-    "Products",
-    "Billing",
-    "Transactions",
-    "Stock",
-    "Reports"
-  ],
+  [STAFF_ROLES.ADMIN]: APP_MODULES,
   [STAFF_ROLES.CASHIER]: [
     "Members",
     "Cards",
@@ -43,6 +33,7 @@ export const PERMISSION_ACCESS_BY_ROLE = {
     "view_reports"
   ],
   [STAFF_ROLES.ADMIN]: [
+    "manage_staff",
     "manage_members",
     "manage_cards",
     "manage_wallets",

@@ -21,17 +21,7 @@ const MODULES = [
 
 const STAFF_MODULE_ACCESS = {
   [STAFF_ROLES.SUPER_ADMIN]: MODULES,
-  [STAFF_ROLES.ADMIN]: [
-    "Members",
-    "Cards",
-    "Wallets",
-    "Recharges",
-    "Products",
-    "Billing",
-    "Transactions",
-    "Stock",
-    "Reports"
-  ],
+  [STAFF_ROLES.ADMIN]: MODULES,
   [STAFF_ROLES.CASHIER]: [
     "Members",
     "Cards",
@@ -56,6 +46,7 @@ const STAFF_PERMISSION_ACCESS = {
     "view_reports"
   ],
   [STAFF_ROLES.ADMIN]: [
+    "manage_staff",
     "manage_members",
     "manage_cards",
     "manage_wallets",

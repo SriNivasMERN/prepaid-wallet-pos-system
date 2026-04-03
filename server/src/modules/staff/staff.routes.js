@@ -13,7 +13,7 @@ const { createStaffHandler, getStaffListHandler } = require("./staff.controller"
 const staffRouter = express.Router();
 
 staffRouter.use(requireAuth);
-staffRouter.use(requireRoles(STAFF_ROLES.SUPER_ADMIN));
+staffRouter.use(requireRoles(STAFF_ROLES.SUPER_ADMIN, STAFF_ROLES.ADMIN));
 
 /**
  * Returns the staff list for management view.
@@ -21,7 +21,7 @@ staffRouter.use(requireRoles(STAFF_ROLES.SUPER_ADMIN));
 staffRouter.get("/", getStaffListHandler);
 
 /**
- * Creates an Admin or Cashier account.
+ * Creates an allowed staff account for the current role.
  */
 staffRouter.post("/", createStaffHandler);
 
