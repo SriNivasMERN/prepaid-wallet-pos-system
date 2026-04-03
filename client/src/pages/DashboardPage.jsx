@@ -1,7 +1,7 @@
 /**
  * Module: Dashboard Page
  * File: DashboardPage.jsx
- * Purpose: Provides the authenticated operational layout with module navigation and logout control.
+ * Purpose: Provides the authenticated operational layout with module navigation, staff management, and logout control.
  */
 
 import { useEffect, useState } from "react";
@@ -16,17 +16,21 @@ import {
   getAllowedModulesForRole,
   getAllowedPermissionsForRole
 } from "../constants/accessControl";
+import { createStaffAccount, fetchStaffList } from "../features/staff/api/staffApi";
+import { getApiErrorMessage } from "../utils/getApiErrorMessage";
+
+const staffInitialForm = {
+  fullName: "",
+  username: "",
+  password: "",
+  role: "Admin",
+  status: "Active"
+};
 
 const moduleScreens = {
   Staff: {
     title: "Staff",
     metrics: ["Active Staff", "Admins", "Cashiers"],
-    formFields: [
-      { label: "Full Name", type: "text" },
-      { label: "Username", type: "text" },
-      { label: "Role", type: "select", options: ["Super Admin", "Admin", "Cashier"] },
-      { label: "Status", type: "select", options: ["Active", "Inactive"] }
-    ],
     filters: ["Search Staff", "Role", "Status"],
     columns: ["Name", "Username", "Role", "Status", "Created By"]
   },
@@ -144,15 +148,12 @@ const moduleScreens = {
   }
 };
 
-/**
- * Renders a form control based on the supplied field type.
- */
 function ModuleField({ field }) {
   if (field.type === "textarea") {
     return (
       <label className="field-group field-group--wide">
         <span>{field.label}</span>
-        <textarea rows="3" placeholder={field.label} />
+        <textarea rows="3" placeholder={field.label} autoComplete="off" />
       </label>
     );
   }
@@ -161,7 +162,7 @@ function ModuleField({ field }) {
     return (
       <label className="field-group">
         <span>{field.label}</span>
-        <select defaultValue="">
+        <select defaultValue="" autoComplete="off">
           <option value="" disabled>
             Select
           </option>
@@ -187,10 +188,37 @@ function ModuleField({ field }) {
   );
 }
 
-/**
- * Displays the dashboard shell with module-focused UI sections.
- */
-function DashboardPage({ currentStaff, onLogout }) {
+function validateStaffForm(formData) {
+  const nextErrors = {};
+
+  if (!formData.fullName.trim()) {
+    nextErrors.fullName = "Full name is required.";
+  }
+
+  if (!formData.username.trim()) {
+    nextErrors.username = "Username is required.";
+  } else if (formData.username.trim().length < 3) {
+    nextErrors.username = "Minimum 3 characters required.";
+  }
+
+  if (!formData.password) {
+    nextErrors.password = "Password is required.";
+  } else if (formData.password.length < 8) {
+    nextErrors.password = "Minimum 8 characters required.";
+  }
+
+  if (!formData.role) {
+    nextErrors.role = "Role is required.";
+  }
+
+  if (!formData.status) {
+    nextErrors.status = "Status is required.";
+  }
+
+  return nextErrors;
+}
+
+function DashboardPage({ currentStaff, authToken, onLogout }) {
   const navigate = useNavigate();
   const allowedModules = currentStaff?.allowedModules?.length
     ? currentStaff.allowedModules
@@ -201,6 +229,13 @@ function DashboardPage({ currentStaff, onLogout }) {
   const [activeModule, setActiveModule] = useState(
     allowedModules.includes("Billing") ? "Billing" : allowedModules[0] || ""
   );
+  const [staffForm, setStaffForm] = useState(staffInitialForm);
+  const [staffFormErrors, setStaffFormErrors] = useState({});
+  const [staffRequestError, setStaffRequestError] = useState("");
+  const [staffSuccessMessage, setStaffSuccessMessage] = useState("");
+  const [isCreatingStaff, setIsCreatingStaff] = useState(false);
+  const [isLoadingStaff, setIsLoadingStaff] = useState(false);
+  const [staffRecords, setStaffRecords] = useState([]);
 
   useEffect(() => {
     if (!allowedModules.length) {
@@ -213,15 +248,100 @@ function DashboardPage({ currentStaff, onLogout }) {
     }
   }, [activeModule, allowedModules, navigate]);
 
+  useEffect(() => {
+    const loadStaff = async () => {
+      if (activeModule !== "Staff" || !authToken) {
+        return;
+      }
+
+      setIsLoadingStaff(true);
+      setStaffRequestError("");
+
+      try {
+        const response = await fetchStaffList(authToken);
+        setStaffRecords(response.data || []);
+      } catch (error) {
+        setStaffRequestError(getApiErrorMessage(error));
+      } finally {
+        setIsLoadingStaff(false);
+      }
+    };
+
+    loadStaff();
+  }, [activeModule, authToken]);
+
   const activeScreen = moduleScreens[activeModule];
   const canCreateEntries = allowedPermissions.length > 0;
+  const staffMetrics = {
+    active: staffRecords.filter((staff) => staff.status === "Active").length,
+    admins: staffRecords.filter((staff) => staff.role === "Admin").length,
+    cashiers: staffRecords.filter((staff) => staff.role === "Cashier").length
+  };
 
-  /**
-   * Clears the authenticated session and returns to login.
-   */
   const handleLogout = () => {
     onLogout?.();
     navigate("/login", { replace: true });
+  };
+
+  const handleStaffInputChange = (event) => {
+    const { name, value } = event.target;
+
+    setStaffForm((currentState) => ({
+      ...currentState,
+      [name]: value
+    }));
+    setStaffFormErrors((currentErrors) => ({
+      ...currentErrors,
+      [name]: ""
+    }));
+    setStaffRequestError("");
+    setStaffSuccessMessage("");
+  };
+
+  const handleStaffSubmit = async (event) => {
+    event.preventDefault();
+
+    const validationErrors = validateStaffForm(staffForm);
+    if (Object.keys(validationErrors).length > 0) {
+      setStaffFormErrors(validationErrors);
+      return;
+    }
+
+    setIsCreatingStaff(true);
+    setStaffRequestError("");
+    setStaffSuccessMessage("");
+
+    try {
+      const response = await createStaffAccount(
+        {
+          fullName: staffForm.fullName.trim(),
+          username: staffForm.username.trim(),
+          password: staffForm.password,
+          role: staffForm.role,
+          status: staffForm.status
+        },
+        authToken
+      );
+
+      setStaffRecords((currentList) => [
+        {
+          ...response.data,
+          createdBy: {
+            id: currentStaff?.id,
+            fullName: currentStaff?.fullName,
+            username: currentStaff?.username,
+            role: currentStaff?.role
+          }
+        },
+        ...currentList
+      ]);
+      setStaffForm(staffInitialForm);
+      setStaffSuccessMessage("Staff account created successfully.");
+    } catch (error) {
+      setStaffRequestError(getApiErrorMessage(error));
+    } finally {
+      setIsCreatingStaff(false);
+    }
   };
 
   if (!activeScreen) {
@@ -278,12 +398,23 @@ function DashboardPage({ currentStaff, onLogout }) {
               <strong>{metric.value}</strong>
             </button>
           ))}
-          {activeScreen.metrics.map((metric) => (
-            <button key={metric} type="button" className="metric-card metric-card--muted">
-              <span>{metric}</span>
-              <strong>View</strong>
-            </button>
-          ))}
+          {activeModule === "Staff"
+            ? [
+                { label: "Active Staff", value: String(staffMetrics.active) },
+                { label: "Admins", value: String(staffMetrics.admins) },
+                { label: "Cashiers", value: String(staffMetrics.cashiers) }
+              ].map((metric) => (
+                <button key={metric.label} type="button" className="metric-card metric-card--muted">
+                  <span>{metric.label}</span>
+                  <strong>{metric.value}</strong>
+                </button>
+              ))
+            : activeScreen.metrics.map((metric) => (
+                <button key={metric} type="button" className="metric-card metric-card--muted">
+                  <span>{metric}</span>
+                  <strong>View</strong>
+                </button>
+              ))}
         </section>
 
         <SectionCard title="Access Summary">
@@ -303,80 +434,217 @@ function DashboardPage({ currentStaff, onLogout }) {
           </div>
         </SectionCard>
 
-        <SectionCard title={activeScreen.title}>
-          <form className="module-form-grid" onSubmit={(event) => event.preventDefault()}>
-            {activeScreen.formFields.map((field) => (
-              <ModuleField key={field.label} field={field} />
-            ))}
-            <div className="form-actions form-actions--full">
-              <button type="submit" className="primary-button">
-                Save
-              </button>
-              <button type="button" className="secondary-button">
-                Reset
-              </button>
-            </div>
-          </form>
-        </SectionCard>
+        {activeModule === "Staff" ? (
+          <>
+            <SectionCard title="Create Staff Account">
+              <form className="form-grid" onSubmit={handleStaffSubmit} autoComplete="off">
+                <label className="field-group">
+                  <span>Full Name</span>
+                  <input
+                    type="text"
+                    name="fullName"
+                    value={staffForm.fullName}
+                    onChange={handleStaffInputChange}
+                    placeholder="Enter full name"
+                    autoComplete="off"
+                  />
+                  {staffFormErrors.fullName ? (
+                    <small className="field-error">{staffFormErrors.fullName}</small>
+                  ) : null}
+                </label>
 
-        <SectionCard title="Filters">
-          <div className="filter-grid">
-            {activeScreen.filters.map((filter) => (
-              <label key={filter} className="field-group">
-                <span>{filter}</span>
-                <input
-                  type={
-                    filter.toLowerCase().includes("date")
-                      ? "date"
-                      : filter.toLowerCase().includes("range")
-                        ? "text"
-                        : "search"
-                  }
-                  placeholder={filter}
-                />
-              </label>
-            ))}
-          </div>
-        </SectionCard>
+                <label className="field-group">
+                  <span>Username</span>
+                  <input
+                    type="text"
+                    name="username"
+                    value={staffForm.username}
+                    onChange={handleStaffInputChange}
+                    placeholder="Enter username"
+                    autoComplete="off"
+                  />
+                  {staffFormErrors.username ? (
+                    <small className="field-error">{staffFormErrors.username}</small>
+                  ) : null}
+                </label>
 
-        <SectionCard
-          title={`${activeScreen.title} List`}
-          actions={<button type="button" className="secondary-button">Refresh</button>}
-        >
-          <div className="table-wrapper">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  {activeScreen.columns.map((column) => (
-                    <th key={column}>{column}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {[1, 2, 3].map((rowIndex) => (
-                  <tr key={rowIndex}>
-                    {activeScreen.columns.map((column) => (
-                      <td key={`${column}-${rowIndex}`}>
-                        {column === "Status" || column.includes("Status") ? (
-                          <span className="status-badge">
-                            {rowIndex === 3 ? "Inactive" : "Active"}
-                          </span>
-                        ) : column === "Amount" || column.includes("Price") ? (
-                          `Rs ${rowIndex * 120}`
-                        ) : (
-                          `${column} ${rowIndex}`
-                        )}
-                      </td>
-                    ))}
-                  </tr>
+                <label className="field-group">
+                  <span>Password</span>
+                  <input
+                    type="password"
+                    name="password"
+                    value={staffForm.password}
+                    onChange={handleStaffInputChange}
+                    placeholder="Create password"
+                    autoComplete="new-password"
+                  />
+                  {staffFormErrors.password ? (
+                    <small className="field-error">{staffFormErrors.password}</small>
+                  ) : null}
+                </label>
+
+                <label className="field-group">
+                  <span>Role</span>
+                  <select name="role" value={staffForm.role} onChange={handleStaffInputChange} autoComplete="off">
+                    <option value="Admin">Admin</option>
+                    <option value="Cashier">Cashier</option>
+                  </select>
+                  {staffFormErrors.role ? (
+                    <small className="field-error">{staffFormErrors.role}</small>
+                  ) : null}
+                </label>
+
+                <label className="field-group">
+                  <span>Status</span>
+                  <select name="status" value={staffForm.status} onChange={handleStaffInputChange} autoComplete="off">
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                  {staffFormErrors.status ? (
+                    <small className="field-error">{staffFormErrors.status}</small>
+                  ) : null}
+                </label>
+
+                {staffRequestError ? <div className="form-message form-message--error">{staffRequestError}</div> : null}
+                {staffSuccessMessage ? <div className="form-message">{staffSuccessMessage}</div> : null}
+
+                <div className="form-actions form-actions--full">
+                  <button type="submit" className="primary-button" disabled={isCreatingStaff}>
+                    {isCreatingStaff ? "Creating..." : "Create Staff"}
+                  </button>
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={() => {
+                      setStaffForm(staffInitialForm);
+                      setStaffFormErrors({});
+                      setStaffRequestError("");
+                      setStaffSuccessMessage("");
+                    }}
+                  >
+                    Reset
+                  </button>
+                </div>
+              </form>
+            </SectionCard>
+
+            <SectionCard title="Staff List">
+              {isLoadingStaff ? <div className="feedback-actions">Loading staff...</div> : null}
+              <div className="table-wrapper">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Username</th>
+                      <th>Role</th>
+                      <th>Status</th>
+                      <th>Created By</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {staffRecords.length === 0 && !isLoadingStaff ? (
+                      <tr>
+                        <td colSpan="5">No staff records found.</td>
+                      </tr>
+                    ) : (
+                      staffRecords.map((staff) => (
+                        <tr key={staff.id}>
+                          <td>{staff.fullName}</td>
+                          <td>{staff.username}</td>
+                          <td>{staff.role}</td>
+                          <td>
+                            <span className="status-badge">{staff.status}</span>
+                          </td>
+                          <td>{staff.createdBy?.fullName || "System"}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </SectionCard>
+          </>
+        ) : (
+          <>
+            <SectionCard title={activeScreen.title}>
+              <form className="module-form-grid" onSubmit={(event) => event.preventDefault()} autoComplete="off">
+                {activeScreen.formFields.map((field) => (
+                  <ModuleField key={field.label} field={field} />
                 ))}
-              </tbody>
-            </table>
-          </div>
-        </SectionCard>
+                <div className="form-actions form-actions--full">
+                  <button type="submit" className="primary-button">
+                    Save
+                  </button>
+                  <button type="button" className="secondary-button">
+                    Reset
+                  </button>
+                </div>
+              </form>
+            </SectionCard>
+
+            <SectionCard title="Filters">
+              <div className="filter-grid">
+                {activeScreen.filters.map((filter) => (
+                  <label key={filter} className="field-group">
+                    <span>{filter}</span>
+                    <input
+                      type={
+                        filter.toLowerCase().includes("date")
+                          ? "date"
+                          : filter.toLowerCase().includes("range")
+                            ? "text"
+                            : "search"
+                      }
+                      placeholder={filter}
+                    />
+                  </label>
+                ))}
+              </div>
+            </SectionCard>
+
+            <SectionCard
+              title={`${activeScreen.title} List`}
+              actions={<button type="button" className="secondary-button">Refresh</button>}
+            >
+              <div className="table-wrapper">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      {activeScreen.columns.map((column) => (
+                        <th key={column}>{column}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[1, 2, 3].map((rowIndex) => (
+                      <tr key={rowIndex}>
+                        {activeScreen.columns.map((column) => (
+                          <td key={`${column}-${rowIndex}`}>
+                            {column === "Status" || column.includes("Status") ? (
+                              <span className="status-badge">
+                                {rowIndex === 3 ? "Inactive" : "Active"}
+                              </span>
+                            ) : column === "Amount" || column.includes("Price") ? (
+                              `Rs ${rowIndex * 120}`
+                            ) : (
+                              `${column} ${rowIndex}`
+                            )}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </SectionCard>
+          </>
+        )}
       </main>
     </div>
   );
 }
 
 export default DashboardPage;
+
+
+

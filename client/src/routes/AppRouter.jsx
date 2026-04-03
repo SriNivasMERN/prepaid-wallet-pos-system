@@ -16,9 +16,6 @@ import LoginPage from "../pages/LoginPage";
 import NotFoundPage from "../pages/NotFoundPage";
 import UnauthorizedPage from "../pages/UnauthorizedPage";
 
-/**
- * Blocks or allows routes based on first-time setup completion.
- */
 function SetupGuard({ isSetupComplete, allowWhenSetupComplete, children }) {
   if (allowWhenSetupComplete && !isSetupComplete) {
     return <Navigate to="/setup" replace />;
@@ -31,9 +28,6 @@ function SetupGuard({ isSetupComplete, allowWhenSetupComplete, children }) {
   return children;
 }
 
-/**
- * Redirects authenticated users away from the login screen.
- */
 function LoginRedirectGuard({ isAuthenticated, children }) {
   if (isAuthenticated) {
     return <Navigate to="/dashboard" replace />;
@@ -42,9 +36,6 @@ function LoginRedirectGuard({ isAuthenticated, children }) {
   return children;
 }
 
-/**
- * Protects app routes until first-time setup has been completed.
- */
 function SetupCompletionGuard({ isSetupComplete, children }) {
   if (!isSetupComplete) {
     return <Navigate to="/setup" replace />;
@@ -53,9 +44,6 @@ function SetupCompletionGuard({ isSetupComplete, children }) {
   return children;
 }
 
-/**
- * Protects app routes until a staff session exists.
- */
 function AuthGuard({ isAuthenticated, children }) {
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
@@ -64,9 +52,6 @@ function AuthGuard({ isAuthenticated, children }) {
   return children;
 }
 
-/**
- * Protects app routes until the logged-in role is recognized by access rules.
- */
 function AuthorizationGuard({ currentStaff, children }) {
   if (!hasRecognizedRole(currentStaff?.role)) {
     return <Navigate to="/unauthorized" replace />;
@@ -75,16 +60,10 @@ function AuthorizationGuard({ currentStaff, children }) {
   return children;
 }
 
-/**
- * Displays a minimal loading state while auth state is being fetched.
- */
 function AppLoader() {
   return <div className="app-loader">Loading</div>;
 }
 
-/**
- * Declares the route structure used by the app.
- */
 function AppRouter() {
   const {
     isLoading: isSetupLoading,
@@ -134,7 +113,11 @@ function AppRouter() {
           <SetupCompletionGuard isSetupComplete={isSetupComplete}>
             <AuthGuard isAuthenticated={isAuthenticated}>
               <AuthorizationGuard currentStaff={session?.staff}>
-                <DashboardPage currentStaff={session?.staff} onLogout={removeSession} />
+                <DashboardPage
+                  currentStaff={session?.staff}
+                  authToken={session?.token}
+                  onLogout={removeSession}
+                />
               </AuthorizationGuard>
             </AuthGuard>
           </SetupCompletionGuard>

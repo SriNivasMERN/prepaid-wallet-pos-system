@@ -17,6 +17,7 @@ const {
 const { errorHandler } = require("./middlewares/errorHandler");
 const { notFoundHandler } = require("./middlewares/notFoundHandler");
 const { authRouter } = require("./modules/auth/auth.routes");
+const { staffRouter } = require("./modules/staff/staff.routes");
 const { buildApiResponse } = require("./utils/apiResponse");
 
 const app = express();
@@ -47,6 +48,7 @@ app.get(`${API_PREFIX}/health`, (request, response) => {
 });
 
 app.use(`${API_PREFIX}/auth`, authRouter);
+app.use(`${API_PREFIX}/staff`, staffRouter);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
