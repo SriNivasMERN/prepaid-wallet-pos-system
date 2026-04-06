@@ -8,6 +8,10 @@
  * Returns the best available error message for UI display.
  */
 export function getApiErrorMessage(error) {
+  if (error?.response?.errors?.[0]?.message) {
+    return error.response.errors[0].message;
+  }
+
   if (error?.response?.message) {
     return error.response.message;
   }

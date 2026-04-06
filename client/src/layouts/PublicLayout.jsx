@@ -4,7 +4,7 @@
  * Purpose: Wraps public-access pages like login and first-time setup.
  */
 
-import { Link, Outlet, useLocation } from "react-router-dom";
+import { Link, Outlet } from "react-router-dom";
 
 import { APP_NAME } from "../constants/appConstants";
 
@@ -12,27 +12,17 @@ import { APP_NAME } from "../constants/appConstants";
  * Builds a consistent frame for authentication-related pages.
  */
 function PublicLayout({ isSetupComplete = false }) {
-  const location = useLocation();
-  const isLoginPage = location.pathname === "/login";
-
   return (
     <div className="public-shell">
       <aside className="public-shell__aside">
         <span className="brand-badge">POS</span>
         <h1>{APP_NAME}</h1>
         <div className="public-shell__switcher">
-          {isSetupComplete ? (
-            <Link
-              className={`switcher-link ${isLoginPage ? "is-active" : ""}`}
-              to="/login"
-            >
-              Login
-            </Link>
-          ) : (
+          {!isSetupComplete ? (
             <Link className="switcher-link is-active" to="/setup">
               First-Time Setup
             </Link>
-          )}
+          ) : null}
         </div>
       </aside>
 

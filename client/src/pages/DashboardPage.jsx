@@ -1,7 +1,7 @@
 /**
  * Module: Dashboard Page
  * File: DashboardPage.jsx
- * Purpose: Provides the authenticated operational layout with module navigation, staff management, and logout control.
+ * Purpose: Provides the authenticated operational layout with module navigation, staff management, member management, and logout control.
  */
 
 import { useEffect, useState } from "react";
@@ -13,6 +13,7 @@ import {
   getAllowedModulesForRole,
   getAllowedPermissionsForRole
 } from "../constants/accessControl";
+import MembersModule from "../features/members/components/MembersModule";
 import { createStaffAccount, fetchStaffList } from "../features/staff/api/staffApi";
 import { getApiErrorMessage } from "../utils/getApiErrorMessage";
 
@@ -33,15 +34,7 @@ const moduleScreens = {
   },
   Members: {
     title: "Members",
-    metrics: ["Total Members", "Active Members", "Inactive Members"],
-    formFields: [
-      { label: "Full Name", type: "text" },
-      { label: "Mobile Number", type: "text" },
-      { label: "Reference Details", type: "textarea" },
-      { label: "Status", type: "select", options: ["Active", "Inactive"] }
-    ],
-    filters: ["Search Members", "Status", "Card Number"],
-    columns: ["Member", "Mobile", "Card", "Wallet", "Status"]
+    metrics: ["Total Members", "Active Members", "Inactive Members"]
   },
   Cards: {
     title: "Cards",
@@ -246,6 +239,11 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
   const [isCreatingStaff, setIsCreatingStaff] = useState(false);
   const [isLoadingStaff, setIsLoadingStaff] = useState(false);
   const [staffRecords, setStaffRecords] = useState([]);
+  const [memberMetrics, setMemberMetrics] = useState({
+    total: 0,
+    active: 0,
+    inactive: 0
+  });
 
   useEffect(() => {
     if (!allowedModules.length) {
@@ -425,12 +423,23 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
                   <strong>{metric.value}</strong>
                 </button>
               ))
-            : activeScreen.metrics.map((metric) => (
-                <button key={metric} type="button" className="metric-card metric-card--muted">
-                  <span>{metric}</span>
-                  <strong>View</strong>
-                </button>
-              ))}
+            : activeModule === "Members"
+              ? [
+                  { label: "Total Members", value: String(memberMetrics.total) },
+                  { label: "Active Members", value: String(memberMetrics.active) },
+                  { label: "Inactive Members", value: String(memberMetrics.inactive) }
+                ].map((metric) => (
+                  <button key={metric.label} type="button" className="metric-card metric-card--muted">
+                    <span>{metric.label}</span>
+                    <strong>{metric.value}</strong>
+                  </button>
+                ))
+              : activeScreen.metrics.map((metric) => (
+                  <button key={metric} type="button" className="metric-card metric-card--muted">
+                    <span>{metric}</span>
+                    <strong>View</strong>
+                  </button>
+                ))}
         </section>
 
         <SectionCard title="Access Summary">
@@ -579,6 +588,8 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
               </div>
             </SectionCard>
           </>
+        ) : activeModule === "Members" ? (
+          <MembersModule authToken={authToken} onMetricsChange={setMemberMetrics} />
         ) : (
           <>
             <SectionCard title={activeScreen.title}>
