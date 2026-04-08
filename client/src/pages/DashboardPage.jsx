@@ -1,7 +1,7 @@
 /**
  * Module: Dashboard Page
  * File: DashboardPage.jsx
- * Purpose: Provides the authenticated operational layout with module navigation, staff management, member management, and logout control.
+ * Purpose: Provides the authenticated operational layout with module navigation, staff management, member management, card management, and logout control.
  */
 
 import { useEffect, useState } from "react";
@@ -13,6 +13,7 @@ import {
   getAllowedModulesForRole,
   getAllowedPermissionsForRole
 } from "../constants/accessControl";
+import CardsModule from "../features/cards/components/CardsModule";
 import MembersModule from "../features/members/components/MembersModule";
 import { createStaffAccount, fetchStaffList } from "../features/staff/api/staffApi";
 import { getApiErrorMessage } from "../utils/getApiErrorMessage";
@@ -38,15 +39,7 @@ const moduleScreens = {
   },
   Cards: {
     title: "Cards",
-    metrics: ["Active Cards", "Expired Cards", "Replaced Cards"],
-    formFields: [
-      { label: "Card Number", type: "text" },
-      { label: "Member", type: "search" },
-      { label: "Activated At", type: "date" },
-      { label: "Expires At", type: "date" }
-    ],
-    filters: ["Search Card", "Status", "Expiry"],
-    columns: ["Card Number", "Member", "Status", "Activated At", "Expires At"]
+    metrics: ["Active Cards", "Expired Cards", "Replaced Cards"]
   },
   Wallets: {
     title: "Wallets",
@@ -244,6 +237,11 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
     active: 0,
     inactive: 0
   });
+  const [cardMetrics, setCardMetrics] = useState({
+    active: 0,
+    expired: 0,
+    replaced: 0
+  });
 
   useEffect(() => {
     if (!allowedModules.length) {
@@ -434,6 +432,17 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
                     <strong>{metric.value}</strong>
                   </button>
                 ))
+              : activeModule === "Cards"
+                ? [
+                    { label: "Active Cards", value: String(cardMetrics.active) },
+                    { label: "Expired Cards", value: String(cardMetrics.expired) },
+                    { label: "Replaced Cards", value: String(cardMetrics.replaced) }
+                  ].map((metric) => (
+                    <button key={metric.label} type="button" className="metric-card metric-card--muted">
+                      <span>{metric.label}</span>
+                      <strong>{metric.value}</strong>
+                    </button>
+                  ))
               : activeScreen.metrics.map((metric) => (
                   <button key={metric} type="button" className="metric-card metric-card--muted">
                     <span>{metric}</span>
@@ -590,6 +599,8 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
           </>
         ) : activeModule === "Members" ? (
           <MembersModule authToken={authToken} onMetricsChange={setMemberMetrics} />
+        ) : activeModule === "Cards" ? (
+          <CardsModule authToken={authToken} onMetricsChange={setCardMetrics} />
         ) : (
           <>
             <SectionCard title={activeScreen.title}>
