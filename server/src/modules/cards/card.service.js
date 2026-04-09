@@ -1,7 +1,7 @@
 /**
  * Module: Card Service
  * File: card.service.js
- * Purpose: Handles card assignment, replacement, listing, and detail lookup.
+ * Purpose: Handles card assignment, replacement, listing, detail lookup, and operational readiness checks.
  */
 
 const mongoose = require("mongoose");
@@ -64,9 +64,53 @@ const ensureValidObjectId = (value, fieldName, topMessage) => {
 };
 
 /**
+ * Returns true when the supplied card date is already expired.
+ */
+const isCardExpired = (expiresAt) => {
+  if (!expiresAt) {
+    return false;
+  }
+
+  const expiryDate = new Date(expiresAt);
+
+  if (Number.isNaN(expiryDate.getTime())) {
+    return false;
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  return expiryDate < today;
+};
+
+/**
+ * Builds the operational readiness profile for one card and linked member.
+ */
+const buildCardOperationalProfile = (card, member) => {
+  const expired = isCardExpired(card.expiresAt);
+  const activeCard = card.status === RECORD_STATUS.ACTIVE;
+  const activeMember = member?.status === RECORD_STATUS.ACTIVE;
+  const canUseInOperations = activeCard && activeMember && !expired;
+
+  return {
+    expired,
+    activeMember,
+    canUseInOperations,
+    blockingReason:
+      card.status !== RECORD_STATUS.ACTIVE
+        ? "Card is inactive."
+        : member?.status !== RECORD_STATUS.ACTIVE
+          ? "Linked member is inactive."
+          : expired
+            ? "Card is expired."
+            : null
+  };
+};
+
+/**
  * Shapes a card document for API responses.
  */
-const toCardResponse = (card) => ({
+const toCardResponse = (card, options = {}) => ({
   id: card._id,
   cardNumber: card.cardNumber,
   status: card.status,
@@ -99,7 +143,8 @@ const toCardResponse = (card) => ({
         username: card.updatedBy.username,
         role: card.updatedBy.role
       }
-    : null
+    : null,
+  ...(options.operationalProfile ? { operationalProfile: options.operationalProfile } : {})
 });
 
 /**
@@ -153,6 +198,14 @@ const assignCard = async (payload, currentAuth) => {
 
   const member = await getMemberForCardFlow(values.memberId);
 
+  if (member.status !== RECORD_STATUS.ACTIVE) {
+    throw createConflictError(
+      "memberId",
+      "Only an active member can receive a card.",
+      "Card assignment is not allowed."
+    );
+  }
+
   const existingCardNumber = await Card.exists({
     cardNumber: values.cardNumber,
     isDeleted: false
@@ -197,7 +250,9 @@ const assignCard = async (payload, currentAuth) => {
 
     const hydratedCard = await getCardDocumentById(createdCard._id);
 
-    return toCardResponse(hydratedCard);
+    return toCardResponse(hydratedCard, {
+      operationalProfile: buildCardOperationalProfile(hydratedCard, hydratedCard.memberId)
+    });
   } catch (error) {
     if (error?.code === 11000) {
       if (error.keyPattern?.cardNumber) {
@@ -263,7 +318,11 @@ const getCardList = async (query = {}) => {
     .populate("updatedBy", "fullName username role")
     .sort({ createdAt: -1 });
 
-  return cards.map(toCardResponse);
+  return cards.map((card) =>
+    toCardResponse(card, {
+      operationalProfile: buildCardOperationalProfile(card, card.memberId)
+    })
+  );
 };
 
 /**
@@ -272,7 +331,20 @@ const getCardList = async (query = {}) => {
 const getCardById = async (cardId) => {
   const card = await getCardDocumentById(cardId);
 
-  return toCardResponse(card);
+  return toCardResponse(card, {
+    operationalProfile: buildCardOperationalProfile(card, card.memberId)
+  });
+};
+
+/**
+ * Returns the operational readiness view for a single card.
+ */
+const getCardOperationalProfile = async (cardId) => {
+  const card = await getCardDocumentById(cardId);
+
+  return toCardResponse(card, {
+    operationalProfile: buildCardOperationalProfile(card, card.memberId)
+  });
 };
 
 /**
@@ -304,7 +376,23 @@ const replaceCard = async (cardId, payload, currentAuth) => {
     );
   }
 
+  if (isCardExpired(currentCard.expiresAt)) {
+    throw createConflictError(
+      "cardId",
+      "An expired card cannot be replaced through active-card replacement flow.",
+      "Card replacement is not allowed."
+    );
+  }
+
   const member = await getMemberForCardFlow(currentCard.memberId);
+
+  if (member.status !== RECORD_STATUS.ACTIVE) {
+    throw createConflictError(
+      "memberId",
+      "Only an active member can replace a card.",
+      "Card replacement is not allowed."
+    );
+  }
 
   const duplicateCard = await Card.exists({
     _id: { $ne: currentCard._id },
@@ -343,8 +431,15 @@ const replaceCard = async (cardId, payload, currentAuth) => {
     const hydratedReplacementCard = await getCardDocumentById(replacementCard._id);
 
     return {
-      replacedCard: toCardResponse(hydratedOldCard),
-      replacementCard: toCardResponse(hydratedReplacementCard)
+      replacedCard: toCardResponse(hydratedOldCard, {
+        operationalProfile: buildCardOperationalProfile(hydratedOldCard, hydratedOldCard.memberId)
+      }),
+      replacementCard: toCardResponse(hydratedReplacementCard, {
+        operationalProfile: buildCardOperationalProfile(
+          hydratedReplacementCard,
+          hydratedReplacementCard.memberId
+        )
+      })
     };
   } catch (error) {
     if (error?.code === 11000 && error.keyPattern?.cardNumber) {
@@ -363,5 +458,6 @@ module.exports = {
   assignCard,
   getCardList,
   getCardById,
+  getCardOperationalProfile,
   replaceCard
 };

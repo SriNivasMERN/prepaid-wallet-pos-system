@@ -1,7 +1,7 @@
 /**
  * Module: Member Controller
  * File: member.controller.js
- * Purpose: Handles member create, list, detail, and update responses.
+ * Purpose: Handles member create, list, detail, update, and operational readiness responses.
  */
 
 const { buildApiResponse } = require("../../utils/apiResponse");
@@ -9,6 +9,7 @@ const {
   createMember,
   getMemberById,
   getMemberList,
+  getMemberOperationalProfile,
   updateMember
 } = require("./member.service");
 
@@ -40,6 +41,24 @@ const getMemberByIdHandler = async (request, response, next) => {
     response.status(200).json(
       buildApiResponse({
         message: "Member profile fetched successfully.",
+        data
+      })
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Returns the member operational readiness profile.
+ */
+const getMemberOperationalProfileHandler = async (request, response, next) => {
+  try {
+    const data = await getMemberOperationalProfile(request.params.memberId);
+
+    response.status(200).json(
+      buildApiResponse({
+        message: "Member operational profile fetched successfully.",
         data
       })
     );
@@ -91,6 +110,7 @@ const updateMemberHandler = async (request, response, next) => {
 module.exports = {
   getMemberListHandler,
   getMemberByIdHandler,
+  getMemberOperationalProfileHandler,
   createMemberHandler,
   updateMemberHandler
 };

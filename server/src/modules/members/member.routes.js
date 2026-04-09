@@ -12,6 +12,7 @@ const {
   createMemberHandler,
   getMemberByIdHandler,
   getMemberListHandler,
+  getMemberOperationalProfileHandler,
   updateMemberHandler
 } = require("./member.controller");
 
@@ -35,6 +36,11 @@ membersRouter.get("/", getMemberListHandler);
  * Creates a new member record.
  */
 membersRouter.post("/", createMemberHandler);
+
+/**
+ * Returns the operational readiness profile for one member.
+ */
+membersRouter.get("/:memberId/operational-profile", getMemberOperationalProfileHandler);
 
 /**
  * Returns a single member profile.

@@ -1,7 +1,7 @@
 /**
  * Module: Card Routes
  * File: card.routes.js
- * Purpose: Exposes Cards module routes for assignment, replacement, list, and detail operations.
+ * Purpose: Exposes Cards module routes for assignment, replacement, list, detail, and operational readiness operations.
  */
 
 const express = require("express");
@@ -12,6 +12,7 @@ const {
   assignCardHandler,
   getCardByIdHandler,
   getCardListHandler,
+  getCardOperationalProfileHandler,
   replaceCardHandler
 } = require("./card.controller");
 
@@ -35,6 +36,11 @@ cardsRouter.get("/", getCardListHandler);
  * Assigns a new card.
  */
 cardsRouter.post("/", assignCardHandler);
+
+/**
+ * Returns the operational readiness profile for one card.
+ */
+cardsRouter.get("/:cardId/operational-profile", getCardOperationalProfileHandler);
 
 /**
  * Returns a single card profile.

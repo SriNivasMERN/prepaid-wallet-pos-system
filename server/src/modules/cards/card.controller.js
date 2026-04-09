@@ -1,7 +1,7 @@
 /**
  * Module: Card Controller
  * File: card.controller.js
- * Purpose: Handles card assign, list, detail, and replacement responses.
+ * Purpose: Handles card assign, list, detail, replacement, and operational readiness responses.
  */
 
 const { buildApiResponse } = require("../../utils/apiResponse");
@@ -9,6 +9,7 @@ const {
   assignCard,
   getCardById,
   getCardList,
+  getCardOperationalProfile,
   replaceCard
 } = require("./card.service");
 
@@ -40,6 +41,24 @@ const getCardByIdHandler = async (request, response, next) => {
     response.status(200).json(
       buildApiResponse({
         message: "Card profile fetched successfully.",
+        data
+      })
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Returns the operational readiness profile for one card.
+ */
+const getCardOperationalProfileHandler = async (request, response, next) => {
+  try {
+    const data = await getCardOperationalProfile(request.params.cardId);
+
+    response.status(200).json(
+      buildApiResponse({
+        message: "Card operational profile fetched successfully.",
         data
       })
     );
@@ -87,6 +106,7 @@ const replaceCardHandler = async (request, response, next) => {
 module.exports = {
   getCardListHandler,
   getCardByIdHandler,
+  getCardOperationalProfileHandler,
   assignCardHandler,
   replaceCardHandler
 };

@@ -1,11 +1,13 @@
 /**
  * Module: Member Service
  * File: member.service.js
- * Purpose: Handles member creation, listing, detail lookup, and updates for the Members module.
+ * Purpose: Handles member creation, listing, detail lookup, updates, and operational readiness checks for the Members module.
  */
 
 const mongoose = require("mongoose");
 
+const { RECORD_STATUS } = require("../../constants/appConstants");
+const { Card } = require("../cards/card.model");
 const { Member } = require("./member.model");
 const {
   validateCreateMemberPayload,
@@ -66,9 +68,61 @@ const ensureValidMemberId = (memberId) => {
 };
 
 /**
+ * Returns true when the supplied card date is already expired.
+ */
+const isCardExpired = (expiresAt) => {
+  if (!expiresAt) {
+    return false;
+  }
+
+  const expiryDate = new Date(expiresAt);
+
+  if (Number.isNaN(expiryDate.getTime())) {
+    return false;
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  return expiryDate < today;
+};
+
+/**
+ * Builds the operational readiness profile for a member and linked card.
+ */
+const buildMemberOperationalProfile = (member, linkedCard = null) => {
+  const hasLinkedCard = Boolean(linkedCard);
+  const cardExpired = linkedCard ? isCardExpired(linkedCard.expiresAt) : false;
+  const activeLinkedCard =
+    linkedCard && linkedCard.status === RECORD_STATUS.ACTIVE && !cardExpired;
+  const canUseCardOperations =
+    member.status === RECORD_STATUS.ACTIVE && activeLinkedCard;
+
+  return {
+    hasLinkedCard,
+    linkedCardStatus: linkedCard?.status || null,
+    linkedCardNumber: linkedCard?.cardNumber || null,
+    linkedCardExpired: cardExpired,
+    canAssignNewCard: member.status === RECORD_STATUS.ACTIVE && !activeLinkedCard,
+    canReplaceCard: member.status === RECORD_STATUS.ACTIVE && activeLinkedCard,
+    canUseCardOperations,
+    blockingReason:
+      member.status !== RECORD_STATUS.ACTIVE
+        ? "Member is inactive."
+        : !linkedCard
+          ? "Member does not have a linked card."
+          : linkedCard.status !== RECORD_STATUS.ACTIVE
+            ? "Linked card is inactive."
+            : cardExpired
+              ? "Linked card is expired."
+              : null
+  };
+};
+
+/**
  * Shapes a member document for module responses.
  */
-const toMemberResponse = (member) => ({
+const toMemberResponse = (member, options = {}) => ({
   id: member._id,
   fullName: member.fullName,
   mobileNumber: member.mobileNumber,
@@ -93,7 +147,8 @@ const toMemberResponse = (member) => ({
         username: member.updatedBy.username,
         role: member.updatedBy.role
       }
-    : null
+    : null,
+  ...(options.operationalProfile ? { operationalProfile: options.operationalProfile } : {})
 });
 
 /**
@@ -118,6 +173,20 @@ const getMemberDocumentById = async (memberId) => {
   }
 
   return member;
+};
+
+/**
+ * Returns the linked active or inactive card associated with a member when present.
+ */
+const getLinkedCardForMember = async (member) => {
+  if (!member?.linkedCardId) {
+    return null;
+  }
+
+  return Card.findOne({
+    _id: member.linkedCardId,
+    isDeleted: false
+  });
 };
 
 /**
@@ -196,7 +265,7 @@ const getMemberList = async (query = {}) => {
     .populate("updatedBy", "fullName username role")
     .sort({ createdAt: -1 });
 
-  return members.map(toMemberResponse);
+  return members.map((member) => toMemberResponse(member));
 };
 
 /**
@@ -206,6 +275,18 @@ const getMemberById = async (memberId) => {
   const member = await getMemberDocumentById(memberId);
 
   return toMemberResponse(member);
+};
+
+/**
+ * Returns the operational readiness view for one member.
+ */
+const getMemberOperationalProfile = async (memberId) => {
+  const member = await getMemberDocumentById(memberId);
+  const linkedCard = await getLinkedCardForMember(member);
+
+  return toMemberResponse(member, {
+    operationalProfile: buildMemberOperationalProfile(member, linkedCard)
+  });
 };
 
 /**
@@ -249,6 +330,9 @@ const updateMember = async (memberId, payload, currentAuth) => {
     }
   }
 
+  const nextStatus = values.status || existingMember.status;
+  const currentStatus = existingMember.status;
+
   Object.assign(existingMember, values, {
     updatedBy: currentAuth.staffId
   });
@@ -256,9 +340,32 @@ const updateMember = async (memberId, payload, currentAuth) => {
   try {
     await existingMember.save();
 
-    const hydratedMember = await getMemberDocumentById(existingMember._id);
+    if (
+      currentStatus === RECORD_STATUS.ACTIVE &&
+      nextStatus === RECORD_STATUS.INACTIVE &&
+      existingMember.linkedCardId
+    ) {
+      await Card.updateOne(
+        {
+          _id: existingMember.linkedCardId,
+          isDeleted: false,
+          status: RECORD_STATUS.ACTIVE
+        },
+        {
+          $set: {
+            status: RECORD_STATUS.INACTIVE,
+            updatedBy: currentAuth.staffId
+          }
+        }
+      );
+    }
 
-    return toMemberResponse(hydratedMember);
+    const hydratedMember = await getMemberDocumentById(existingMember._id);
+    const linkedCard = await getLinkedCardForMember(hydratedMember);
+
+    return toMemberResponse(hydratedMember, {
+      operationalProfile: buildMemberOperationalProfile(hydratedMember, linkedCard)
+    });
   } catch (error) {
     if (error?.code === 11000 && error.keyPattern?.mobileNumber) {
       throw createConflictError(
@@ -276,5 +383,6 @@ module.exports = {
   createMember,
   getMemberList,
   getMemberById,
+  getMemberOperationalProfile,
   updateMember
 };
