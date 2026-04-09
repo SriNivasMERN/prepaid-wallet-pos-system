@@ -16,6 +16,7 @@ import {
 import CardsModule from "../features/cards/components/CardsModule";
 import MembersModule from "../features/members/components/MembersModule";
 import { createStaffAccount, fetchStaffList } from "../features/staff/api/staffApi";
+import WalletsModule from "../features/wallets/components/WalletsModule";
 import { getApiErrorMessage } from "../utils/getApiErrorMessage";
 
 const staffInitialForm = {
@@ -242,6 +243,11 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
     expired: 0,
     replaced: 0
   });
+  const [walletMetrics, setWalletMetrics] = useState({
+    active: 0,
+    lowBalance: 0,
+    inactive: 0
+  });
 
   useEffect(() => {
     if (!allowedModules.length) {
@@ -443,6 +449,17 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
                       <strong>{metric.value}</strong>
                     </button>
                   ))
+                : activeModule === "Wallets"
+                  ? [
+                      { label: "Active Wallets", value: String(walletMetrics.active) },
+                      { label: "Low Balance", value: String(walletMetrics.lowBalance) },
+                      { label: "Inactive Wallets", value: String(walletMetrics.inactive) }
+                    ].map((metric) => (
+                      <button key={metric.label} type="button" className="metric-card metric-card--muted">
+                        <span>{metric.label}</span>
+                        <strong>{metric.value}</strong>
+                      </button>
+                    ))
               : activeScreen.metrics.map((metric) => (
                   <button key={metric} type="button" className="metric-card metric-card--muted">
                     <span>{metric}</span>
@@ -601,6 +618,8 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
           <MembersModule authToken={authToken} onMetricsChange={setMemberMetrics} />
         ) : activeModule === "Cards" ? (
           <CardsModule authToken={authToken} onMetricsChange={setCardMetrics} />
+        ) : activeModule === "Wallets" ? (
+          <WalletsModule authToken={authToken} onMetricsChange={setWalletMetrics} />
         ) : (
           <>
             <SectionCard title={activeScreen.title}>
