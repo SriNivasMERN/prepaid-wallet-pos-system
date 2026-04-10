@@ -15,6 +15,7 @@ import {
 } from "../constants/accessControl";
 import CardsModule from "../features/cards/components/CardsModule";
 import MembersModule from "../features/members/components/MembersModule";
+import RechargesModule from "../features/recharges/components/RechargesModule";
 import { createStaffAccount, fetchStaffList } from "../features/staff/api/staffApi";
 import WalletsModule from "../features/wallets/components/WalletsModule";
 import { getApiErrorMessage } from "../utils/getApiErrorMessage";
@@ -248,6 +249,11 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
     lowBalance: 0,
     inactive: 0
   });
+  const [rechargeMetrics, setRechargeMetrics] = useState({
+    todayCount: 0,
+    todayValue: 0,
+    recentEntries: 0
+  });
 
   useEffect(() => {
     if (!allowedModules.length) {
@@ -460,6 +466,17 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
                         <strong>{metric.value}</strong>
                       </button>
                     ))
+                : activeModule === "Recharges"
+                  ? [
+                      { label: "Today Recharges", value: String(rechargeMetrics.todayCount) },
+                      { label: "Recharge Value", value: `Rs ${Number(rechargeMetrics.todayValue || 0).toFixed(2)}` },
+                      { label: "Recent Credit Entries", value: String(rechargeMetrics.recentEntries) }
+                    ].map((metric) => (
+                      <button key={metric.label} type="button" className="metric-card metric-card--muted">
+                        <span>{metric.label}</span>
+                        <strong>{metric.value}</strong>
+                      </button>
+                    ))
               : activeScreen.metrics.map((metric) => (
                   <button key={metric} type="button" className="metric-card metric-card--muted">
                     <span>{metric}</span>
@@ -620,6 +637,8 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
           <CardsModule authToken={authToken} onMetricsChange={setCardMetrics} />
         ) : activeModule === "Wallets" ? (
           <WalletsModule authToken={authToken} onMetricsChange={setWalletMetrics} />
+        ) : activeModule === "Recharges" ? (
+          <RechargesModule authToken={authToken} onMetricsChange={setRechargeMetrics} />
         ) : (
           <>
             <SectionCard title={activeScreen.title}>
