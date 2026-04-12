@@ -1,10 +1,11 @@
 /**
  * Module: Transaction Service
  * File: transaction.service.js
- * Purpose: Builds a transaction visibility ledger from recharge credit entries for the Transactions module.
+ * Purpose: Builds a transaction visibility ledger from recharge and debit entries for the Transactions module.
  */
 
 const { Recharge } = require("../recharges/recharge.model");
+const { Debit } = require("../debits/debit.model");
 const { Card } = require("../cards/card.model");
 const { Member } = require("../members/member.model");
 
@@ -47,21 +48,54 @@ const toTransactionResponse = (recharge) => ({
 });
 
 /**
- * Returns the derived transaction ledger with optional search, type, and date range filters.
+ * Shapes a manual debit entry as a transaction response.
  */
-const getTransactionList = async (query = {}) => {
+const toDebitTransactionResponse = (debit) => ({
+  id: debit._id,
+  reference: `DBT-${String(debit._id).slice(-6).toUpperCase()}`,
+  type: "Debit",
+  amount: debit.amount,
+  balanceBefore: debit.balanceBefore,
+  balanceAfter: debit.balanceAfter,
+  reason: debit.reason,
+  notes: debit.notes,
+  createdAt: debit.createdAt,
+  member: debit.memberId
+    ? {
+        id: debit.memberId._id,
+        fullName: debit.memberId.fullName,
+        mobileNumber: debit.memberId.mobileNumber,
+        status: debit.memberId.status
+      }
+    : null,
+  card: debit.cardId
+    ? {
+        id: debit.cardId._id,
+        cardNumber: debit.cardId.cardNumber,
+        status: debit.cardId.status
+      }
+    : null,
+  createdBy: debit.createdBy
+    ? {
+        id: debit.createdBy._id,
+        fullName: debit.createdBy.fullName,
+        username: debit.createdBy.username,
+        role: debit.createdBy.role
+      }
+    : null
+});
+
+/**
+ * Builds a shared database query for recharge and debit-backed transaction entries.
+ */
+const buildTransactionQuery = async (query = {}) => {
   const databaseQuery = {
     isDeleted: false
   };
 
   const searchValue = typeof query.search === "string" ? query.search.trim() : "";
-  const typeValue = typeof query.type === "string" ? query.type.trim() : "";
   const fromDateValue = typeof query.fromDate === "string" ? query.fromDate.trim() : "";
   const toDateValue = typeof query.toDate === "string" ? query.toDate.trim() : "";
-
-  if (typeValue === "Debit") {
-    return [];
-  }
 
   if (fromDateValue || toDateValue) {
     const createdAtQuery = {};
@@ -108,13 +142,40 @@ const getTransactionList = async (query = {}) => {
     ];
   }
 
-  const rechargeTransactions = await Recharge.find(databaseQuery)
-    .populate("memberId", "fullName mobileNumber status")
-    .populate("cardId", "cardNumber status")
-    .populate("createdBy", "fullName username role")
-    .sort({ createdAt: -1 });
+  return databaseQuery;
+};
 
-  return rechargeTransactions.map(toTransactionResponse);
+/**
+ * Returns the derived transaction ledger with optional search, type, and date range filters.
+ */
+const getTransactionList = async (query = {}) => {
+  const typeValue = typeof query.type === "string" ? query.type.trim() : "";
+  const databaseQuery = await buildTransactionQuery(query);
+
+  const shouldLoadCredits = !typeValue || typeValue === "Credit";
+  const shouldLoadDebits = !typeValue || typeValue === "Debit";
+
+  const [rechargeTransactions, debitTransactions] = await Promise.all([
+    shouldLoadCredits
+      ? Recharge.find(databaseQuery)
+          .populate("memberId", "fullName mobileNumber status")
+          .populate("cardId", "cardNumber status")
+          .populate("createdBy", "fullName username role")
+          .sort({ createdAt: -1 })
+      : Promise.resolve([]),
+    shouldLoadDebits
+      ? Debit.find(databaseQuery)
+          .populate("memberId", "fullName mobileNumber status")
+          .populate("cardId", "cardNumber status")
+          .populate("createdBy", "fullName username role")
+          .sort({ createdAt: -1 })
+      : Promise.resolve([])
+  ]);
+
+  return [
+    ...rechargeTransactions.map(toTransactionResponse),
+    ...debitTransactions.map(toDebitTransactionResponse)
+  ].sort((left, right) => new Date(right.createdAt) - new Date(left.createdAt));
 };
 
 module.exports = {

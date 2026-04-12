@@ -18,6 +18,7 @@ const { errorHandler } = require("./middlewares/errorHandler");
 const { notFoundHandler } = require("./middlewares/notFoundHandler");
 const { authRouter } = require("./modules/auth/auth.routes");
 const { cardsRouter } = require("./modules/cards/card.routes");
+const { debitsRouter } = require("./modules/debits/debit.routes");
 const { membersRouter } = require("./modules/members/member.routes");
 const { rechargesRouter } = require("./modules/recharges/recharge.routes");
 const { staffRouter } = require("./modules/staff/staff.routes");
@@ -54,6 +55,7 @@ app.get(`${API_PREFIX}/health`, (request, response) => {
 
 app.use(`${API_PREFIX}/auth`, authRouter);
 app.use(`${API_PREFIX}/cards`, cardsRouter);
+app.use(`${API_PREFIX}/debits`, debitsRouter);
 app.use(`${API_PREFIX}/members`, membersRouter);
 app.use(`${API_PREFIX}/recharges`, rechargesRouter);
 app.use(`${API_PREFIX}/staff`, staffRouter);
