@@ -1,0 +1,492 @@
+/**
+ * Module: Debits Module UI
+ * File: DebitsModule.jsx
+ * Purpose: Provides the Debits module create form, filters, and list connected to backend APIs.
+ */
+
+import { useEffect, useMemo, useState } from "react";
+
+import SectionCard from "../../../components/common/SectionCard";
+import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
+import { fetchStaffList } from "../../staff/api/staffApi";
+import { fetchWalletList } from "../../wallets/api/walletApi";
+import { createDebitRecord, fetchDebitList } from "../api/debitApi";
+
+const debitInitialForm = {
+  walletId: "",
+  amount: "",
+  reason: "",
+  notes: ""
+};
+
+const debitInitialFilters = {
+  search: "",
+  reason: "",
+  date: "",
+  cashierId: ""
+};
+
+function validateDebitForm(formData) {
+  const nextErrors = {};
+
+  if (!formData.walletId) {
+    nextErrors.walletId = "Wallet is required.";
+  }
+
+  if (!formData.amount) {
+    nextErrors.amount = "Amount is required.";
+  } else if (!Number.isFinite(Number(formData.amount)) || Number(formData.amount) <= 0) {
+    nextErrors.amount = "Amount must be greater than zero.";
+  }
+
+  if (!formData.reason.trim()) {
+    nextErrors.reason = "Reason is required.";
+  } else if (formData.reason.trim().length > 120) {
+    nextErrors.reason = "Reason must be 120 characters or less.";
+  }
+
+  if (formData.notes.trim().length > 300) {
+    nextErrors.notes = "Notes must be 300 characters or less.";
+  }
+
+  return nextErrors;
+}
+
+function formatCurrency(value) {
+  const amount = Number(value);
+
+  if (!Number.isFinite(amount)) {
+    return "Rs 0.00";
+  }
+
+  return `Rs ${amount.toFixed(2)}`;
+}
+
+function formatDateTime(value) {
+  if (!value) {
+    return "-";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "-";
+  }
+
+  return `${date.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric"
+  })} ${date.toLocaleTimeString("en-IN", {
+    hour: "2-digit",
+    minute: "2-digit"
+  })}`;
+}
+
+function DebitsModule({ authToken, onMetricsChange }) {
+  const [debitForm, setDebitForm] = useState(debitInitialForm);
+  const [debitFormErrors, setDebitFormErrors] = useState({});
+  const [debitRequestError, setDebitRequestError] = useState("");
+  const [debitSuccessMessage, setDebitSuccessMessage] = useState("");
+  const [isCreatingDebit, setIsCreatingDebit] = useState(false);
+  const [isLoadingDebits, setIsLoadingDebits] = useState(false);
+  const [debitRecords, setDebitRecords] = useState([]);
+  const [walletOptions, setWalletOptions] = useState([]);
+  const [isLoadingWallets, setIsLoadingWallets] = useState(false);
+  const [cashierOptions, setCashierOptions] = useState([]);
+  const [debitFilterForm, setDebitFilterForm] = useState(debitInitialFilters);
+  const [appliedDebitFilters, setAppliedDebitFilters] = useState(debitInitialFilters);
+  const [debitReloadToken, setDebitReloadToken] = useState(0);
+
+  useEffect(() => {
+    const loadFormOptions = async () => {
+      if (!authToken) {
+        return;
+      }
+
+      setIsLoadingWallets(true);
+
+      try {
+        const [walletResponse, staffResponse] = await Promise.all([
+          fetchWalletList(authToken, { status: "Active" }),
+          fetchStaffList(authToken)
+        ]);
+        const nextWallets = (walletResponse.data || []).filter(
+          (wallet) => wallet.status === "Active" && wallet.member?.status === "Active"
+        );
+
+        setWalletOptions(nextWallets);
+        setCashierOptions(staffResponse.data || []);
+        setDebitForm((currentState) => ({
+          ...currentState,
+          walletId:
+            currentState.walletId &&
+            nextWallets.some((wallet) => wallet.id === currentState.walletId)
+              ? currentState.walletId
+              : ""
+        }));
+      } catch (error) {
+        setDebitRequestError(getApiErrorMessage(error));
+      } finally {
+        setIsLoadingWallets(false);
+      }
+    };
+
+    loadFormOptions();
+  }, [authToken, debitReloadToken]);
+
+  useEffect(() => {
+    const loadDebits = async () => {
+      if (!authToken) {
+        return;
+      }
+
+      setIsLoadingDebits(true);
+      setDebitRequestError("");
+
+      try {
+        const response = await fetchDebitList(authToken, appliedDebitFilters);
+        const nextRecords = response.data || [];
+        const today = new Date();
+
+        today.setHours(0, 0, 0, 0);
+
+        const todayRecords = nextRecords.filter((debit) => {
+          const createdAt = new Date(debit.createdAt);
+
+          return !Number.isNaN(createdAt.getTime()) && createdAt >= today;
+        });
+
+        setDebitRecords(nextRecords);
+        onMetricsChange?.({
+          todayCount: todayRecords.length,
+          todayValue: todayRecords.reduce(
+            (total, debit) => total + Number(debit.amount || 0),
+            0
+          ),
+          recentEntries: nextRecords.length
+        });
+      } catch (error) {
+        setDebitRequestError(getApiErrorMessage(error));
+      } finally {
+        setIsLoadingDebits(false);
+      }
+    };
+
+    loadDebits();
+  }, [authToken, appliedDebitFilters, debitReloadToken, onMetricsChange]);
+
+  const selectedWallet = useMemo(
+    () => walletOptions.find((wallet) => wallet.id === debitForm.walletId) || null,
+    [walletOptions, debitForm.walletId]
+  );
+
+  const resetDebitForm = () => {
+    setDebitForm(debitInitialForm);
+    setDebitFormErrors({});
+    setDebitRequestError("");
+    setDebitSuccessMessage("");
+  };
+
+  const handleDebitInputChange = (event) => {
+    const { name, value } = event.target;
+
+    setDebitForm((currentState) => ({
+      ...currentState,
+      [name]: value
+    }));
+    setDebitFormErrors((currentErrors) => ({
+      ...currentErrors,
+      [name]: ""
+    }));
+    setDebitRequestError("");
+    setDebitSuccessMessage("");
+  };
+
+  const handleDebitFilterChange = (event) => {
+    const { name, value } = event.target;
+
+    setDebitFilterForm((currentState) => ({
+      ...currentState,
+      [name]: value
+    }));
+  };
+
+  const handleDebitSubmit = async (event) => {
+    event.preventDefault();
+
+    const validationErrors = validateDebitForm(debitForm);
+    if (Object.keys(validationErrors).length > 0) {
+      setDebitFormErrors(validationErrors);
+      return;
+    }
+
+    setIsCreatingDebit(true);
+    setDebitRequestError("");
+    setDebitSuccessMessage("");
+
+    try {
+      await createDebitRecord(
+        {
+          walletId: debitForm.walletId,
+          amount: Number(debitForm.amount),
+          reason: debitForm.reason.trim(),
+          notes: debitForm.notes.trim()
+        },
+        authToken
+      );
+
+      resetDebitForm();
+      setDebitSuccessMessage("Debit created successfully.");
+      setDebitReloadToken((currentValue) => currentValue + 1);
+    } catch (error) {
+      setDebitRequestError(getApiErrorMessage(error));
+    } finally {
+      setIsCreatingDebit(false);
+    }
+  };
+
+  const handleDebitFilterSubmit = (event) => {
+    event.preventDefault();
+    setAppliedDebitFilters({
+      search: debitFilterForm.search.trim(),
+      reason: debitFilterForm.reason.trim(),
+      date: debitFilterForm.date,
+      cashierId: debitFilterForm.cashierId
+    });
+  };
+
+  const resetDebitFilters = () => {
+    setDebitFilterForm(debitInitialFilters);
+    setAppliedDebitFilters(debitInitialFilters);
+  };
+
+  return (
+    <>
+      <SectionCard title="Create Debit">
+        <form className="form-grid" onSubmit={handleDebitSubmit} autoComplete="off">
+          <label className="field-group field-group--wide">
+            <span>Wallet</span>
+            <select
+              name="walletId"
+              value={debitForm.walletId}
+              onChange={handleDebitInputChange}
+              autoComplete="off"
+              disabled={isLoadingWallets}
+            >
+              <option value="">
+                {isLoadingWallets ? "Loading wallets..." : "Select wallet"}
+              </option>
+              {walletOptions.map((wallet) => (
+                <option key={wallet.id} value={wallet.id}>
+                  {wallet.member?.fullName} ({wallet.member?.mobileNumber}) - Bal{" "}
+                  {formatCurrency(wallet.balance)}
+                </option>
+              ))}
+            </select>
+            {debitFormErrors.walletId ? (
+              <small className="field-error">{debitFormErrors.walletId}</small>
+            ) : null}
+          </label>
+
+          <label className="field-group">
+            <span>Member</span>
+            <input
+              type="text"
+              value={selectedWallet?.member?.fullName || ""}
+              readOnly
+              placeholder="Selected member"
+              autoComplete="off"
+            />
+          </label>
+
+          <label className="field-group">
+            <span>Current Balance</span>
+            <input
+              type="text"
+              value={selectedWallet ? formatCurrency(selectedWallet.balance) : ""}
+              readOnly
+              placeholder="Current balance"
+              autoComplete="off"
+            />
+          </label>
+
+          <label className="field-group">
+            <span>Amount</span>
+            <input
+              type="number"
+              name="amount"
+              value={debitForm.amount}
+              onChange={handleDebitInputChange}
+              placeholder="Enter amount"
+              min="0.01"
+              step="0.01"
+              autoComplete="off"
+            />
+            {debitFormErrors.amount ? (
+              <small className="field-error">{debitFormErrors.amount}</small>
+            ) : null}
+          </label>
+
+          <label className="field-group field-group--wide">
+            <span>Reason</span>
+            <input
+              type="text"
+              name="reason"
+              value={debitForm.reason}
+              onChange={handleDebitInputChange}
+              placeholder="Enter debit reason"
+              autoComplete="off"
+            />
+            {debitFormErrors.reason ? (
+              <small className="field-error">{debitFormErrors.reason}</small>
+            ) : null}
+          </label>
+
+          <label className="field-group field-group--wide">
+            <span>Notes</span>
+            <textarea
+              rows="3"
+              name="notes"
+              value={debitForm.notes}
+              onChange={handleDebitInputChange}
+              placeholder="Enter notes"
+              autoComplete="off"
+            />
+            {debitFormErrors.notes ? (
+              <small className="field-error">{debitFormErrors.notes}</small>
+            ) : null}
+          </label>
+
+          {debitRequestError ? <div className="form-message form-message--error">{debitRequestError}</div> : null}
+          {debitSuccessMessage ? <div className="form-message">{debitSuccessMessage}</div> : null}
+
+          <div className="form-actions form-actions--full">
+            <button type="submit" className="primary-button" disabled={isCreatingDebit || isLoadingWallets}>
+              {isCreatingDebit ? "Creating..." : "Create Debit"}
+            </button>
+            <button type="button" className="secondary-button" onClick={resetDebitForm}>
+              Reset
+            </button>
+          </div>
+        </form>
+      </SectionCard>
+
+      <SectionCard title="Filters">
+        <form className="filter-grid" onSubmit={handleDebitFilterSubmit} autoComplete="off">
+          <label className="field-group field-group--wide">
+            <span>Search Debits</span>
+            <input
+              type="search"
+              name="search"
+              value={debitFilterForm.search}
+              onChange={handleDebitFilterChange}
+              placeholder="Search by member, mobile number, card number, or reason"
+              autoComplete="off"
+            />
+          </label>
+
+          <label className="field-group">
+            <span>Reason</span>
+            <input
+              type="text"
+              name="reason"
+              value={debitFilterForm.reason}
+              onChange={handleDebitFilterChange}
+              placeholder="Filter by reason"
+              autoComplete="off"
+            />
+          </label>
+
+          <label className="field-group">
+            <span>Date</span>
+            <input
+              type="date"
+              name="date"
+              value={debitFilterForm.date}
+              onChange={handleDebitFilterChange}
+              autoComplete="off"
+            />
+          </label>
+
+          <label className="field-group">
+            <span>Cashier</span>
+            <select
+              name="cashierId"
+              value={debitFilterForm.cashierId}
+              onChange={handleDebitFilterChange}
+              autoComplete="off"
+            >
+              <option value="">All</option>
+              {cashierOptions.map((staff) => (
+                <option key={staff.id} value={staff.id}>
+                  {staff.fullName}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <div className="form-actions form-actions--full">
+            <button type="submit" className="primary-button">
+              Apply Filters
+            </button>
+            <button type="button" className="secondary-button" onClick={resetDebitFilters}>
+              Reset
+            </button>
+          </div>
+        </form>
+      </SectionCard>
+
+      <SectionCard
+        title="Debits List"
+        actions={
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={() => setDebitReloadToken((currentValue) => currentValue + 1)}
+          >
+            Refresh
+          </button>
+        }
+      >
+        {isLoadingDebits ? <div className="feedback-actions">Loading debits...</div> : null}
+        <div className="table-wrapper">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Member</th>
+                <th>Card</th>
+                <th>Amount</th>
+                <th>Reason</th>
+                <th>Cashier</th>
+                <th>Balance After</th>
+                <th>Created At</th>
+              </tr>
+            </thead>
+            <tbody>
+              {debitRecords.length === 0 && !isLoadingDebits ? (
+                <tr>
+                  <td colSpan="7">No debit records found.</td>
+                </tr>
+              ) : (
+                debitRecords.map((debit) => (
+                  <tr key={debit.id}>
+                    <td>{debit.member?.fullName || "-"}</td>
+                    <td>{debit.card?.cardNumber || "-"}</td>
+                    <td>{formatCurrency(debit.amount)}</td>
+                    <td>{debit.reason || "-"}</td>
+                    <td>{debit.createdBy?.fullName || "System"}</td>
+                    <td>{formatCurrency(debit.balanceAfter)}</td>
+                    <td>{formatDateTime(debit.createdAt)}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </SectionCard>
+    </>
+  );
+}
+
+export default DebitsModule;

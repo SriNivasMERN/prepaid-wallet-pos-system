@@ -14,6 +14,7 @@ export const MODULE_ACCESS_BY_ROLE = {
     "Cards",
     "Wallets",
     "Recharges",
+    "Debits",
     "Billing",
     "Transactions"
   ]

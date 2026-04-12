@@ -19,6 +19,7 @@ export const APP_MODULES = [
   "Cards",
   "Wallets",
   "Recharges",
+  "Debits",
   "Products",
   "Billing",
   "Transactions",

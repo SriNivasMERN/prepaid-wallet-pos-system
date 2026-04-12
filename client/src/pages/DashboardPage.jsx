@@ -14,6 +14,7 @@ import {
   getAllowedPermissionsForRole
 } from "../constants/accessControl";
 import CardsModule from "../features/cards/components/CardsModule";
+import DebitsModule from "../features/debits/components/DebitsModule";
 import MembersModule from "../features/members/components/MembersModule";
 import RechargesModule from "../features/recharges/components/RechargesModule";
 import { createStaffAccount, fetchStaffList } from "../features/staff/api/staffApi";
@@ -68,6 +69,19 @@ const moduleScreens = {
     ],
     filters: ["Date", "Payment Mode", "Cashier"],
     columns: ["Member", "Card", "Amount", "Payment Mode", "Cashier"]
+  },
+  Debits: {
+    title: "Debits",
+    metrics: ["Today Debits", "Debit Value", "Recent Debit Entries"],
+    formFields: [
+      { label: "Wallet", type: "search" },
+      { label: "Member", type: "search" },
+      { label: "Amount", type: "number" },
+      { label: "Reason", type: "text" },
+      { label: "Notes", type: "textarea" }
+    ],
+    filters: ["Search Debit", "Reason", "Date", "Cashier"],
+    columns: ["Member", "Card", "Amount", "Reason", "Cashier"]
   },
   Products: {
     title: "Products",
@@ -251,6 +265,11 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
     inactive: 0
   });
   const [rechargeMetrics, setRechargeMetrics] = useState({
+    todayCount: 0,
+    todayValue: 0,
+    recentEntries: 0
+  });
+  const [debitMetrics, setDebitMetrics] = useState({
     todayCount: 0,
     todayValue: 0,
     recentEntries: 0
@@ -483,6 +502,17 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
                         <strong>{metric.value}</strong>
                       </button>
                     ))
+                : activeModule === "Debits"
+                  ? [
+                      { label: "Today Debits", value: String(debitMetrics.todayCount) },
+                      { label: "Debit Value", value: `Rs ${Number(debitMetrics.todayValue || 0).toFixed(2)}` },
+                      { label: "Recent Debit Entries", value: String(debitMetrics.recentEntries) }
+                    ].map((metric) => (
+                      <button key={metric.label} type="button" className="metric-card metric-card--muted">
+                        <span>{metric.label}</span>
+                        <strong>{metric.value}</strong>
+                      </button>
+                    ))
                 : activeModule === "Transactions"
                   ? [
                       { label: "Today Transactions", value: String(transactionMetrics.today) },
@@ -656,6 +686,8 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
           <WalletsModule authToken={authToken} onMetricsChange={setWalletMetrics} />
         ) : activeModule === "Recharges" ? (
           <RechargesModule authToken={authToken} onMetricsChange={setRechargeMetrics} />
+        ) : activeModule === "Debits" ? (
+          <DebitsModule authToken={authToken} onMetricsChange={setDebitMetrics} />
         ) : activeModule === "Transactions" ? (
           <TransactionsModule authToken={authToken} onMetricsChange={setTransactionMetrics} />
         ) : (

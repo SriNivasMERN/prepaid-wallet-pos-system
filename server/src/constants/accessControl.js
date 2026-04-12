@@ -12,6 +12,7 @@ const MODULES = [
   "Cards",
   "Wallets",
   "Recharges",
+  "Debits",
   "Products",
   "Billing",
   "Transactions",
@@ -27,6 +28,7 @@ const STAFF_MODULE_ACCESS = {
     "Cards",
     "Wallets",
     "Recharges",
+    "Debits",
     "Billing",
     "Transactions"
   ]
@@ -39,6 +41,7 @@ const STAFF_PERMISSION_ACCESS = {
     "manage_cards",
     "manage_wallets",
     "process_recharges",
+    "process_debits",
     "manage_products",
     "process_billing",
     "view_transactions",
@@ -51,6 +54,7 @@ const STAFF_PERMISSION_ACCESS = {
     "manage_cards",
     "manage_wallets",
     "process_recharges",
+    "process_debits",
     "manage_products",
     "process_billing",
     "view_transactions",
@@ -62,6 +66,7 @@ const STAFF_PERMISSION_ACCESS = {
     "manage_cards",
     "manage_wallets",
     "process_recharges",
+    "process_debits",
     "process_billing",
     "view_transactions"
   ]
