@@ -16,6 +16,7 @@ import {
 import CardsModule from "../features/cards/components/CardsModule";
 import DebitsModule from "../features/debits/components/DebitsModule";
 import MembersModule from "../features/members/components/MembersModule";
+import ProductsModule from "../features/products/components/ProductsModule";
 import RechargesModule from "../features/recharges/components/RechargesModule";
 import { createStaffAccount, fetchStaffList } from "../features/staff/api/staffApi";
 import TransactionsModule from "../features/transactions/components/TransactionsModule";
@@ -274,6 +275,11 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
     todayValue: 0,
     recentEntries: 0
   });
+  const [productMetrics, setProductMetrics] = useState({
+    active: 0,
+    inactive: 0,
+    stockAlerts: 0
+  });
   const [transactionMetrics, setTransactionMetrics] = useState({
     today: 0,
     credits: 0,
@@ -513,6 +519,17 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
                         <strong>{metric.value}</strong>
                       </button>
                     ))
+                : activeModule === "Products"
+                  ? [
+                      { label: "Active Products", value: String(productMetrics.active) },
+                      { label: "Inactive Products", value: String(productMetrics.inactive) },
+                      { label: "Stock Alerts", value: String(productMetrics.stockAlerts) }
+                    ].map((metric) => (
+                      <button key={metric.label} type="button" className="metric-card metric-card--muted">
+                        <span>{metric.label}</span>
+                        <strong>{metric.value}</strong>
+                      </button>
+                    ))
                 : activeModule === "Transactions"
                   ? [
                       { label: "Today Transactions", value: String(transactionMetrics.today) },
@@ -688,6 +705,8 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
           <RechargesModule authToken={authToken} onMetricsChange={setRechargeMetrics} />
         ) : activeModule === "Debits" ? (
           <DebitsModule authToken={authToken} onMetricsChange={setDebitMetrics} />
+        ) : activeModule === "Products" ? (
+          <ProductsModule authToken={authToken} onMetricsChange={setProductMetrics} />
         ) : activeModule === "Transactions" ? (
           <TransactionsModule authToken={authToken} onMetricsChange={setTransactionMetrics} />
         ) : (

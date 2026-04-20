@@ -1,0 +1,48 @@
+/**
+ * Module: Products API
+ * File: productApi.js
+ * Purpose: Handles Products module requests for listing and creating product records.
+ */
+
+import { httpRequest } from "../../../api/http";
+
+/**
+ * Fetches the product list with optional search, status, and unit filters.
+ */
+export function fetchProductList(token, filters = {}) {
+  const searchParams = new URLSearchParams();
+
+  if (filters.search?.trim()) {
+    searchParams.set("search", filters.search.trim());
+  }
+
+  if (filters.status?.trim()) {
+    searchParams.set("status", filters.status.trim());
+  }
+
+  if (filters.unit?.trim()) {
+    searchParams.set("unit", filters.unit.trim());
+  }
+
+  const queryString = searchParams.toString();
+  const path = queryString ? `/products?${queryString}` : "/products";
+
+  return httpRequest(path, {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+}
+
+/**
+ * Creates a new product record.
+ */
+export function createProductRecord(payload, token) {
+  return httpRequest("/products", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`
+    },
+    body: payload
+  });
+}
