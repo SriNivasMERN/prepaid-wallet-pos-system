@@ -19,6 +19,7 @@ import MembersModule from "../features/members/components/MembersModule";
 import ProductsModule from "../features/products/components/ProductsModule";
 import RechargesModule from "../features/recharges/components/RechargesModule";
 import { createStaffAccount, fetchStaffList } from "../features/staff/api/staffApi";
+import StocksModule from "../features/stocks/components/StocksModule";
 import TransactionsModule from "../features/transactions/components/TransactionsModule";
 import WalletsModule from "../features/wallets/components/WalletsModule";
 import { getApiErrorMessage } from "../utils/getApiErrorMessage";
@@ -285,6 +286,11 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
     credits: 0,
     debits: 0
   });
+  const [stockMetrics, setStockMetrics] = useState({
+    available: 0,
+    lowStock: 0,
+    negative: 0
+  });
 
   useEffect(() => {
     if (!allowedModules.length) {
@@ -541,6 +547,17 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
                         <strong>{metric.value}</strong>
                       </button>
                     ))
+                  : activeModule === "Stock"
+                    ? [
+                        { label: "Available Items", value: String(stockMetrics.available) },
+                        { label: "Low Stock", value: String(stockMetrics.lowStock) },
+                        { label: "Negative Stock", value: String(stockMetrics.negative) }
+                      ].map((metric) => (
+                        <button key={metric.label} type="button" className="metric-card metric-card--muted">
+                          <span>{metric.label}</span>
+                          <strong>{metric.value}</strong>
+                        </button>
+                      ))
               : activeScreen.metrics.map((metric) => (
                   <button key={metric} type="button" className="metric-card metric-card--muted">
                     <span>{metric}</span>
@@ -709,6 +726,8 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
           <ProductsModule authToken={authToken} onMetricsChange={setProductMetrics} />
         ) : activeModule === "Transactions" ? (
           <TransactionsModule authToken={authToken} onMetricsChange={setTransactionMetrics} />
+        ) : activeModule === "Stock" ? (
+          <StocksModule authToken={authToken} onMetricsChange={setStockMetrics} />
         ) : (
           <>
             <SectionCard title={activeScreen.title}>
