@@ -13,6 +13,7 @@ import {
   getAllowedModulesForRole,
   getAllowedPermissionsForRole
 } from "../constants/accessControl";
+import BillingModule from "../features/billing/components/BillingModule";
 import CardsModule from "../features/cards/components/CardsModule";
 import DebitsModule from "../features/debits/components/DebitsModule";
 import MembersModule from "../features/members/components/MembersModule";
@@ -221,6 +222,16 @@ function validateStaffForm(formData) {
   return nextErrors;
 }
 
+function formatMoney(value) {
+  const amount = Number(value);
+
+  if (!Number.isFinite(amount)) {
+    return "Rs 0.00";
+  }
+
+  return `Rs ${amount.toFixed(2)}`;
+}
+
 function getStaffRoleOptions(role) {
   if (role === "Admin") {
     return ["Cashier"];
@@ -290,6 +301,11 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
     available: 0,
     lowStock: 0,
     negative: 0
+  });
+  const [billingMetrics, setBillingMetrics] = useState({
+    todayCount: 0,
+    collectedAmount: 0,
+    stockWarnings: 0
   });
 
   useEffect(() => {
@@ -536,6 +552,17 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
                         <strong>{metric.value}</strong>
                       </button>
                     ))
+                : activeModule === "Billing"
+                  ? [
+                      { label: "Today Bills", value: String(billingMetrics.todayCount) },
+                      { label: "Collected Amount", value: formatMoney(billingMetrics.collectedAmount) },
+                      { label: "Stock Warnings", value: String(billingMetrics.stockWarnings) }
+                    ].map((metric) => (
+                      <button key={metric.label} type="button" className="metric-card metric-card--muted">
+                        <span>{metric.label}</span>
+                        <strong>{metric.value}</strong>
+                      </button>
+                    ))
                 : activeModule === "Transactions"
                   ? [
                       { label: "Today Transactions", value: String(transactionMetrics.today) },
@@ -724,6 +751,8 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
           <DebitsModule authToken={authToken} onMetricsChange={setDebitMetrics} />
         ) : activeModule === "Products" ? (
           <ProductsModule authToken={authToken} onMetricsChange={setProductMetrics} />
+        ) : activeModule === "Billing" ? (
+          <BillingModule authToken={authToken} onMetricsChange={setBillingMetrics} />
         ) : activeModule === "Transactions" ? (
           <TransactionsModule authToken={authToken} onMetricsChange={setTransactionMetrics} />
         ) : activeModule === "Stock" ? (
