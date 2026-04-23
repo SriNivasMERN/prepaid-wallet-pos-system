@@ -19,6 +19,7 @@ import DebitsModule from "../features/debits/components/DebitsModule";
 import MembersModule from "../features/members/components/MembersModule";
 import ProductsModule from "../features/products/components/ProductsModule";
 import RechargesModule from "../features/recharges/components/RechargesModule";
+import ReportsModule from "../features/reports/components/ReportsModule";
 import { createStaffAccount, fetchStaffList } from "../features/staff/api/staffApi";
 import StocksModule from "../features/stocks/components/StocksModule";
 import TransactionsModule from "../features/transactions/components/TransactionsModule";
@@ -307,6 +308,14 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
     collectedAmount: 0,
     stockWarnings: 0
   });
+  const [reportMetrics, setReportMetrics] = useState({
+    firstLabel: "Records",
+    firstValue: "0",
+    secondLabel: "Summary",
+    secondValue: "Rs 0.00",
+    thirdLabel: "Details",
+    thirdValue: "0"
+  });
 
   useEffect(() => {
     if (!allowedModules.length) {
@@ -575,16 +584,27 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
                       </button>
                     ))
                   : activeModule === "Stock"
-                    ? [
-                        { label: "Available Items", value: String(stockMetrics.available) },
-                        { label: "Low Stock", value: String(stockMetrics.lowStock) },
-                        { label: "Negative Stock", value: String(stockMetrics.negative) }
-                      ].map((metric) => (
+                  ? [
+                      { label: "Available Items", value: String(stockMetrics.available) },
+                      { label: "Low Stock", value: String(stockMetrics.lowStock) },
+                      { label: "Negative Stock", value: String(stockMetrics.negative) }
+                    ].map((metric) => (
                         <button key={metric.label} type="button" className="metric-card metric-card--muted">
                           <span>{metric.label}</span>
                           <strong>{metric.value}</strong>
                         </button>
                       ))
+                    : activeModule === "Reports"
+                      ? [
+                          { label: reportMetrics.firstLabel, value: reportMetrics.firstValue },
+                          { label: reportMetrics.secondLabel, value: reportMetrics.secondValue },
+                          { label: reportMetrics.thirdLabel, value: reportMetrics.thirdValue }
+                        ].map((metric) => (
+                          <button key={metric.label} type="button" className="metric-card metric-card--muted">
+                            <span>{metric.label}</span>
+                            <strong>{metric.value}</strong>
+                          </button>
+                        ))
               : activeScreen.metrics.map((metric) => (
                   <button key={metric} type="button" className="metric-card metric-card--muted">
                     <span>{metric}</span>
@@ -757,6 +777,8 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
           <TransactionsModule authToken={authToken} onMetricsChange={setTransactionMetrics} />
         ) : activeModule === "Stock" ? (
           <StocksModule authToken={authToken} onMetricsChange={setStockMetrics} />
+        ) : activeModule === "Reports" ? (
+          <ReportsModule authToken={authToken} onMetricsChange={setReportMetrics} />
         ) : (
           <>
             <SectionCard title={activeScreen.title}>
