@@ -6,7 +6,10 @@
 
 import { useEffect, useState } from "react";
 
+import IconButton from "../../../components/common/IconButton";
+import ModalDialog from "../../../components/common/ModalDialog";
 import SectionCard from "../../../components/common/SectionCard";
+import StatusChip from "../../../components/common/StatusChip";
 import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
 import { createProductRecord, fetchProductList } from "../api/productApi";
 
@@ -78,6 +81,7 @@ function ProductsModule({ authToken, onMetricsChange }) {
   const [productFilterForm, setProductFilterForm] = useState(productInitialFilters);
   const [appliedProductFilters, setAppliedProductFilters] = useState(productInitialFilters);
   const [productReloadToken, setProductReloadToken] = useState(0);
+  const [selectedProductRecord, setSelectedProductRecord] = useState(null);
 
   useEffect(() => {
     const loadProducts = async () => {
@@ -343,18 +347,17 @@ function ProductsModule({ authToken, onMetricsChange }) {
       <SectionCard
         title="Products List"
         actions={
-          <button
-            type="button"
-            className="secondary-button"
+          <IconButton
+            icon="refresh"
+            label="Refresh products"
+            text="Refresh"
             onClick={() => setProductReloadToken((currentValue) => currentValue + 1)}
-          >
-            Refresh
-          </button>
+          />
         }
       >
         {isLoadingProducts ? <div className="feedback-actions">Loading products...</div> : null}
         <div className="table-wrapper">
-          <table className="data-table">
+          <table className="data-table data-table--dense">
             <thead>
               <tr>
                 <th>Product</th>
@@ -363,12 +366,13 @@ function ProductsModule({ authToken, onMetricsChange }) {
                 <th>Unit</th>
                 <th>Status</th>
                 <th>Created By</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {productRecords.length === 0 && !isLoadingProducts ? (
                 <tr>
-                  <td colSpan="6">No product records found.</td>
+                  <td colSpan="7">No product records found.</td>
                 </tr>
               ) : (
                 productRecords.map((product) => (
@@ -378,9 +382,25 @@ function ProductsModule({ authToken, onMetricsChange }) {
                     <td>{formatCurrency(product.sellingPrice)}</td>
                     <td>{product.unit}</td>
                     <td>
-                      <span className="status-badge">{product.status}</span>
+                      <StatusChip value={product.status} />
                     </td>
                     <td>{product.createdBy?.fullName || "System"}</td>
+                    <td>
+                      <div className="table-row-actions">
+                        <IconButton
+                          icon="view"
+                          label={`View ${product.productName}`}
+                          title="View details"
+                          onClick={() => setSelectedProductRecord(product)}
+                        />
+                        <IconButton
+                          icon="edit"
+                          label={`Edit ${product.productName}`}
+                          title="Edit flow begins on Day 27."
+                          disabled
+                        />
+                      </div>
+                    </td>
                   </tr>
                 ))
               )}
@@ -388,6 +408,47 @@ function ProductsModule({ authToken, onMetricsChange }) {
           </table>
         </div>
       </SectionCard>
+
+      <ModalDialog
+        isOpen={Boolean(selectedProductRecord)}
+        title="Product Details"
+        onClose={() => setSelectedProductRecord(null)}
+        footer={(
+          <button type="button" className="secondary-button" onClick={() => setSelectedProductRecord(null)}>
+            Close
+          </button>
+        )}
+        width="620px"
+      >
+        {selectedProductRecord ? (
+          <div className="details-grid">
+            <div className="details-grid__item">
+              <span>Product Name</span>
+              <strong>{selectedProductRecord.productName}</strong>
+            </div>
+            <div className="details-grid__item">
+              <span>Product Code</span>
+              <strong>{selectedProductRecord.productCode}</strong>
+            </div>
+            <div className="details-grid__item">
+              <span>Selling Price</span>
+              <strong>{formatCurrency(selectedProductRecord.sellingPrice)}</strong>
+            </div>
+            <div className="details-grid__item">
+              <span>Unit</span>
+              <strong>{selectedProductRecord.unit}</strong>
+            </div>
+            <div className="details-grid__item">
+              <span>Status</span>
+              <strong><StatusChip value={selectedProductRecord.status} /></strong>
+            </div>
+            <div className="details-grid__item details-grid__item--wide">
+              <span>Created By</span>
+              <strong>{selectedProductRecord.createdBy?.fullName || "System"}</strong>
+            </div>
+          </div>
+        ) : null}
+      </ModalDialog>
     </>
   );
 }

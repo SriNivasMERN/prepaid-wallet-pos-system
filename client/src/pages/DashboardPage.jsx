@@ -7,7 +7,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+import AdminIcon from "../components/common/AdminIcon";
+import IconButton from "../components/common/IconButton";
+import ModalDialog from "../components/common/ModalDialog";
 import SectionCard from "../components/common/SectionCard";
+import StatusChip from "../components/common/StatusChip";
 import { APP_NAME, DASHBOARD_METRICS } from "../constants/appConstants";
 import {
   getAllowedModulesForRole,
@@ -241,6 +245,20 @@ function getStaffRoleOptions(role) {
   return ["Admin", "Cashier"];
 }
 
+const modulePrimaryActions = {
+  Staff: "Add Staff",
+  Members: "Add Member",
+  Cards: "Assign Card",
+  Wallets: "Create Wallet",
+  Recharges: "Create Recharge",
+  Debits: "Create Debit",
+  Products: "Add Product",
+  Billing: "Create Bill",
+  Transactions: "View Transactions",
+  Stock: "Add Stock Movement",
+  Reports: "View Reports"
+};
+
 function DashboardPage({ currentStaff, authToken, onLogout }) {
   const navigate = useNavigate();
   const allowedModules = currentStaff?.allowedModules?.length
@@ -316,6 +334,7 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
     thirdLabel: "Details",
     thirdValue: "0"
   });
+  const [selectedStaffRecord, setSelectedStaffRecord] = useState(null);
 
   useEffect(() => {
     if (!allowedModules.length) {
@@ -358,11 +377,23 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
   }, [activeModule, authToken]);
 
   const activeScreen = moduleScreens[activeModule];
+  const activePrimaryAction = modulePrimaryActions[activeModule] || "Open Module";
   const canCreateEntries = allowedPermissions.length > 0;
   const staffMetrics = {
     active: staffRecords.filter((staff) => staff.status === "Active").length,
     admins: staffRecords.filter((staff) => staff.role === "Admin").length,
     cashiers: staffRecords.filter((staff) => staff.role === "Cashier").length
+  };
+
+  const handlePrimaryActionClick = () => {
+    const firstSectionCard = document.querySelector(".app-shell__content .section-card");
+
+    if (firstSectionCard instanceof HTMLElement) {
+      firstSectionCard.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
+    }
   };
 
   const resetStaffForm = () => {
@@ -471,8 +502,16 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
             <button type="button" className="secondary-button" onClick={handleLogout}>
               Logout
             </button>
-            <button type="button" className="primary-button" disabled={!canCreateEntries}>
-              New Entry
+            <button
+              type="button"
+              className="primary-button"
+              onClick={handlePrimaryActionClick}
+              disabled={!canCreateEntries}
+            >
+              <span className="button-content">
+                <AdminIcon name="add" />
+                <span>{activePrimaryAction}</span>
+              </span>
             </button>
           </div>
         </header>
@@ -726,7 +765,7 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
             <SectionCard title="Staff List">
               {isLoadingStaff ? <div className="feedback-actions">Loading staff...</div> : null}
               <div className="table-wrapper">
-                <table className="data-table">
+                <table className="data-table data-table--dense">
                   <thead>
                     <tr>
                       <th>Name</th>
@@ -734,12 +773,13 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
                       <th>Role</th>
                       <th>Status</th>
                       <th>Created By</th>
+                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {staffRecords.length === 0 && !isLoadingStaff ? (
                       <tr>
-                        <td colSpan="5">No staff records found.</td>
+                        <td colSpan="6">No staff records found.</td>
                       </tr>
                     ) : (
                       staffRecords.map((staff) => (
@@ -748,9 +788,25 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
                           <td>{staff.username}</td>
                           <td>{staff.role}</td>
                           <td>
-                            <span className="status-badge">{staff.status}</span>
+                            <StatusChip value={staff.status} />
                           </td>
                           <td>{staff.createdBy?.fullName || "System"}</td>
+                          <td>
+                            <div className="table-row-actions">
+                              <IconButton
+                                icon="view"
+                                label={`View ${staff.fullName}`}
+                                title="View details"
+                                onClick={() => setSelectedStaffRecord(staff)}
+                              />
+                              <IconButton
+                                icon="edit"
+                                label={`Edit ${staff.fullName}`}
+                                title="Edit pattern is prepared; staff edit flow is scheduled for Day 29."
+                                disabled
+                              />
+                            </div>
+                          </td>
                         </tr>
                       ))
                     )}
@@ -820,15 +876,16 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
 
             <SectionCard
               title={`${activeScreen.title} List`}
-              actions={<button type="button" className="secondary-button">Refresh</button>}
+              actions={<IconButton icon="refresh" label="Refresh list" text="Refresh" />}
             >
               <div className="table-wrapper">
-                <table className="data-table">
+                <table className="data-table data-table--dense">
                   <thead>
                     <tr>
                       {activeScreen.columns.map((column) => (
                         <th key={column}>{column}</th>
                       ))}
+                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -837,9 +894,7 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
                         {activeScreen.columns.map((column) => (
                           <td key={`${column}-${rowIndex}`}>
                             {column === "Status" || column.includes("Status") ? (
-                              <span className="status-badge">
-                                {rowIndex === 3 ? "Inactive" : "Active"}
-                              </span>
+                              <StatusChip value={rowIndex === 3 ? "Inactive" : "Active"} />
                             ) : column === "Amount" || column.includes("Price") ? (
                               `Rs ${rowIndex * 120}`
                             ) : (
@@ -847,6 +902,21 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
                             )}
                           </td>
                         ))}
+                        <td>
+                          <div className="table-row-actions">
+                            <IconButton
+                              icon="view"
+                              label={`View ${activeScreen.title} row ${rowIndex}`}
+                              title="View details"
+                            />
+                            <IconButton
+                              icon="edit"
+                              label={`Edit ${activeScreen.title} row ${rowIndex}`}
+                              title="Edit pattern is prepared for module-specific rollout."
+                              disabled
+                            />
+                          </div>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -856,6 +926,43 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
           </>
         )}
       </main>
+
+      <ModalDialog
+        isOpen={Boolean(selectedStaffRecord)}
+        title="Staff Details"
+        onClose={() => setSelectedStaffRecord(null)}
+        footer={(
+          <button type="button" className="secondary-button" onClick={() => setSelectedStaffRecord(null)}>
+            Close
+          </button>
+        )}
+        width="620px"
+      >
+        {selectedStaffRecord ? (
+          <div className="details-grid">
+            <div className="details-grid__item">
+              <span>Full Name</span>
+              <strong>{selectedStaffRecord.fullName}</strong>
+            </div>
+            <div className="details-grid__item">
+              <span>Username</span>
+              <strong>{selectedStaffRecord.username}</strong>
+            </div>
+            <div className="details-grid__item">
+              <span>Role</span>
+              <strong>{selectedStaffRecord.role}</strong>
+            </div>
+            <div className="details-grid__item">
+              <span>Status</span>
+              <strong><StatusChip value={selectedStaffRecord.status} /></strong>
+            </div>
+            <div className="details-grid__item details-grid__item--wide">
+              <span>Created By</span>
+              <strong>{selectedStaffRecord.createdBy?.fullName || "System"}</strong>
+            </div>
+          </div>
+        ) : null}
+      </ModalDialog>
     </div>
   );
 }

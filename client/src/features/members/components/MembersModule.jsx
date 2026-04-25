@@ -6,7 +6,10 @@
 
 import { useEffect, useState } from "react";
 
+import IconButton from "../../../components/common/IconButton";
+import ModalDialog from "../../../components/common/ModalDialog";
 import SectionCard from "../../../components/common/SectionCard";
+import StatusChip from "../../../components/common/StatusChip";
 import { createMemberRecord, fetchMemberList } from "../api/memberApi";
 import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
 
@@ -55,6 +58,7 @@ function MembersModule({ authToken, onMetricsChange }) {
   const [memberFilterForm, setMemberFilterForm] = useState(memberInitialFilters);
   const [appliedMemberFilters, setAppliedMemberFilters] = useState(memberInitialFilters);
   const [memberReloadToken, setMemberReloadToken] = useState(0);
+  const [selectedMemberRecord, setSelectedMemberRecord] = useState(null);
 
   useEffect(() => {
     const loadMembers = async () => {
@@ -270,11 +274,18 @@ function MembersModule({ authToken, onMetricsChange }) {
 
       <SectionCard
         title="Members List"
-        actions={<button type="button" className="secondary-button" onClick={() => setMemberReloadToken((currentValue) => currentValue + 1)}>Refresh</button>}
+        actions={(
+          <IconButton
+            icon="refresh"
+            label="Refresh members"
+            text="Refresh"
+            onClick={() => setMemberReloadToken((currentValue) => currentValue + 1)}
+          />
+        )}
       >
         {isLoadingMembers ? <div className="feedback-actions">Loading members...</div> : null}
         <div className="table-wrapper">
-          <table className="data-table">
+          <table className="data-table data-table--dense">
             <thead>
               <tr>
                 <th>Name</th>
@@ -282,12 +293,13 @@ function MembersModule({ authToken, onMetricsChange }) {
                 <th>Reference Details</th>
                 <th>Status</th>
                 <th>Created By</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {memberRecords.length === 0 && !isLoadingMembers ? (
                 <tr>
-                  <td colSpan="5">No member records found.</td>
+                  <td colSpan="6">No member records found.</td>
                 </tr>
               ) : (
                 memberRecords.map((member) => (
@@ -296,9 +308,25 @@ function MembersModule({ authToken, onMetricsChange }) {
                     <td>{member.mobileNumber}</td>
                     <td>{member.referenceDetails || "-"}</td>
                     <td>
-                      <span className="status-badge">{member.status}</span>
+                      <StatusChip value={member.status} />
                     </td>
                     <td>{member.createdBy?.fullName || "System"}</td>
+                    <td>
+                      <div className="table-row-actions">
+                        <IconButton
+                          icon="view"
+                          label={`View ${member.fullName}`}
+                          title="View details"
+                          onClick={() => setSelectedMemberRecord(member)}
+                        />
+                        <IconButton
+                          icon="edit"
+                          label={`Edit ${member.fullName}`}
+                          title="Edit flow begins on Day 28."
+                          disabled
+                        />
+                      </div>
+                    </td>
                   </tr>
                 ))
               )}
@@ -306,6 +334,43 @@ function MembersModule({ authToken, onMetricsChange }) {
           </table>
         </div>
       </SectionCard>
+
+      <ModalDialog
+        isOpen={Boolean(selectedMemberRecord)}
+        title="Member Details"
+        onClose={() => setSelectedMemberRecord(null)}
+        footer={(
+          <button type="button" className="secondary-button" onClick={() => setSelectedMemberRecord(null)}>
+            Close
+          </button>
+        )}
+        width="620px"
+      >
+        {selectedMemberRecord ? (
+          <div className="details-grid">
+            <div className="details-grid__item">
+              <span>Full Name</span>
+              <strong>{selectedMemberRecord.fullName}</strong>
+            </div>
+            <div className="details-grid__item">
+              <span>Mobile Number</span>
+              <strong>{selectedMemberRecord.mobileNumber}</strong>
+            </div>
+            <div className="details-grid__item">
+              <span>Status</span>
+              <strong><StatusChip value={selectedMemberRecord.status} /></strong>
+            </div>
+            <div className="details-grid__item details-grid__item--wide">
+              <span>Reference Details</span>
+              <strong>{selectedMemberRecord.referenceDetails || "-"}</strong>
+            </div>
+            <div className="details-grid__item details-grid__item--wide">
+              <span>Created By</span>
+              <strong>{selectedMemberRecord.createdBy?.fullName || "System"}</strong>
+            </div>
+          </div>
+        ) : null}
+      </ModalDialog>
     </>
   );
 }
