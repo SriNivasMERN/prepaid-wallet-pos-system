@@ -2,8 +2,9 @@
 ## Test Objectives
 - Verify authenticated allowed roles can create and view member records.
 - Verify member search and status filters work correctly.
+- Verify member `View`, `Edit`, and `Activate` / `Mark Inactive` flows behave correctly.
 - Verify member validation, duplicate mobile number checks, and status handling.
-- Verify member detail, update, and operational profile endpoints behave correctly.
+- Verify member detail, update, and operational profile rules remain correct.
 
 ## Preconditions
 - Approved QA environment and approved QA test data are available for execution.
@@ -32,34 +33,15 @@
      - Success message is shown.
      - The new member appears in the members list after reload.
 
-3. Create member with empty reference details
+3. Search members by full name or mobile number
    - Steps:
      1. Open `Members`.
-     2. Enter valid values for `Full Name`, `Mobile Number`, and `Status`.
-     3. Leave `Reference Details` empty.
-     4. Click `Create Member`.
-   - Expected Result:
-     - Member creation succeeds.
-     - The member is stored successfully even without reference details.
-
-4. Search members by full name
-   - Steps:
-     1. Open `Members`.
-     2. In `Search Members`, enter part of an existing member name.
-     3. Click `Apply Filters`.
-   - Expected Result:
-     - The list refreshes.
-     - Only matching member records are shown.
-
-5. Search members by mobile number
-   - Steps:
-     1. Open `Members`.
-     2. In `Search Members`, enter part or all of an existing mobile number.
+     2. Use `Search Members`.
      3. Click `Apply Filters`.
    - Expected Result:
      - Matching member records are shown.
 
-6. Filter members by status
+4. Filter members by status
    - Steps:
      1. Open `Members`.
      2. Select `Active` or `Inactive` in the status filter.
@@ -67,22 +49,60 @@
    - Expected Result:
      - The list shows only records matching the selected status.
 
-7. Reset member filters restores default listing
+5. Reset member filters restores default listing
    - Steps:
-     1. Apply search and/or status filters.
+     1. Apply filters.
      2. Click `Reset`.
    - Expected Result:
      - Filter inputs return to default values.
-     - The members list reloads without the previous filters.
+     - The members list reloads without previous filters.
 
-8. Refresh button reloads members list
+6. Refresh button reloads members list with current filters
    - Steps:
-     1. Open `Members`.
-     2. Click `Refresh` in the list section.
+     1. Apply a filter.
+     2. Click `Refresh`.
    - Expected Result:
      - The list reloads successfully.
+     - Currently applied filters remain effective.
 
-9. Fetch member operational profile for active member with eligible linked card
+7. View action opens member details modal
+   - Steps:
+     1. Open `Members`.
+     2. Click `View` on a member row.
+   - Expected Result:
+     - Member details modal opens.
+     - Member profile information is shown.
+
+8. Edit action updates member successfully
+   - Steps:
+     1. Open `Members`.
+     2. Click `Edit` on a member row.
+     3. Update one or more safe fields.
+     4. Click `Save Changes`.
+   - Expected Result:
+     - Member update succeeds.
+     - Success message is shown.
+     - Updated values appear in the list.
+
+9. Mark member inactive successfully
+   - Steps:
+     1. Open `Members`.
+     2. Click `Mark Inactive` on an active member row.
+     3. Confirm the action.
+   - Expected Result:
+     - Member status changes to `Inactive`.
+     - Member remains visible in the list.
+
+10. Activate inactive member successfully
+   - Steps:
+     1. Open `Members`.
+     2. Click `Activate` on an inactive member row.
+     3. Confirm the action.
+   - Expected Result:
+     - Member status changes to `Active`.
+     - Member remains visible in the list.
+
+11. Fetch member operational profile for active member with eligible linked card
    - Steps:
      1. Use a member record that has an active linked card and active member status.
      2. Request the operational profile for that member.
@@ -101,44 +121,32 @@
      - Member is not created.
      - Required validation messages are shown.
 
-2. Member form rejects name shorter than minimum length
-   - Steps:
-     1. Enter a one-character name.
-     2. Enter a valid mobile number.
-     3. Select a valid status.
-     4. Click `Create Member`.
-   - Expected Result:
-     - Member is not created.
-     - Full name length validation is shown.
-
-3. Member form rejects invalid mobile number format
-   - Steps:
-     1. Enter a valid full name.
-     2. Enter a mobile number containing fewer than 10 digits, more than 15 digits, or non-digit characters.
-     3. Select a valid status.
-     4. Click `Create Member`.
-   - Expected Result:
-     - Member is not created.
-     - Mobile number validation is shown.
-
-4. Duplicate mobile number is rejected
+2. Member edit form rejects invalid mobile number format
    - Steps:
      1. Open `Members`.
-     2. Enter a mobile number already used by another active member.
-     3. Fill the remaining fields with valid values.
-     4. Click `Create Member`.
+     2. Click `Edit`.
+     3. Enter an invalid mobile number.
+     4. Click `Save Changes`.
    - Expected Result:
-     - Member is not created.
+     - Member is not updated.
+     - Mobile number validation is shown.
+
+3. Duplicate mobile number is rejected
+   - Steps:
+     1. Use a mobile number already used by another active member.
+     2. Attempt create or edit with that mobile number.
+   - Expected Result:
+     - Save is rejected.
      - Request error indicates the mobile number is already in use.
 
-5. Update request with no recognized fields is rejected
+4. Update request with no recognized fields is rejected
    - Steps:
      1. Send a member update request with no valid member fields in the payload.
    - Expected Result:
      - The request is rejected.
      - Validation indicates at least one valid field must be provided.
 
-6. Invalid member id is rejected
+5. Invalid member id is rejected
    - Steps:
      1. Request member detail, update, or operational profile using an invalid member id format.
    - Expected Result:
@@ -171,13 +179,14 @@
      - `canUseCardOperations` is false.
      - Blocking reason explains that the member is inactive.
 
-4. Operational profile blocks card operations when no linked card exists
+4. Member remains visible and manageable after status change
    - Steps:
-     1. Use an active member with no linked card.
-     2. Request the operational profile.
+     1. Mark a member inactive.
+     2. Filter by `Inactive`.
+     3. Use `View` or `Activate` on that same member.
    - Expected Result:
-     - `hasLinkedCard` is false.
-     - Blocking reason explains that the member does not have a linked card.
+     - Member remains accessible in normal UI.
+     - No hidden archive behavior exists.
 
 ## API Verification Steps
 - Endpoint: `GET /api/v1/members`
@@ -199,14 +208,6 @@
   - `201 Created` for valid payload.
   - `400 Bad Request` for invalid payload.
   - `409 Conflict` for duplicate mobile number.
-
-- Endpoint: `GET /api/v1/members/:memberId`
-- Payload:
-  1. Send a `GET` request using a valid member id.
-  2. Include header `Authorization: Bearer <valid token>`.
-- Expected Response:
-  - `200 OK` for a valid existing member.
-  - `404 Not Found` for missing or invalid member id.
 
 - Endpoint: `PATCH /api/v1/members/:memberId`
 - Payload:
@@ -234,9 +235,11 @@
   3. Submit invalid values.
   4. Submit valid approved QA values.
   5. Use search and status filters.
-  6. Use `Reset` and `Refresh`.
+  6. Use `View`, `Edit`, `Activate` / `Mark Inactive`.
+  7. Use `Reset` and `Refresh`.
 - Expected Result:
   - Members module opens for allowed roles.
   - Invalid submissions are blocked with clear validation.
-  - Valid member creation succeeds.
+  - Valid member create and update actions succeed.
+  - Status lifecycle remains visible in the normal UI.
   - Filters, reset, and refresh behave correctly.

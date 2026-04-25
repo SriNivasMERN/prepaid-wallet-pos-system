@@ -3,6 +3,7 @@
 - Verify only allowed roles can access and use the Products module.
 - Verify product creation works correctly with valid product data.
 - Verify product list, search, status, and unit filters work correctly.
+- Verify product `View`, `Edit`, and `Activate` / `Mark Inactive` flows behave correctly.
 - Verify duplicate product code protection, frontend validation, and backend validation behavior.
 
 ## Preconditions
@@ -36,32 +37,15 @@
      - Success message is shown.
      - The new product appears in the list after reload.
 
-3. Product code is saved in normalized uppercase form
+3. Search products by product name or product code
    - Steps:
      1. Open `Products`.
-     2. Create a valid product using lowercase or mixed-case product code.
-     3. Review the saved row in the product list.
-   - Expected Result:
-     - The product is created successfully.
-     - The saved product code appears in uppercase form.
-
-4. Search products by product name
-   - Steps:
-     1. Open `Products`.
-     2. Enter a known product name in `Search Product`.
+     2. Enter a known product name or product code in `Search Product`.
      3. Click `Apply Filters`.
    - Expected Result:
      - Matching product records are shown.
 
-5. Search products by product code
-   - Steps:
-     1. Open `Products`.
-     2. Enter a known product code in `Search Product`.
-     3. Click `Apply Filters`.
-   - Expected Result:
-     - Matching product records are shown.
-
-6. Filter products by status
+4. Filter products by status
    - Steps:
      1. Open `Products`.
      2. Select `Active` or `Inactive` in the status filter.
@@ -69,38 +53,66 @@
    - Expected Result:
      - Only product records with the selected status are shown.
 
-7. Filter products by unit
+5. Filter products by unit
    - Steps:
      1. Open `Products`.
-     2. Select `Piece`, `Bottle`, or `Pack` in the unit filter.
+     2. Select a unit in the unit filter.
      3. Click `Apply Filters`.
    - Expected Result:
      - Only product records with the selected unit are shown.
 
-8. Reset product filters restores default listing
+6. Reset product filters restores default listing
    - Steps:
-     1. Apply one or more product filters.
+     1. Apply one or more filters.
      2. Click `Reset`.
    - Expected Result:
      - Filter inputs return to default values.
-     - The product list reloads without the previous filters.
+     - Product list reloads without previous filters.
 
-9. Refresh reloads the product list
+7. Refresh reloads the product list with current filters
    - Steps:
-     1. Open `Products`.
+     1. Apply one or more filters.
      2. Click `Refresh`.
    - Expected Result:
-     - The product list reloads successfully.
+     - The list reloads successfully.
+     - Currently applied filters remain effective.
 
-10. Dashboard product metrics reflect live records
+8. View action opens product details modal
    - Steps:
      1. Open `Products`.
-     2. Create one or more active and inactive products.
-     3. Review the module metrics.
+     2. Click `View` on a product row.
    - Expected Result:
-     - `Active Products` reflects active product rows.
-     - `Inactive Products` reflects inactive product rows.
-     - `Stock Alerts` remains visible as designed for current scope.
+     - Product details modal opens.
+     - Product name, code, price, unit, and status are shown.
+
+9. Edit action updates product successfully
+   - Steps:
+     1. Open `Products`.
+     2. Click `Edit` on a product row.
+     3. Update one or more fields.
+     4. Click `Save Changes`.
+   - Expected Result:
+     - Product update succeeds.
+     - Success message is shown.
+     - Updated values appear in the list.
+
+10. Mark product inactive successfully
+   - Steps:
+     1. Open `Products`.
+     2. Click `Mark Inactive` on an active product row.
+     3. Confirm the action.
+   - Expected Result:
+     - Product status changes to `Inactive`.
+     - Product remains visible in the normal list.
+
+11. Activate inactive product successfully
+   - Steps:
+     1. Open `Products`.
+     2. Click `Activate` on an inactive product row.
+     3. Confirm the action.
+   - Expected Result:
+     - Product status changes to `Active`.
+     - Product remains visible in the normal list.
 
 ## Negative Test Cases
 1. Product form rejects empty required fields
@@ -132,24 +144,24 @@
      - Product is not created.
      - Selling price validation error is shown.
 
-4. Duplicate product code is rejected
+4. Duplicate product code is rejected on create or edit
    - Steps:
-     1. Create or use an existing product.
-     2. Attempt to create another product with the same product code.
+     1. Use an existing product code.
+     2. Attempt create or edit with the same code on another product.
    - Expected Result:
-     - Product is not created.
+     - Save is rejected.
      - Duplicate code error is shown.
 
 5. Unsupported unit is rejected through direct API test
    - Steps:
-     1. Send a product create request with an unsupported unit value.
+     1. Send a product create or update request with an unsupported unit value.
    - Expected Result:
      - The request is rejected.
      - Unit validation error is returned.
 
 6. Unsupported status is rejected through direct API test
    - Steps:
-     1. Send a product create request with an unsupported status value.
+     1. Send a product create or update request with an unsupported status value.
    - Expected Result:
      - The request is rejected.
      - Status validation error is returned.
@@ -163,7 +175,13 @@
      - Products management is unavailable for cashier role.
 
 ## Edge Cases
-1. Search remains case-insensitive for product name and code
+1. Product code is saved in normalized uppercase form
+   - Steps:
+     1. Create or update a product using lowercase or mixed-case product code.
+   - Expected Result:
+     - The saved product code appears in uppercase form.
+
+2. Search remains case-insensitive for product name and code
    - Steps:
      1. Open `Products`.
      2. Search using different uppercase and lowercase versions of a product name or product code.
@@ -171,21 +189,14 @@
    - Expected Result:
      - Matching product records are still returned.
 
-2. Product list remains stable when filters return no matches
+3. Inactive product remains visible and manageable
    - Steps:
-     1. Open `Products`.
-     2. Apply filters using values that match no products.
+     1. Mark a product inactive.
+     2. Filter by `Inactive`.
+     3. Use `View` or `Activate` on that same row.
    - Expected Result:
-     - The module remains stable.
-     - A no-records message is shown.
-
-3. Refresh keeps currently applied filters
-   - Steps:
-     1. Apply one or more product filters.
-     2. Click `Refresh`.
-   - Expected Result:
-     - The list reloads successfully.
-     - The currently applied filters remain effective.
+     - Product remains accessible in normal UI.
+     - No hidden archive behavior exists.
 
 ## API Verification Steps
 - Endpoint: `GET /api/v1/products`
@@ -208,6 +219,27 @@
   - `400 Bad Request` for invalid payload.
   - `409 Conflict` for duplicate product code.
 
+- Endpoint: `PATCH /api/v1/products/:productId`
+- Payload:
+  1. Send a `PATCH` request using a valid product id.
+  2. Include header `Authorization: Bearer <valid token>`.
+  3. Send valid editable fields.
+- Expected Response:
+  - `200 OK` for valid update.
+  - `400 Bad Request` for invalid payload.
+  - `404 Not Found` for missing product.
+  - `409 Conflict` for duplicate product code.
+
+- Endpoint: `PATCH /api/v1/products/:productId/status`
+- Payload:
+  1. Send a `PATCH` request using a valid product id.
+  2. Include header `Authorization: Bearer <valid token>`.
+  3. Send `status` as `Active` or `Inactive`.
+- Expected Response:
+  - `200 OK` for valid status update.
+  - `400 Bad Request` for invalid status.
+  - `404 Not Found` for missing product.
+
 ## UI Verification Steps
 - Page/Screen: `Products`
 - Steps:
@@ -216,11 +248,11 @@
   3. Submit invalid values.
   4. Submit valid approved QA values.
   5. Use search, status, and unit filters.
-  6. Use `Reset` and `Refresh`.
-  7. Review live product metrics.
+  6. Use `View`, `Edit`, `Activate` / `Mark Inactive`.
+  7. Use `Reset` and `Refresh`.
 - Expected Result:
   - Products module opens for allowed roles.
   - Invalid submissions are blocked with clear validation.
-  - Valid product creation succeeds.
+  - Valid product creation and update succeed.
+  - Status lifecycle remains visible in the normal UI.
   - Filters, reset, and refresh behave correctly.
-  - Metrics reflect live product records.

@@ -3,6 +3,7 @@
 - Verify only allowed roles can access and use the Billing module.
 - Verify bill creation works correctly with valid card-linked wallet and valid bill items.
 - Verify billing list, search, status, and date filters work correctly.
+- Verify bill `View Details` flow behaves correctly while keeping completed bills immutable.
 - Verify frontend validation, duplicate-item protection, and backend billing validation behavior.
 
 ## Preconditions
@@ -26,41 +27,7 @@
      - The `Bills List` section is visible.
      - Real bill data loads successfully.
 
-2. Active product options load in billing product dropdown
-   - Steps:
-     1. Open `Billing`.
-     2. Open the `Product` dropdown.
-   - Expected Result:
-     - Active products are available for selection.
-     - Product options load without error.
-
-3. Selected product shows unit price
-   - Steps:
-     1. Open `Billing`.
-     2. Select a product from the dropdown.
-   - Expected Result:
-     - The `Unit Price` field shows the selected product selling price.
-
-4. Add one valid item to pending bill
-   - Steps:
-     1. Open `Billing`.
-     2. Select a valid active product.
-     3. Enter a valid whole-number quantity greater than zero.
-     4. Click `Add Item`.
-   - Expected Result:
-     - The pending bill table shows the selected product row.
-     - The row includes product, code, unit price, quantity, and line total.
-     - The running `Total` updates correctly.
-
-5. Remove a pending bill item
-   - Steps:
-     1. Add one or more valid bill items.
-     2. Click `Remove` on one pending row.
-   - Expected Result:
-     - The selected item is removed from the pending bill table.
-     - The running `Total` updates correctly.
-
-6. Create bill with valid card number and valid items
+2. Create bill with valid card number and valid items
    - Steps:
      1. Open `Billing`.
      2. Enter a valid linked card number.
@@ -73,31 +40,15 @@
      - The bills list reloads successfully.
      - A new completed bill appears in the list.
 
-7. Search bills by bill number
+3. Search bills by bill number, member name, or card number
    - Steps:
      1. Open `Billing`.
-     2. Enter a known bill number in `Search Bill`.
+     2. Use `Search Bill`.
      3. Click `Apply Filters`.
    - Expected Result:
      - Matching bill records are shown.
 
-8. Search bills by member name
-   - Steps:
-     1. Open `Billing`.
-     2. Enter a known member name in `Search Bill`.
-     3. Click `Apply Filters`.
-   - Expected Result:
-     - Matching bill records are shown.
-
-9. Search bills by card number
-   - Steps:
-     1. Open `Billing`.
-     2. Enter a known card number in `Search Bill`.
-     3. Click `Apply Filters`.
-   - Expected Result:
-     - Matching bill records are shown.
-
-10. Filter bills by status
+4. Filter bills by status
    - Steps:
      1. Open `Billing`.
      2. Select `Completed` in the status filter.
@@ -105,7 +56,7 @@
    - Expected Result:
      - Only completed bill rows are shown.
 
-11. Filter bills by date
+5. Filter bills by date
    - Steps:
      1. Open `Billing`.
      2. Select a valid billing date in the `Date` filter.
@@ -113,30 +64,29 @@
    - Expected Result:
      - Only bills created on the selected date are shown.
 
-12. Reset billing filters restores default listing
+6. Reset billing filters restores default listing
    - Steps:
      1. Apply one or more billing filters.
      2. Click `Reset`.
    - Expected Result:
      - Filter inputs return to default values.
-     - The bills list reloads without the previous filters.
+     - The bills list reloads without previous filters.
 
-13. Refresh reloads the bills list
+7. Refresh reloads the bills list with current filters
    - Steps:
-     1. Open `Billing`.
+     1. Apply one or more filters.
      2. Click `Refresh`.
    - Expected Result:
-     - The bills list reloads successfully.
+     - The list reloads successfully.
+     - Currently applied filters remain effective.
 
-14. Dashboard billing metrics reflect live records
+8. View action opens bill details modal
    - Steps:
      1. Open `Billing`.
-     2. Create one or more valid bills.
-     3. Review the module metrics.
+     2. Click `View` on a bill row.
    - Expected Result:
-     - `Today Bills` reflects today bill count.
-     - `Collected Amount` reflects the sum of currently loaded bill records.
-     - `Stock Warnings` remains visible as designed for current scope.
+     - `Bill Details` modal opens.
+     - Bill number, status, member, card, balance before, balance after, and line items are shown.
 
 ## Negative Test Cases
 1. Billing form rejects empty card number on submit
@@ -159,47 +109,7 @@
      - Bill is not created.
      - Bill-items validation error is shown.
 
-3. Add Item rejects empty product
-   - Steps:
-     1. Open `Billing`.
-     2. Leave `Product` unselected.
-     3. Enter a valid quantity.
-     4. Click `Add Item`.
-   - Expected Result:
-     - Item is not added.
-     - Product validation error is shown.
-
-4. Add Item rejects empty quantity
-   - Steps:
-     1. Open `Billing`.
-     2. Select a valid product.
-     3. Clear the quantity value.
-     4. Click `Add Item`.
-   - Expected Result:
-     - Item is not added.
-     - Quantity validation error is shown.
-
-5. Add Item rejects zero or negative quantity
-   - Steps:
-     1. Open `Billing`.
-     2. Select a valid product.
-     3. Enter `0` or a negative quantity.
-     4. Click `Add Item`.
-   - Expected Result:
-     - Item is not added.
-     - Quantity validation error is shown.
-
-6. Add Item rejects non-integer quantity
-   - Steps:
-     1. Open `Billing`.
-     2. Select a valid product.
-     3. Enter a decimal quantity such as `1.5`.
-     4. Click `Add Item`.
-   - Expected Result:
-     - Item is not added.
-     - Whole-number quantity validation error is shown.
-
-7. Duplicate product cannot be added to the same bill
+3. Duplicate product cannot be added to the same bill
    - Steps:
      1. Add a valid product to the pending bill.
      2. Try to add the same product again.
@@ -207,16 +117,16 @@
      - Duplicate item is not added.
      - Duplicate-product error is shown.
 
-8. Billing request is rejected for invalid card number
+4. Billing request is rejected for invalid card number
    - Steps:
      1. Enter a card number that does not exist in approved QA data.
      2. Add valid bill items.
      3. Submit the bill.
    - Expected Result:
      - Bill is not created.
-     - Backend returns a not-found or billing-not-allowed error.
+     - Backend returns a billing-not-allowed or not-found error.
 
-9. Billing request is rejected for insufficient wallet balance
+5. Billing request is rejected for insufficient wallet balance
    - Steps:
      1. Use a valid card linked to a wallet with insufficient balance.
      2. Add items whose total exceeds wallet balance.
@@ -225,7 +135,7 @@
      - Bill is not created.
      - Insufficient balance error is shown.
 
-10. Billing request is rejected for insufficient stock
+6. Billing request is rejected for insufficient stock
    - Steps:
      1. Use a valid card and wallet.
      2. Add a product quantity greater than available stock.
@@ -234,51 +144,34 @@
      - Bill is not created.
      - Insufficient stock error is shown.
 
-11. Billing request is rejected for inactive product through direct API test
+7. Billing cannot be edited or deleted through normal UI
    - Steps:
-     1. Send a bill create request using an inactive product id.
+     1. Open `Billing`.
+     2. Review bill row actions and available controls.
    - Expected Result:
-     - The request is rejected.
-     - Error indicates only active products can be billed.
-
-12. Billing request is rejected for duplicate products through direct API test
-   - Steps:
-     1. Send a bill create request with the same `productId` repeated in `items`.
-   - Expected Result:
-     - The request is rejected.
-     - Duplicate-product error is returned.
+     - No edit or delete action is exposed for completed bills.
 
 ## Edge Cases
 1. Search remains case-insensitive for member name and card number
    - Steps:
      1. Open `Billing`.
-     2. Search using different uppercase and lowercase forms of known member or card values.
+     2. Search using different uppercase and lowercase forms of known values.
      3. Apply filters.
    - Expected Result:
      - Matching bill records are still returned.
 
 2. Bills list remains stable when filters return no matches
    - Steps:
-     1. Open `Billing`.
-     2. Apply filters using values that match no bills.
+     1. Apply filters using values that match no bills.
    - Expected Result:
      - The module remains stable.
      - A no-records message is shown.
 
-3. Refresh keeps currently applied filters
-   - Steps:
-     1. Apply one or more billing filters.
-     2. Click `Refresh`.
-   - Expected Result:
-     - The list reloads successfully.
-     - The currently applied filters remain effective.
-
-4. Bill total updates correctly when multiple items are added and one is removed
+3. Bill total updates correctly when multiple items are added and one is removed
    - Steps:
      1. Add multiple valid items.
      2. Note the total.
      3. Remove one item.
-     4. Review the total again.
    - Expected Result:
      - The total always reflects the exact current pending item list.
 
@@ -322,11 +215,10 @@
   4. Submit invalid values.
   5. Submit valid approved QA billing values.
   6. Use search, status, and date filters.
-  7. Use `Reset` and `Refresh`.
-  8. Review live billing metrics.
+  7. Use `View`, `Reset`, and `Refresh`.
 - Expected Result:
   - Billing module opens for allowed roles.
   - Invalid submissions are blocked with clear validation.
   - Valid bill creation succeeds.
+  - Bill details modal works correctly.
   - Filters, reset, and refresh behave correctly.
-  - Metrics reflect live bill records.

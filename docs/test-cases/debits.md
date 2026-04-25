@@ -2,8 +2,8 @@
 ## Test Objectives
 - Verify allowed roles can create manual debit entries only for eligible active wallets.
 - Verify debit list, search, reason, cashier, and date filters work correctly.
+- Verify debit `View Details` flow behaves correctly while debit records remain immutable.
 - Verify debit validation, insufficient-balance handling, and balance deduction behavior.
-- Verify debit detail lookup behaves correctly.
 
 ## Preconditions
 - Approved QA environment and approved QA test data are available for execution.
@@ -20,44 +20,28 @@
      - The `Filters` section is visible.
      - The debit list loads successfully.
 
-2. Eligible active wallets appear in debit dropdown
-   - Steps:
-     1. Open `Debits`.
-     2. Open the `Wallet` dropdown.
-   - Expected Result:
-     - Active wallets linked to active members are available for selection.
-
-3. Selected wallet displays member and current balance
-   - Steps:
-     1. Open `Debits`.
-     2. Select a wallet from the dropdown.
-   - Expected Result:
-     - The `Member` field auto-fills with the linked member name.
-     - The `Current Balance` field shows the selected wallet balance.
-
-4. Create debit with valid data and sufficient balance
+2. Create debit with valid data and sufficient balance
    - Steps:
      1. Open `Debits`.
      2. Select an eligible wallet with enough balance.
-     3. Enter a valid amount greater than zero and not more than the current balance.
-     4. Enter a valid reason.
-     5. Optionally enter notes within allowed length.
-     6. Click `Create Debit`.
+     3. Enter a valid amount and reason.
+     4. Optionally enter notes.
+     5. Click `Create Debit`.
    - Expected Result:
      - Debit creation succeeds.
      - Success message is shown.
      - The new debit appears in the list after reload.
      - Wallet balance decreases by the debit amount.
 
-5. Search debits by member name, mobile number, card number, or reason
+3. Search debits by member name, mobile number, card number, or reason
    - Steps:
      1. Open `Debits`.
-     2. Enter a known member name, mobile number, card number, or reason in `Search Debits`.
+     2. Use `Search Debits`.
      3. Click `Apply Filters`.
    - Expected Result:
      - Matching debit records are shown.
 
-6. Filter debits by reason
+4. Filter debits by reason
    - Steps:
      1. Open `Debits`.
      2. Enter a reason keyword in the `Reason` filter.
@@ -65,7 +49,7 @@
    - Expected Result:
      - Only debit records matching the reason filter are shown.
 
-7. Filter debits by cashier
+5. Filter debits by cashier
    - Steps:
      1. Open `Debits`.
      2. Select a staff record in the `Cashier` filter.
@@ -73,7 +57,7 @@
    - Expected Result:
      - Only debit records created by the selected cashier are shown.
 
-8. Filter debits by date
+6. Filter debits by date
    - Steps:
      1. Open `Debits`.
      2. Select a date in the `Date` filter.
@@ -81,20 +65,29 @@
    - Expected Result:
      - Only debit records created on the selected date are shown.
 
-9. Reset debit filters restores default listing
+7. Reset debit filters restores default listing
    - Steps:
      1. Apply one or more debit filters.
      2. Click `Reset`.
    - Expected Result:
      - Filter inputs return to default values.
-     - The debit list reloads without the previous filters.
+     - The debit list reloads without previous filters.
 
-10. Refresh reloads the debit list
+8. Refresh reloads the debit list with current filters
    - Steps:
-     1. Open `Debits`.
+     1. Apply one or more filters.
      2. Click `Refresh`.
    - Expected Result:
-     - The debit list reloads successfully.
+     - The list reloads successfully.
+     - Currently applied filters remain effective.
+
+9. View action opens debit details modal
+   - Steps:
+     1. Open `Debits`.
+     2. Click `View` on a debit row.
+   - Expected Result:
+     - `Debit Details` modal opens.
+     - Member, card, amount, reason, balance before, balance after, and notes are shown.
 
 ## Negative Test Cases
 1. Debit form rejects empty required fields
@@ -109,70 +102,56 @@
 2. Debit form rejects zero or negative amount
    - Steps:
      1. Select an eligible wallet.
-     2. Enter `0` or a negative number in `Amount`.
-     3. Enter a valid reason.
-     4. Click `Create Debit`.
+     2. Enter `0` or a negative number.
+     3. Submit the debit.
    - Expected Result:
      - Debit is not created.
      - Amount validation error is shown.
 
 3. Debit form rejects reason longer than allowed length
    - Steps:
-     1. Select a valid wallet.
-     2. Enter valid amount.
-     3. Enter a reason longer than 120 characters.
-     4. Submit the debit.
+     1. Enter a reason longer than 120 characters.
+     2. Submit the debit.
    - Expected Result:
      - Debit is not created.
      - Reason length validation error is shown.
 
-4. Debit form rejects notes longer than allowed length
-   - Steps:
-     1. Select a valid wallet.
-     2. Enter valid amount and reason.
-     3. Enter notes longer than 300 characters.
-     4. Submit the debit.
-   - Expected Result:
-     - Debit is not created.
-     - Notes length validation error is shown.
-
-5. Debit is rejected when amount exceeds wallet balance
+4. Debit is rejected when amount exceeds wallet balance
    - Steps:
      1. Select a wallet with known current balance.
      2. Enter an amount greater than that balance.
-     3. Enter a valid reason.
-     4. Click `Create Debit`.
+     3. Submit the debit.
    - Expected Result:
      - Debit is not created.
      - Error indicates insufficient wallet balance.
 
-6. Inactive wallet cannot be debited
+5. Inactive wallet cannot be debited
    - Steps:
      1. Attempt debit for an inactive wallet through direct API test.
    - Expected Result:
      - The request is rejected.
      - Error indicates only an active wallet can be debited.
 
-7. Inactive member wallet cannot be debited
+6. Inactive member wallet cannot be debited
    - Steps:
      1. Attempt debit for a wallet linked to an inactive member.
    - Expected Result:
      - The request is rejected.
      - Error indicates only an active member wallet can be debited.
 
-8. Debit is rejected when member has no linked card
-   - Steps:
-     1. Attempt debit for a wallet whose member has no linked card.
-   - Expected Result:
-     - The request is rejected.
-     - Error indicates a linked card is required before debit.
-
-9. Debit is rejected when linked card is inactive or expired
+7. Debit is rejected when linked card is inactive or expired
    - Steps:
      1. Attempt debit for a wallet whose linked card is inactive or expired.
    - Expected Result:
      - The request is rejected.
      - Error indicates a usable active card is required before debit.
+
+8. Debit cannot be edited or deleted through normal UI
+   - Steps:
+     1. Open `Debits`.
+     2. Review debit row actions and available controls.
+   - Expected Result:
+     - No edit or delete action is exposed for debit records.
 
 ## Edge Cases
 1. Balance after debit is calculated correctly
@@ -186,9 +165,7 @@
 
 2. Search remains case-insensitive for reason and member name
    - Steps:
-     1. Open `Debits`.
-     2. Search using different uppercase and lowercase versions of a reason or member name.
-     3. Apply filters.
+     1. Search using different uppercase and lowercase versions of a reason or member name.
    - Expected Result:
      - Matching debit records are still returned.
 
@@ -238,9 +215,10 @@
   3. Submit invalid values.
   4. Submit valid approved QA values.
   5. Use search, reason, date, and cashier filters.
-  6. Use `Reset` and `Refresh`.
+  6. Use `View`, `Reset`, and `Refresh`.
 - Expected Result:
   - Debits module opens for allowed roles.
   - Invalid submissions are blocked with clear validation.
   - Valid debit creation succeeds only for eligible wallets with sufficient balance.
+  - Debit details modal works correctly.
   - Filters, reset, and refresh behave correctly.

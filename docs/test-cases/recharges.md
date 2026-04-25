@@ -2,8 +2,8 @@
 ## Test Objectives
 - Verify allowed roles can create recharge entries only for eligible active wallets.
 - Verify recharge list, search, payment mode, cashier, and date filters work correctly.
+- Verify recharge `View Details` flow behaves correctly while recharge records remain immutable.
 - Verify recharge validation, operational eligibility checks, and balance credit behavior.
-- Verify recharge detail lookup behaves correctly.
 
 ## Preconditions
 - Approved QA environment and approved QA test data are available for execution.
@@ -20,23 +20,7 @@
      - The `Filters` section is visible.
      - The recharge list loads successfully.
 
-2. Eligible active wallets appear in recharge dropdown
-   - Steps:
-     1. Open `Recharges`.
-     2. Open the `Wallet` dropdown.
-   - Expected Result:
-     - Active wallets linked to active members are available for selection.
-     - Wallet options load without error.
-
-3. Selected wallet displays member and current balance
-   - Steps:
-     1. Open `Recharges`.
-     2. Select a wallet from the dropdown.
-   - Expected Result:
-     - The `Member` field auto-fills with the linked member name.
-     - The `Current Balance` field shows the selected wallet balance.
-
-4. Create recharge with valid data
+2. Create recharge with valid data
    - Steps:
      1. Open `Recharges`.
      2. Select an eligible wallet.
@@ -50,23 +34,23 @@
      - The new recharge appears in the list after reload.
      - Wallet balance increases by the recharge amount.
 
-5. Search recharges by member name, mobile number, or card number
+3. Search recharges by member name, mobile number, or card number
    - Steps:
      1. Open `Recharges`.
-     2. Enter a known member name, mobile number, or card number in `Search Recharges`.
+     2. Use `Search Recharges`.
      3. Click `Apply Filters`.
    - Expected Result:
      - Matching recharge records are shown.
 
-6. Filter recharges by payment mode
+4. Filter recharges by payment mode
    - Steps:
      1. Open `Recharges`.
-     2. Select `Cash`, `UPI`, or `Card` in the payment mode filter.
+     2. Select a payment mode.
      3. Click `Apply Filters`.
    - Expected Result:
      - Only recharge records with the selected payment mode are shown.
 
-7. Filter recharges by cashier
+5. Filter recharges by cashier
    - Steps:
      1. Open `Recharges`.
      2. Select a staff record in the `Cashier` filter.
@@ -74,7 +58,7 @@
    - Expected Result:
      - Only recharge records created by the selected cashier are shown.
 
-8. Filter recharges by date
+6. Filter recharges by date
    - Steps:
      1. Open `Recharges`.
      2. Select a date in the `Date` filter.
@@ -82,20 +66,29 @@
    - Expected Result:
      - Only recharge records created on the selected date are shown.
 
-9. Reset recharge filters restores default listing
+7. Reset recharge filters restores default listing
    - Steps:
      1. Apply one or more recharge filters.
      2. Click `Reset`.
    - Expected Result:
      - Filter inputs return to default values.
-     - The recharge list reloads without the previous filters.
+     - The recharge list reloads without previous filters.
 
-10. Refresh reloads the recharge list
+8. Refresh reloads the recharge list with current filters
    - Steps:
-     1. Open `Recharges`.
+     1. Apply one or more filters.
      2. Click `Refresh`.
    - Expected Result:
-     - The recharge list reloads successfully.
+     - The list reloads successfully.
+     - Currently applied filters remain effective.
+
+9. View action opens recharge details modal
+   - Steps:
+     1. Open `Recharges`.
+     2. Click `View` on a recharge row.
+   - Expected Result:
+     - `Recharge Details` modal opens.
+     - Member, card, amount, payment mode, balance before, balance after, and notes are shown.
 
 ## Negative Test Cases
 1. Recharge form rejects empty required fields
@@ -110,57 +103,47 @@
 2. Recharge form rejects zero or negative amount
    - Steps:
      1. Select an eligible wallet.
-     2. Enter `0` or a negative number in `Amount`.
-     3. Select a valid payment mode.
-     4. Click `Create Recharge`.
+     2. Enter `0` or a negative number.
+     3. Submit the recharge.
    - Expected Result:
      - Recharge is not created.
      - Amount validation error is shown.
 
-3. Recharge form rejects invalid payment mode
+3. Recharge form rejects notes longer than allowed length
    - Steps:
-     1. Send a recharge create request with an unsupported payment mode.
-   - Expected Result:
-     - The request is rejected.
-     - Payment mode validation error is returned.
-
-4. Recharge form rejects notes longer than allowed length
-   - Steps:
-     1. Select a valid wallet.
-     2. Enter valid amount and payment mode.
-     3. Enter notes longer than 300 characters.
-     4. Submit the recharge.
+     1. Enter notes longer than 300 characters.
+     2. Submit the recharge.
    - Expected Result:
      - Recharge is not created.
      - Notes length validation error is shown.
 
-5. Inactive wallet cannot be recharged
+4. Inactive wallet cannot be recharged
    - Steps:
      1. Attempt recharge for an inactive wallet through direct API test.
    - Expected Result:
      - The request is rejected.
      - Error indicates only an active wallet can be recharged.
 
-6. Inactive member wallet cannot be recharged
+5. Inactive member wallet cannot be recharged
    - Steps:
      1. Attempt recharge for a wallet linked to an inactive member.
    - Expected Result:
      - The request is rejected.
      - Error indicates only an active member can be recharged.
 
-7. Recharge is rejected when member has no linked card
-   - Steps:
-     1. Attempt recharge for a wallet whose member has no linked card.
-   - Expected Result:
-     - The request is rejected.
-     - Error indicates a linked card is required before recharge.
-
-8. Recharge is rejected when linked card is inactive or expired
+6. Recharge is rejected when linked card is inactive or expired
    - Steps:
      1. Attempt recharge for a wallet whose linked card is inactive or expired.
    - Expected Result:
      - The request is rejected.
      - Error indicates a usable active card is required before recharge.
+
+7. Recharge cannot be edited or deleted through normal UI
+   - Steps:
+     1. Open `Recharges`.
+     2. Review recharge row actions and available controls.
+   - Expected Result:
+     - No edit or delete action is exposed for recharge records.
 
 ## Edge Cases
 1. Balance after recharge is calculated correctly
@@ -174,9 +157,7 @@
 
 2. Search remains case-insensitive for member name
    - Steps:
-     1. Open `Recharges`.
-     2. Search using different uppercase and lowercase versions of a member name.
-     3. Apply filters.
+     1. Search using different uppercase and lowercase versions of a member name.
    - Expected Result:
      - Matching recharge records are still returned.
 
@@ -226,9 +207,10 @@
   3. Submit invalid values.
   4. Submit valid approved QA values.
   5. Use search, date, payment mode, and cashier filters.
-  6. Use `Reset` and `Refresh`.
+  6. Use `View`, `Reset`, and `Refresh`.
 - Expected Result:
   - Recharges module opens for allowed roles.
   - Invalid submissions are blocked with clear validation.
   - Valid recharge creation succeeds only for eligible wallets.
+  - Recharge details modal works correctly.
   - Filters, reset, and refresh behave correctly.

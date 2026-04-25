@@ -3,6 +3,7 @@
 - Verify only allowed roles can access and use the Stock module.
 - Verify stock movement creation works correctly for active products.
 - Verify stock list, search, stock status, and movement type filters work correctly.
+- Verify stock `View Details` flow behaves correctly while movement history remains immutable.
 - Verify current quantity updates correctly and stock status is shown correctly after movements.
 
 ## Preconditions
@@ -23,22 +24,7 @@
      - The `Stock List` section is visible.
      - Real stock data loads successfully.
 
-2. Active products appear in stock movement dropdown
-   - Steps:
-     1. Open `Stock`.
-     2. Open the `Product` dropdown.
-   - Expected Result:
-     - Active products are available for selection.
-     - Product options load without error.
-
-3. Selected product shows current quantity
-   - Steps:
-     1. Open `Stock`.
-     2. Select a product from the dropdown.
-   - Expected Result:
-     - The `Current Qty` field shows the current quantity for that product.
-
-4. Create opening stock with valid data
+2. Create opening stock with valid data
    - Steps:
      1. Open `Stock`.
      2. Select an active product with no existing opening stock.
@@ -52,7 +38,7 @@
      - The stock list reloads successfully.
      - Current quantity reflects the opening quantity.
 
-5. Create manual stock update with valid data
+3. Create manual stock update with valid data
    - Steps:
      1. Open `Stock`.
      2. Select an active product.
@@ -64,7 +50,7 @@
      - The stock list reloads successfully.
      - Current quantity is updated correctly.
 
-6. Search stock by product name or product code
+4. Search stock by product name or product code
    - Steps:
      1. Open `Stock`.
      2. Enter a known product name or product code in `Search Product`.
@@ -72,46 +58,53 @@
    - Expected Result:
      - Matching stock records are shown.
 
-7. Filter stock by stock status
+5. Filter stock by stock status
    - Steps:
      1. Open `Stock`.
-     2. Select a stock status such as `Available`, `Low Stock`, `Out of Stock`, or `Negative Stock`.
+     2. Select a stock status.
      3. Click `Apply Filters`.
    - Expected Result:
      - Only stock rows with the selected status are shown.
 
-8. Filter stock by movement type
+6. Filter stock by movement type
    - Steps:
      1. Open `Stock`.
-     2. Select `Opening` or `Manual Update` in the movement type filter.
+     2. Select `Opening` or `Manual Update`.
      3. Click `Apply Filters`.
    - Expected Result:
      - Only stock rows matching the selected latest movement type are shown.
 
-9. Reset stock filters restores default listing
+7. Reset stock filters restores default listing
    - Steps:
      1. Apply one or more stock filters.
      2. Click `Reset`.
    - Expected Result:
      - Filter inputs return to default values.
-     - The stock list reloads without the previous filters.
+     - The stock list reloads without previous filters.
 
-10. Refresh reloads the stock list
+8. Refresh reloads the stock list with current filters
    - Steps:
-     1. Open `Stock`.
+     1. Apply one or more stock filters.
      2. Click `Refresh`.
    - Expected Result:
-     - The stock list reloads successfully.
+     - The list reloads successfully.
+     - Currently applied filters remain effective.
 
-11. Dashboard stock metrics reflect live records
+9. View action opens stock details modal
+   - Steps:
+     1. Open `Stock`.
+     2. Click `View` on a stock row.
+   - Expected Result:
+     - `Stock Details` modal opens.
+     - Product, code, current quantity, last change, movement type, stock status, and notes are shown.
+
+10. Dashboard stock metrics reflect live records
    - Steps:
      1. Open `Stock`.
      2. Create stock movements that produce `Available`, `Low Stock`, or `Negative Stock` conditions where applicable.
      3. Review the module metrics.
    - Expected Result:
-     - `Available Items` reflects available stock rows.
-     - `Low Stock` reflects low stock rows.
-     - `Negative Stock` reflects negative stock rows.
+     - `Available Items`, `Low Stock`, and `Negative Stock` match visible stock rows.
 
 ## Negative Test Cases
 1. Stock movement form rejects empty required fields
@@ -127,8 +120,7 @@
    - Steps:
      1. Select a valid product.
      2. Enter `0` in `Quantity Change`.
-     3. Choose a valid movement type.
-     4. Click `Save Stock Movement`.
+     3. Submit the form.
    - Expected Result:
      - Stock movement is not created.
      - Quantity validation error is shown.
@@ -151,19 +143,19 @@
      - Second opening stock is not created.
      - Duplicate opening error is shown.
 
-5. Unsupported movement type is rejected through direct API test
-   - Steps:
-     1. Send a stock movement create request with an unsupported movement type.
-   - Expected Result:
-     - The request is rejected.
-     - Movement type validation error is returned.
-
-6. Inactive product cannot receive stock movement
+5. Inactive product cannot receive stock movement
    - Steps:
      1. Attempt stock movement for an inactive product through direct API test.
    - Expected Result:
      - The request is rejected.
      - Error indicates only an active product can receive stock movement.
+
+6. Stock history cannot be edited or deleted through normal UI
+   - Steps:
+     1. Open `Stock`.
+     2. Review available row actions and controls.
+   - Expected Result:
+     - No edit or delete action is exposed for stock history.
 
 7. Cashier cannot access Stock module
    - Steps:
@@ -176,16 +168,13 @@
 ## Edge Cases
 1. Search remains case-insensitive for product name and code
    - Steps:
-     1. Open `Stock`.
-     2. Search using different uppercase and lowercase versions of a product name or product code.
-     3. Apply filters.
+     1. Search using different uppercase and lowercase versions of a product name or product code.
    - Expected Result:
      - Matching stock records are still returned.
 
 2. Stock list remains stable when filters return no matches
    - Steps:
-     1. Open `Stock`.
-     2. Apply filters using values that match no stock rows.
+     1. Apply filters using values that match no stock rows.
    - Expected Result:
      - The module remains stable.
      - A no-records message is shown.
@@ -229,11 +218,10 @@
   3. Submit invalid values.
   4. Submit valid approved QA values for opening stock and manual update.
   5. Use search, stock status, and movement type filters.
-  6. Use `Reset` and `Refresh`.
-  7. Review live stock metrics.
+  6. Use `View`, `Reset`, and `Refresh`.
 - Expected Result:
   - Stock module opens for allowed roles.
   - Invalid submissions are blocked with clear validation.
   - Valid stock movement creation succeeds.
+  - Stock details modal works correctly.
   - Filters, reset, and refresh behave correctly.
-  - Metrics reflect live stock records.

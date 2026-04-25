@@ -1,9 +1,10 @@
 # Module: Wallets
 ## Test Objectives
 - Verify allowed roles can create wallets only for operationally eligible members.
-- Verify wallet list, search, and status filter behavior.
+- Verify wallet list, search, status filter, reset, and refresh behavior.
+- Verify wallet `View`, `Edit`, and `Activate` / `Mark Inactive` flows behave correctly.
 - Verify wallet creation validation, member eligibility rules, and duplicate-wallet prevention.
-- Verify wallet detail and update flows behave correctly.
+- Verify wallet detail and update flows remain administrative only and do not mutate balance history.
 
 ## Preconditions
 - Approved QA environment and approved QA test data are available for execution.
@@ -38,30 +39,15 @@
      - Success message is shown.
      - The wallet appears in the wallets list after reload.
 
-4. New wallet starts with zero balance
-   - Steps:
-     1. Create a wallet successfully.
-     2. Open the wallets list or fetch wallet detail.
-   - Expected Result:
-     - The wallet balance is `0`.
-
-5. Search wallets by member name
+4. Search wallets by member name or mobile number
    - Steps:
      1. Open `Wallets`.
-     2. In `Search Wallets`, enter part of an existing member name.
+     2. In `Search Wallets`, enter part of a member name or mobile number.
      3. Click `Apply Filters`.
    - Expected Result:
      - Matching wallet records are shown.
 
-6. Search wallets by mobile number
-   - Steps:
-     1. Open `Wallets`.
-     2. In `Search Wallets`, enter part or all of an existing member mobile number.
-     3. Click `Apply Filters`.
-   - Expected Result:
-     - Matching wallet records are shown.
-
-7. Filter wallets by status
+5. Filter wallets by status
    - Steps:
      1. Open `Wallets`.
      2. Select `Active` or `Inactive` in the status filter.
@@ -69,28 +55,58 @@
    - Expected Result:
      - The list shows only records matching the selected status.
 
-8. Reset wallet filters restores default listing
+6. Reset wallet filters restores default listing
    - Steps:
      1. Apply search and/or status filters.
      2. Click `Reset`.
    - Expected Result:
      - Filter inputs return to default values.
-     - The wallets list reloads without the previous filters.
+     - The wallets list reloads without previous filters.
 
-9. Refresh button reloads wallets list
+7. Refresh button reloads wallets list with current filters
    - Steps:
-     1. Open `Wallets`.
-     2. Click `Refresh` in the list section.
+     1. Apply a filter in `Wallets`.
+     2. Click `Refresh`.
    - Expected Result:
      - The list reloads successfully.
+     - The currently applied filters remain effective.
 
-10. Update wallet status successfully
+8. View action opens wallet details modal
    - Steps:
-     1. Use an existing wallet record.
-     2. Send a valid update request with a changed status.
+     1. Open `Wallets`.
+     2. Click `View` on a wallet row.
+   - Expected Result:
+     - `Wallet Details` modal opens.
+     - Member, mobile number, linked card, balance, status, and updated date are shown.
+
+9. Edit action updates wallet status successfully
+   - Steps:
+     1. Open `Wallets`.
+     2. Click `Edit` on a wallet row.
+     3. Change `Status`.
+     4. Click `Save Changes`.
    - Expected Result:
      - Wallet update succeeds.
-     - Updated status is returned in the response.
+     - Updated status is shown in the list.
+     - Balance remains unchanged.
+
+10. Mark wallet inactive successfully
+   - Steps:
+     1. Open `Wallets`.
+     2. Click `Mark Inactive` on an active wallet row.
+     3. Confirm the action.
+   - Expected Result:
+     - Wallet status changes to `Inactive`.
+     - Wallet remains visible in the list.
+
+11. Activate inactive wallet successfully
+   - Steps:
+     1. Open `Wallets`.
+     2. Click `Activate` on an inactive wallet row.
+     3. Confirm the action.
+   - Expected Result:
+     - Wallet status changes to `Active`.
+     - Wallet remains visible in the list.
 
 ## Negative Test Cases
 1. Wallet form rejects empty member selection
@@ -167,6 +183,14 @@
    - Expected Result:
      - Low-balance count matches the rule used by the module.
 
+4. Wallet status update does not change balance
+   - Steps:
+     1. Note the balance of an existing wallet.
+     2. Update status through `Edit` or `Activate` / `Mark Inactive`.
+     3. Reopen wallet details.
+   - Expected Result:
+     - Balance remains unchanged after status-only update.
+
 ## API Verification Steps
 - Endpoint: `GET /api/v1/wallets`
 - Payload:
@@ -214,9 +238,11 @@
   3. Submit invalid values.
   4. Submit valid approved QA values.
   5. Use search and status filters.
-  6. Use `Reset` and `Refresh`.
+  6. Use `View`, `Edit`, `Activate` / `Mark Inactive`.
+  7. Use `Reset` and `Refresh`.
 - Expected Result:
   - Wallets module opens for allowed roles.
   - Invalid submissions are blocked with clear validation.
   - Valid wallet creation succeeds for eligible members only.
+  - Detail, edit, and status actions behave correctly.
   - Filters, reset, and refresh behave correctly.
