@@ -1,11 +1,16 @@
 /**
  * Module: Product Controller
  * File: product.controller.js
- * Purpose: Handles product create and product list responses.
+ * Purpose: Handles product create, update, status change, and list responses.
  */
 
 const { buildApiResponse } = require("../../utils/apiResponse");
-const { createProduct, getProductList } = require("./product.service");
+const {
+  createProduct,
+  getProductList,
+  updateProduct,
+  updateProductStatus
+} = require("./product.service");
 
 /**
  * Returns the product list for the Products module.
@@ -43,7 +48,49 @@ const createProductHandler = async (request, response, next) => {
   }
 };
 
+/**
+ * Updates one product master record.
+ */
+const updateProductHandler = async (request, response, next) => {
+  try {
+    const data = await updateProduct(request.params.productId, request.body, request.auth);
+
+    response.status(200).json(
+      buildApiResponse({
+        message: "Product updated successfully.",
+        data
+      })
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Updates one product status.
+ */
+const updateProductStatusHandler = async (request, response, next) => {
+  try {
+    const data = await updateProductStatus(
+      request.params.productId,
+      request.body?.status,
+      request.auth
+    );
+
+    response.status(200).json(
+      buildApiResponse({
+        message: "Product status updated successfully.",
+        data
+      })
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getProductListHandler,
-  createProductHandler
+  createProductHandler,
+  updateProductHandler,
+  updateProductStatusHandler
 };

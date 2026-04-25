@@ -1,7 +1,7 @@
 /**
  * Module: Products API
  * File: productApi.js
- * Purpose: Handles Products module requests for listing and creating product records.
+ * Purpose: Handles Products module requests for listing, creating, updating, and status-managing product records.
  */
 
 import { httpRequest } from "../../../api/http";
@@ -44,5 +44,33 @@ export function createProductRecord(payload, token) {
       Authorization: `Bearer ${token}`
     },
     body: payload
+  });
+}
+
+/**
+ * Updates one product record.
+ */
+export function updateProductRecord(productId, payload, token) {
+  return httpRequest(`/products/${productId}`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`
+    },
+    body: payload
+  });
+}
+
+/**
+ * Updates one product status.
+ */
+export function updateProductStatusRecord(productId, status, token) {
+  return httpRequest(`/products/${productId}/status`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`
+    },
+    body: {
+      status
+    }
   });
 }

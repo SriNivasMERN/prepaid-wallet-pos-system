@@ -11,7 +11,12 @@ import ModalDialog from "../../../components/common/ModalDialog";
 import SectionCard from "../../../components/common/SectionCard";
 import StatusChip from "../../../components/common/StatusChip";
 import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
-import { createProductRecord, fetchProductList } from "../api/productApi";
+import {
+  createProductRecord,
+  fetchProductList,
+  updateProductRecord,
+  updateProductStatusRecord
+} from "../api/productApi";
 
 const productInitialForm = {
   productName: "",
@@ -82,6 +87,13 @@ function ProductsModule({ authToken, onMetricsChange }) {
   const [appliedProductFilters, setAppliedProductFilters] = useState(productInitialFilters);
   const [productReloadToken, setProductReloadToken] = useState(0);
   const [selectedProductRecord, setSelectedProductRecord] = useState(null);
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [editProductForm, setEditProductForm] = useState(productInitialForm);
+  const [editProductFormErrors, setEditProductFormErrors] = useState({});
+  const [editProductRequestError, setEditProductRequestError] = useState("");
+  const [isUpdatingProduct, setIsUpdatingProduct] = useState(false);
+  const [productPendingStatusChange, setProductPendingStatusChange] = useState(null);
+  const [isUpdatingProductStatus, setIsUpdatingProductStatus] = useState(false);
 
   useEffect(() => {
     const loadProducts = async () => {
@@ -143,6 +155,20 @@ function ProductsModule({ authToken, onMetricsChange }) {
     }));
   };
 
+  const handleEditProductInputChange = (event) => {
+    const { name, value } = event.target;
+
+    setEditProductForm((currentState) => ({
+      ...currentState,
+      [name]: value
+    }));
+    setEditProductFormErrors((currentErrors) => ({
+      ...currentErrors,
+      [name]: ""
+    }));
+    setEditProductRequestError("");
+  };
+
   const handleProductSubmit = async (event) => {
     event.preventDefault();
 
@@ -175,6 +201,102 @@ function ProductsModule({ authToken, onMetricsChange }) {
       setProductRequestError(getApiErrorMessage(error));
     } finally {
       setIsCreatingProduct(false);
+    }
+  };
+
+  const openEditProductModal = (product) => {
+    setEditingProduct(product);
+    setEditProductForm({
+      productName: product.productName || "",
+      productCode: product.productCode || "",
+      sellingPrice: String(product.sellingPrice ?? ""),
+      unit: product.unit || "Piece",
+      status: product.status || "Active"
+    });
+    setEditProductFormErrors({});
+    setEditProductRequestError("");
+  };
+
+  const closeEditProductModal = () => {
+    setEditingProduct(null);
+    setEditProductForm(productInitialForm);
+    setEditProductFormErrors({});
+    setEditProductRequestError("");
+  };
+
+  const handleEditProductSubmit = async (event) => {
+    event.preventDefault();
+
+    const validationErrors = validateProductForm(editProductForm);
+
+    if (Object.keys(validationErrors).length > 0) {
+      setEditProductFormErrors(validationErrors);
+      return;
+    }
+
+    setIsUpdatingProduct(true);
+    setEditProductRequestError("");
+
+    try {
+      const response = await updateProductRecord(
+        editingProduct.id,
+        {
+          productName: editProductForm.productName.trim(),
+          productCode: editProductForm.productCode.trim(),
+          sellingPrice: Number(editProductForm.sellingPrice),
+          unit: editProductForm.unit,
+          status: editProductForm.status
+        },
+        authToken
+      );
+
+      const updatedProduct = response.data;
+
+      setProductRecords((currentList) =>
+        currentList.map((product) => (product.id === updatedProduct.id ? updatedProduct : product))
+      );
+      closeEditProductModal();
+      setProductSuccessMessage("Product updated successfully.");
+      setProductReloadToken((currentValue) => currentValue + 1);
+    } catch (error) {
+      setEditProductRequestError(getApiErrorMessage(error));
+    } finally {
+      setIsUpdatingProduct(false);
+    }
+  };
+
+  const handleProductStatusChange = async () => {
+    if (!productPendingStatusChange) {
+      return;
+    }
+
+    setIsUpdatingProductStatus(true);
+    setProductRequestError("");
+
+    try {
+      const response = await updateProductStatusRecord(
+        productPendingStatusChange.id,
+        productPendingStatusChange.nextStatus,
+        authToken
+      );
+      const updatedProduct = response.data;
+
+      setProductRecords((currentList) =>
+        currentList.map((product) => (product.id === updatedProduct.id ? updatedProduct : product))
+      );
+
+      setProductSuccessMessage(
+        updatedProduct.status === "Inactive"
+          ? "Product marked as inactive successfully."
+          : "Product activated successfully."
+      );
+
+      setProductPendingStatusChange(null);
+      setProductReloadToken((currentValue) => currentValue + 1);
+    } catch (error) {
+      setProductRequestError(getApiErrorMessage(error));
+    } finally {
+      setIsUpdatingProductStatus(false);
     }
   };
 
@@ -396,8 +518,21 @@ function ProductsModule({ authToken, onMetricsChange }) {
                         <IconButton
                           icon="edit"
                           label={`Edit ${product.productName}`}
-                          title="Edit flow begins on Day 27."
-                          disabled
+                          title="Edit product"
+                          onClick={() => openEditProductModal(product)}
+                        />
+                        <IconButton
+                          icon={product.status === "Active" ? "close" : "add"}
+                          label={`${product.status === "Active" ? "Mark inactive" : "Activate"} ${product.productName}`}
+                          title={product.status === "Active" ? "Mark inactive" : "Activate"}
+                          onClick={() =>
+                            setProductPendingStatusChange({
+                              id: product.id,
+                              productName: product.productName,
+                              currentStatus: product.status,
+                              nextStatus: product.status === "Active" ? "Inactive" : "Active"
+                            })
+                          }
                         />
                       </div>
                     </td>
@@ -446,6 +581,140 @@ function ProductsModule({ authToken, onMetricsChange }) {
               <span>Created By</span>
               <strong>{selectedProductRecord.createdBy?.fullName || "System"}</strong>
             </div>
+          </div>
+        ) : null}
+      </ModalDialog>
+
+      <ModalDialog
+        isOpen={Boolean(editingProduct)}
+        title="Edit Product"
+        onClose={closeEditProductModal}
+        footer={(
+          <>
+            <button type="button" className="secondary-button" onClick={closeEditProductModal}>
+              Cancel
+            </button>
+            <button type="submit" form="edit-product-form" className="primary-button" disabled={isUpdatingProduct}>
+              {isUpdatingProduct ? "Saving..." : "Save Changes"}
+            </button>
+          </>
+        )}
+        width="720px"
+      >
+        <form id="edit-product-form" className="form-grid" onSubmit={handleEditProductSubmit} autoComplete="off">
+          <label className="field-group">
+            <span>Product Name</span>
+            <input
+              type="text"
+              name="productName"
+              value={editProductForm.productName}
+              onChange={handleEditProductInputChange}
+              placeholder="Enter product name"
+              autoComplete="off"
+            />
+            {editProductFormErrors.productName ? (
+              <small className="field-error">{editProductFormErrors.productName}</small>
+            ) : null}
+          </label>
+
+          <label className="field-group">
+            <span>Product Code</span>
+            <input
+              type="text"
+              name="productCode"
+              value={editProductForm.productCode}
+              onChange={handleEditProductInputChange}
+              placeholder="Enter product code"
+              autoComplete="off"
+            />
+            {editProductFormErrors.productCode ? (
+              <small className="field-error">{editProductFormErrors.productCode}</small>
+            ) : null}
+          </label>
+
+          <label className="field-group">
+            <span>Selling Price</span>
+            <input
+              type="number"
+              name="sellingPrice"
+              value={editProductForm.sellingPrice}
+              onChange={handleEditProductInputChange}
+              min="0.01"
+              step="0.01"
+              autoComplete="off"
+            />
+            {editProductFormErrors.sellingPrice ? (
+              <small className="field-error">{editProductFormErrors.sellingPrice}</small>
+            ) : null}
+          </label>
+
+          <label className="field-group">
+            <span>Unit</span>
+            <select
+              name="unit"
+              value={editProductForm.unit}
+              onChange={handleEditProductInputChange}
+              autoComplete="off"
+            >
+              <option value="Piece">Piece</option>
+              <option value="Bottle">Bottle</option>
+              <option value="Pack">Pack</option>
+            </select>
+            {editProductFormErrors.unit ? (
+              <small className="field-error">{editProductFormErrors.unit}</small>
+            ) : null}
+          </label>
+
+          <label className="field-group">
+            <span>Status</span>
+            <select
+              name="status"
+              value={editProductForm.status}
+              onChange={handleEditProductInputChange}
+              autoComplete="off"
+            >
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+            {editProductFormErrors.status ? (
+              <small className="field-error">{editProductFormErrors.status}</small>
+            ) : null}
+          </label>
+
+          {editProductRequestError ? (
+            <div className="form-message form-message--error">{editProductRequestError}</div>
+          ) : null}
+        </form>
+      </ModalDialog>
+
+      <ModalDialog
+        isOpen={Boolean(productPendingStatusChange)}
+        title={productPendingStatusChange?.nextStatus === "Inactive" ? "Mark Product Inactive" : "Activate Product"}
+        onClose={() => setProductPendingStatusChange(null)}
+        footer={(
+          <>
+            <button type="button" className="secondary-button" onClick={() => setProductPendingStatusChange(null)}>
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="primary-button"
+              onClick={handleProductStatusChange}
+              disabled={isUpdatingProductStatus}
+            >
+              {isUpdatingProductStatus ? "Saving..." : "Confirm"}
+            </button>
+          </>
+        )}
+        width="620px"
+      >
+        {productPendingStatusChange ? (
+          <div className="dialog-note">
+            <span>
+              This action will change <strong>{productPendingStatusChange.productName}</strong> to{" "}
+              <strong>{productPendingStatusChange.nextStatus}</strong>. The product will remain visible in the
+              Products list and can be managed again later.
+            </span>
           </div>
         ) : null}
       </ModalDialog>

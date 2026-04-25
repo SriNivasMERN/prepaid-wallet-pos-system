@@ -1,7 +1,7 @@
 /**
  * Module: Product Validation
  * File: product.validation.js
- * Purpose: Validates product creation payloads and product list filters.
+ * Purpose: Validates product creation and update payloads for the Products module.
  */
 
 const { RECORD_STATUS } = require("../../constants/appConstants");
@@ -30,7 +30,7 @@ const normalizeProductValues = (payload = {}) => ({
 /**
  * Validates create-product payload values.
  */
-const validateCreateProductPayload = (payload = {}) => {
+const validateProductPayload = (payload = {}) => {
   const errors = [];
   const values = normalizeProductValues(payload);
   const status = values.status || RECORD_STATUS.ACTIVE;
@@ -80,5 +80,6 @@ const validateCreateProductPayload = (payload = {}) => {
 };
 
 module.exports = {
-  validateCreateProductPayload
+  validateCreateProductPayload: validateProductPayload,
+  validateUpdateProductPayload: validateProductPayload
 };

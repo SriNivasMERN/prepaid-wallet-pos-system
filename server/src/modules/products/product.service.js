@@ -1,11 +1,17 @@
 /**
  * Module: Product Service
  * File: product.service.js
- * Purpose: Handles product creation and product listing for the Products module.
+ * Purpose: Handles product creation, update, status change, and listing for the Products module.
  */
 
+const mongoose = require("mongoose");
+
+const { RECORD_STATUS } = require("../../constants/appConstants");
 const { Product } = require("./product.model");
-const { validateCreateProductPayload } = require("./product.validation");
+const {
+  validateCreateProductPayload,
+  validateUpdateProductPayload
+} = require("./product.validation");
 
 /**
  * Creates a standard validation error.
@@ -30,6 +36,30 @@ const createConflictError = (field, message, topMessage) => {
     }
   ];
   return error;
+};
+
+/**
+ * Creates a standard not-found error.
+ */
+const createNotFoundError = (field, message, topMessage) => {
+  const error = new Error(topMessage);
+  error.statusCode = 404;
+  error.errors = [
+    {
+      field,
+      message
+    }
+  ];
+  return error;
+};
+
+/**
+ * Validates MongoDB ids used by product APIs.
+ */
+const ensureValidObjectId = (value, fieldName, topMessage) => {
+  if (!mongoose.Types.ObjectId.isValid(value)) {
+    throw createNotFoundError(fieldName, `${fieldName} record was not found.`, topMessage);
+  }
 };
 
 /**
@@ -61,6 +91,38 @@ const toProductResponse = (product) => ({
       }
     : null
 });
+
+/**
+ * Loads one product with related staff details.
+ */
+const getProductDocumentById = async (productId) => {
+  ensureValidObjectId(productId, "productId", "Product was not found.");
+
+  const product = await Product.findOne({
+    _id: productId,
+    isDeleted: false
+  })
+    .populate("createdBy", "fullName username role")
+    .populate("updatedBy", "fullName username role");
+
+  if (!product) {
+    throw createNotFoundError("productId", "Product record was not found.", "Product was not found.");
+  }
+
+  return product;
+};
+
+/**
+ * Loads one product document with staff details.
+ */
+const hydrateProductById = async (productId) => {
+  return Product.findOne({
+    _id: productId,
+    isDeleted: false
+  })
+    .populate("createdBy", "fullName username role")
+    .populate("updatedBy", "fullName username role");
+};
 
 /**
  * Creates a new product master record.
@@ -111,6 +173,86 @@ const createProduct = async (payload, currentAuth) => {
 };
 
 /**
+ * Updates one product master record.
+ */
+const updateProduct = async (productId, payload, currentAuth) => {
+  const { errors, values } = validateUpdateProductPayload(payload);
+
+  if (errors.length > 0) {
+    throw createValidationError(errors, "Product validation failed.");
+  }
+
+  const product = await getProductDocumentById(productId);
+
+  if (values.productCode !== product.productCode) {
+    const existingProduct = await Product.exists({
+      _id: { $ne: product._id },
+      productCode: values.productCode,
+      isDeleted: false
+    });
+
+    if (existingProduct) {
+      throw createConflictError(
+        "productCode",
+        "Choose a different product code.",
+        "Product code is already in use."
+      );
+    }
+  }
+
+  product.productName = values.productName;
+  product.productCode = values.productCode;
+  product.sellingPrice = values.sellingPrice;
+  product.unit = values.unit;
+  product.status = values.status;
+  product.updatedBy = currentAuth.staffId;
+  try {
+    await product.save();
+  } catch (error) {
+    if (error?.code === 11000 && error.keyPattern?.productCode) {
+      throw createConflictError(
+        "productCode",
+        "Choose a different product code.",
+        "Product code is already in use."
+      );
+    }
+
+    throw error;
+  }
+
+  const hydratedProduct = await hydrateProductById(product._id);
+
+  return toProductResponse(hydratedProduct);
+};
+
+/**
+ * Updates the product status only.
+ */
+const updateProductStatus = async (productId, status, currentAuth) => {
+  if (!Object.values(RECORD_STATUS).includes(status)) {
+    throw createValidationError(
+      [
+        {
+          field: "status",
+          message: "Status is not valid."
+        }
+      ],
+      "Product validation failed."
+    );
+  }
+
+  const product = await getProductDocumentById(productId);
+
+  product.status = status;
+  product.updatedBy = currentAuth.staffId;
+  await product.save();
+
+  const hydratedProduct = await hydrateProductById(product._id);
+
+  return toProductResponse(hydratedProduct);
+};
+
+/**
  * Returns the product list with optional search, unit, and status filters.
  */
 const getProductList = async (query = {}) => {
@@ -148,5 +290,7 @@ const getProductList = async (query = {}) => {
 
 module.exports = {
   createProduct,
-  getProductList
+  getProductList,
+  updateProduct,
+  updateProductStatus
 };
