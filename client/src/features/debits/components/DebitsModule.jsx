@@ -6,6 +6,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import IconButton from "../../../components/common/IconButton";
+import ModalDialog from "../../../components/common/ModalDialog";
 import SectionCard from "../../../components/common/SectionCard";
 import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
 import { fetchStaffList } from "../../staff/api/staffApi";
@@ -97,6 +99,7 @@ function DebitsModule({ authToken, onMetricsChange }) {
   const [debitFilterForm, setDebitFilterForm] = useState(debitInitialFilters);
   const [appliedDebitFilters, setAppliedDebitFilters] = useState(debitInitialFilters);
   const [debitReloadToken, setDebitReloadToken] = useState(0);
+  const [selectedDebitRecord, setSelectedDebitRecord] = useState(null);
 
   useEffect(() => {
     const loadFormOptions = async () => {
@@ -440,18 +443,17 @@ function DebitsModule({ authToken, onMetricsChange }) {
       <SectionCard
         title="Debits List"
         actions={
-          <button
-            type="button"
-            className="secondary-button"
+          <IconButton
+            icon="refresh"
+            label="Refresh debits"
+            text="Refresh"
             onClick={() => setDebitReloadToken((currentValue) => currentValue + 1)}
-          >
-            Refresh
-          </button>
+          />
         }
       >
         {isLoadingDebits ? <div className="feedback-actions">Loading debits...</div> : null}
         <div className="table-wrapper">
-          <table className="data-table">
+          <table className="data-table data-table--dense">
             <thead>
               <tr>
                 <th>Member</th>
@@ -461,12 +463,13 @@ function DebitsModule({ authToken, onMetricsChange }) {
                 <th>Cashier</th>
                 <th>Balance After</th>
                 <th>Created At</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {debitRecords.length === 0 && !isLoadingDebits ? (
                 <tr>
-                  <td colSpan="7">No debit records found.</td>
+                  <td colSpan="8">No debit records found.</td>
                 </tr>
               ) : (
                 debitRecords.map((debit) => (
@@ -478,6 +481,16 @@ function DebitsModule({ authToken, onMetricsChange }) {
                     <td>{debit.createdBy?.fullName || "System"}</td>
                     <td>{formatCurrency(debit.balanceAfter)}</td>
                     <td>{formatDateTime(debit.createdAt)}</td>
+                    <td>
+                      <div className="table-row-actions">
+                        <IconButton
+                          icon="view"
+                          label={`View debit for ${debit.member?.fullName || "member"}`}
+                          title="View details"
+                          onClick={() => setSelectedDebitRecord(debit)}
+                        />
+                      </div>
+                    </td>
                   </tr>
                 ))
               )}
@@ -485,6 +498,51 @@ function DebitsModule({ authToken, onMetricsChange }) {
           </table>
         </div>
       </SectionCard>
+
+      <ModalDialog
+        isOpen={Boolean(selectedDebitRecord)}
+        title="Debit Details"
+        onClose={() => setSelectedDebitRecord(null)}
+        footer={(
+          <button type="button" className="secondary-button" onClick={() => setSelectedDebitRecord(null)}>
+            Close
+          </button>
+        )}
+        width="680px"
+      >
+        {selectedDebitRecord ? (
+          <div className="details-grid">
+            <div className="details-grid__item">
+              <span>Member</span>
+              <strong>{selectedDebitRecord.member?.fullName || "-"}</strong>
+            </div>
+            <div className="details-grid__item">
+              <span>Card</span>
+              <strong>{selectedDebitRecord.card?.cardNumber || "-"}</strong>
+            </div>
+            <div className="details-grid__item">
+              <span>Amount</span>
+              <strong>{formatCurrency(selectedDebitRecord.amount)}</strong>
+            </div>
+            <div className="details-grid__item">
+              <span>Reason</span>
+              <strong>{selectedDebitRecord.reason}</strong>
+            </div>
+            <div className="details-grid__item">
+              <span>Balance Before</span>
+              <strong>{formatCurrency(selectedDebitRecord.balanceBefore)}</strong>
+            </div>
+            <div className="details-grid__item">
+              <span>Balance After</span>
+              <strong>{formatCurrency(selectedDebitRecord.balanceAfter)}</strong>
+            </div>
+            <div className="details-grid__item details-grid__item--wide">
+              <span>Notes</span>
+              <strong>{selectedDebitRecord.notes || "-"}</strong>
+            </div>
+          </div>
+        ) : null}
+      </ModalDialog>
     </>
   );
 }

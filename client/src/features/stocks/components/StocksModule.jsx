@@ -6,7 +6,10 @@
 
 import { useEffect, useState } from "react";
 
+import IconButton from "../../../components/common/IconButton";
+import ModalDialog from "../../../components/common/ModalDialog";
 import SectionCard from "../../../components/common/SectionCard";
+import StatusChip from "../../../components/common/StatusChip";
 import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
 import {
   createStockMovementRecord,
@@ -107,6 +110,7 @@ function StocksModule({ authToken, onMetricsChange }) {
   const [stockFilterForm, setStockFilterForm] = useState(stockInitialFilters);
   const [appliedStockFilters, setAppliedStockFilters] = useState(stockInitialFilters);
   const [stockReloadToken, setStockReloadToken] = useState(0);
+  const [selectedStockRecord, setSelectedStockRecord] = useState(null);
 
   useEffect(() => {
     const loadProductOptions = async () => {
@@ -163,7 +167,7 @@ function StocksModule({ authToken, onMetricsChange }) {
     loadStocks();
   }, [authToken, appliedStockFilters, stockReloadToken, onMetricsChange]);
 
-  const selectedStockRecord = stockRecords.find(
+  const selectedStockProductRecord = stockRecords.find(
     (stock) => stock.product?.id === stockForm.productId
   );
 
@@ -277,7 +281,7 @@ function StocksModule({ authToken, onMetricsChange }) {
             <span>Current Qty</span>
             <input
               type="number"
-              value={selectedStockRecord?.currentQuantity ?? 0}
+              value={selectedStockProductRecord?.currentQuantity ?? 0}
               readOnly
             />
           </label>
@@ -397,18 +401,17 @@ function StocksModule({ authToken, onMetricsChange }) {
       <SectionCard
         title="Stock List"
         actions={
-          <button
-            type="button"
-            className="secondary-button"
+          <IconButton
+            icon="refresh"
+            label="Refresh stock"
+            text="Refresh"
             onClick={() => setStockReloadToken((currentValue) => currentValue + 1)}
-          >
-            Refresh
-          </button>
+          />
         }
       >
         {isLoadingStocks ? <div className="feedback-actions">Loading stock...</div> : null}
         <div className="table-wrapper">
-          <table className="data-table">
+          <table className="data-table data-table--dense">
             <thead>
               <tr>
                 <th>Product</th>
@@ -418,12 +421,13 @@ function StocksModule({ authToken, onMetricsChange }) {
                 <th>Movement Type</th>
                 <th>Stock Status</th>
                 <th>Updated At</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {stockRecords.length === 0 && !isLoadingStocks ? (
                 <tr>
-                  <td colSpan="7">No stock records found.</td>
+                  <td colSpan="8">No stock records found.</td>
                 </tr>
               ) : (
                 stockRecords.map((stock) => (
@@ -434,9 +438,19 @@ function StocksModule({ authToken, onMetricsChange }) {
                     <td>{formatQuantityChange(stock.lastChange)}</td>
                     <td>{stock.movementType || "-"}</td>
                     <td>
-                      <span className="status-badge">{stock.stockStatus}</span>
+                      <StatusChip value={stock.stockStatus} />
                     </td>
                     <td>{formatDateTime(stock.lastMovementAt || stock.updatedAt)}</td>
+                    <td>
+                      <div className="table-row-actions">
+                        <IconButton
+                          icon="view"
+                          label={`View stock of ${stock.product?.productName || "product"}`}
+                          title="View details"
+                          onClick={() => setSelectedStockRecord(stock)}
+                        />
+                      </div>
+                    </td>
                   </tr>
                 ))
               )}
@@ -444,6 +458,51 @@ function StocksModule({ authToken, onMetricsChange }) {
           </table>
         </div>
       </SectionCard>
+
+      <ModalDialog
+        isOpen={Boolean(selectedStockRecord)}
+        title="Stock Details"
+        onClose={() => setSelectedStockRecord(null)}
+        footer={(
+          <button type="button" className="secondary-button" onClick={() => setSelectedStockRecord(null)}>
+            Close
+          </button>
+        )}
+        width="700px"
+      >
+        {selectedStockRecord ? (
+          <div className="details-grid">
+            <div className="details-grid__item">
+              <span>Product</span>
+              <strong>{selectedStockRecord.product?.productName || "-"}</strong>
+            </div>
+            <div className="details-grid__item">
+              <span>Code</span>
+              <strong>{selectedStockRecord.product?.productCode || "-"}</strong>
+            </div>
+            <div className="details-grid__item">
+              <span>Current Qty</span>
+              <strong>{formatQuantity(selectedStockRecord.currentQuantity)}</strong>
+            </div>
+            <div className="details-grid__item">
+              <span>Last Change</span>
+              <strong>{formatQuantityChange(selectedStockRecord.lastChange)}</strong>
+            </div>
+            <div className="details-grid__item">
+              <span>Movement Type</span>
+              <strong>{selectedStockRecord.movementType || "-"}</strong>
+            </div>
+            <div className="details-grid__item">
+              <span>Stock Status</span>
+              <strong><StatusChip value={selectedStockRecord.stockStatus} /></strong>
+            </div>
+            <div className="details-grid__item details-grid__item--wide">
+              <span>Notes</span>
+              <strong>{selectedStockRecord.notes || "-"}</strong>
+            </div>
+          </div>
+        ) : null}
+      </ModalDialog>
     </>
   );
 }

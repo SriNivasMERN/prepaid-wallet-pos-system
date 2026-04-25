@@ -6,7 +6,10 @@
 
 import { useEffect, useState } from "react";
 
+import IconButton from "../../../components/common/IconButton";
+import ModalDialog from "../../../components/common/ModalDialog";
 import SectionCard from "../../../components/common/SectionCard";
+import StatusChip from "../../../components/common/StatusChip";
 import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
 import {
   createBillRecord,
@@ -105,6 +108,7 @@ function BillingModule({ authToken, onMetricsChange }) {
   const [billFilterForm, setBillFilterForm] = useState(billingInitialFilters);
   const [appliedBillFilters, setAppliedBillFilters] = useState(billingInitialFilters);
   const [billReloadToken, setBillReloadToken] = useState(0);
+  const [selectedBillRecord, setSelectedBillRecord] = useState(null);
 
   useEffect(() => {
     const loadProductOptions = async () => {
@@ -535,18 +539,17 @@ function BillingModule({ authToken, onMetricsChange }) {
       <SectionCard
         title="Bills List"
         actions={
-          <button
-            type="button"
-            className="secondary-button"
+          <IconButton
+            icon="refresh"
+            label="Refresh bills"
+            text="Refresh"
             onClick={() => setBillReloadToken((currentValue) => currentValue + 1)}
-          >
-            Refresh
-          </button>
+          />
         }
       >
         {isLoadingBills ? <div className="feedback-actions">Loading bills...</div> : null}
         <div className="table-wrapper">
-          <table className="data-table">
+          <table className="data-table data-table--dense">
             <thead>
               <tr>
                 <th>Bill Number</th>
@@ -556,12 +559,13 @@ function BillingModule({ authToken, onMetricsChange }) {
                 <th>Items</th>
                 <th>Status</th>
                 <th>Created At</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {billRecords.length === 0 && !isLoadingBills ? (
                 <tr>
-                  <td colSpan="7">No bill records found.</td>
+                  <td colSpan="8">No bill records found.</td>
                 </tr>
               ) : (
                 billRecords.map((bill) => (
@@ -572,9 +576,19 @@ function BillingModule({ authToken, onMetricsChange }) {
                     <td>{formatCurrency(bill.totalAmount)}</td>
                     <td>{bill.itemCount}</td>
                     <td>
-                      <span className="status-badge">{bill.status}</span>
+                      <StatusChip value={bill.status} />
                     </td>
                     <td>{formatDateTime(bill.createdAt)}</td>
+                    <td>
+                      <div className="table-row-actions">
+                        <IconButton
+                          icon="view"
+                          label={`View ${bill.billNumber}`}
+                          title="View details"
+                          onClick={() => setSelectedBillRecord(bill)}
+                        />
+                      </div>
+                    </td>
                   </tr>
                 ))
               )}
@@ -582,6 +596,75 @@ function BillingModule({ authToken, onMetricsChange }) {
           </table>
         </div>
       </SectionCard>
+
+      <ModalDialog
+        isOpen={Boolean(selectedBillRecord)}
+        title="Bill Details"
+        onClose={() => setSelectedBillRecord(null)}
+        footer={(
+          <button type="button" className="secondary-button" onClick={() => setSelectedBillRecord(null)}>
+            Close
+          </button>
+        )}
+        width="760px"
+      >
+        {selectedBillRecord ? (
+          <>
+            <div className="details-grid">
+              <div className="details-grid__item">
+                <span>Bill Number</span>
+                <strong>{selectedBillRecord.billNumber}</strong>
+              </div>
+              <div className="details-grid__item">
+                <span>Status</span>
+                <strong><StatusChip value={selectedBillRecord.status} /></strong>
+              </div>
+              <div className="details-grid__item">
+                <span>Member</span>
+                <strong>{selectedBillRecord.member?.fullName || "-"}</strong>
+              </div>
+              <div className="details-grid__item">
+                <span>Card</span>
+                <strong>{selectedBillRecord.card?.cardNumber || "-"}</strong>
+              </div>
+              <div className="details-grid__item">
+                <span>Balance Before</span>
+                <strong>{formatCurrency(selectedBillRecord.balanceBefore)}</strong>
+              </div>
+              <div className="details-grid__item">
+                <span>Balance After</span>
+                <strong>{formatCurrency(selectedBillRecord.balanceAfter)}</strong>
+              </div>
+            </div>
+            <div className="table-wrapper">
+              <table className="data-table data-table--dense">
+                <thead>
+                  <tr>
+                    <th>Product</th>
+                    <th>Code</th>
+                    <th>Unit</th>
+                    <th>Qty</th>
+                    <th>Unit Price</th>
+                    <th>Line Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(selectedBillRecord.items || []).map((item, index) => (
+                    <tr key={`${item.productId || item.productCode}-${index}`}>
+                      <td>{item.productName}</td>
+                      <td>{item.productCode}</td>
+                      <td>{item.unit}</td>
+                      <td>{item.quantity}</td>
+                      <td>{formatCurrency(item.unitPrice)}</td>
+                      <td>{formatCurrency(item.lineTotal)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        ) : null}
+      </ModalDialog>
     </>
   );
 }

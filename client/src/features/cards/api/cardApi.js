@@ -1,7 +1,7 @@
 /**
  * Module: Cards API
  * File: cardApi.js
- * Purpose: Handles Cards module requests for listing and assigning cards.
+ * Purpose: Handles Cards module requests for listing, assigning, and replacing cards.
  */
 
 import { httpRequest } from "../../../api/http";
@@ -40,6 +40,19 @@ export function fetchCardList(token, filters = {}) {
 export function assignCardToMember(payload, token) {
   return httpRequest("/cards", {
     method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`
+    },
+    body: payload
+  });
+}
+
+/**
+ * Replaces one active card while preserving member ownership.
+ */
+export function replaceCardRecord(cardId, payload, token) {
+  return httpRequest(`/cards/${cardId}/replace`, {
+    method: "PATCH",
     headers: {
       Authorization: `Bearer ${token}`
     },

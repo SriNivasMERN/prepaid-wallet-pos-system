@@ -6,10 +6,17 @@
 
 import { useEffect, useState } from "react";
 
+import IconButton from "../../../components/common/IconButton";
+import ModalDialog from "../../../components/common/ModalDialog";
 import SectionCard from "../../../components/common/SectionCard";
+import StatusChip from "../../../components/common/StatusChip";
 import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
 import { fetchMemberList } from "../../members/api/memberApi";
-import { assignCardToMember, fetchCardList } from "../api/cardApi";
+import {
+  assignCardToMember,
+  fetchCardList,
+  replaceCardRecord
+} from "../api/cardApi";
 
 const cardInitialForm = {
   cardNumber: "",
@@ -22,6 +29,12 @@ const cardInitialFilters = {
   search: "",
   status: "",
   memberId: ""
+};
+
+const cardReplaceInitialForm = {
+  cardNumber: "",
+  activatedAt: "",
+  expiresAt: ""
 };
 
 function validateCardForm(formData) {
@@ -98,6 +111,12 @@ function CardsModule({ authToken, onMetricsChange }) {
   const [cardFilterForm, setCardFilterForm] = useState(cardInitialFilters);
   const [appliedCardFilters, setAppliedCardFilters] = useState(cardInitialFilters);
   const [cardReloadToken, setCardReloadToken] = useState(0);
+  const [selectedCardRecord, setSelectedCardRecord] = useState(null);
+  const [replacingCard, setReplacingCard] = useState(null);
+  const [replaceCardForm, setReplaceCardForm] = useState(cardReplaceInitialForm);
+  const [replaceCardFormErrors, setReplaceCardFormErrors] = useState({});
+  const [replaceCardRequestError, setReplaceCardRequestError] = useState("");
+  const [isReplacingCard, setIsReplacingCard] = useState(false);
 
   useEffect(() => {
     const loadMembers = async () => {
@@ -177,6 +196,13 @@ function CardsModule({ authToken, onMetricsChange }) {
     setCardSuccessMessage("");
   };
 
+  const closeReplaceCardModal = () => {
+    setReplacingCard(null);
+    setReplaceCardForm(cardReplaceInitialForm);
+    setReplaceCardFormErrors({});
+    setReplaceCardRequestError("");
+  };
+
   const handleCardInputChange = (event) => {
     const { name, value } = event.target;
 
@@ -199,6 +225,20 @@ function CardsModule({ authToken, onMetricsChange }) {
       ...currentState,
       [name]: value
     }));
+  };
+
+  const handleReplaceCardInputChange = (event) => {
+    const { name, value } = event.target;
+
+    setReplaceCardForm((currentState) => ({
+      ...currentState,
+      [name]: value
+    }));
+    setReplaceCardFormErrors((currentErrors) => ({
+      ...currentErrors,
+      [name]: ""
+    }));
+    setReplaceCardRequestError("");
   };
 
   const handleCardSubmit = async (event) => {
@@ -232,6 +272,56 @@ function CardsModule({ authToken, onMetricsChange }) {
       setCardRequestError(getApiErrorMessage(error));
     } finally {
       setIsCreatingCard(false);
+    }
+  };
+
+  const openReplaceCardModal = (card) => {
+    setReplacingCard(card);
+    setReplaceCardForm({
+      cardNumber: "",
+      activatedAt: card.activatedAt ? new Date(card.activatedAt).toISOString().slice(0, 10) : "",
+      expiresAt: card.expiresAt ? new Date(card.expiresAt).toISOString().slice(0, 10) : ""
+    });
+    setReplaceCardFormErrors({});
+    setReplaceCardRequestError("");
+  };
+
+  const handleReplaceCardSubmit = async (event) => {
+    event.preventDefault();
+
+    const validationErrors = validateCardForm({
+      ...replaceCardForm,
+      memberId: replacingCard?.member?.id || "linked-member"
+    });
+
+    delete validationErrors.memberId;
+
+    if (Object.keys(validationErrors).length > 0) {
+      setReplaceCardFormErrors(validationErrors);
+      return;
+    }
+
+    setIsReplacingCard(true);
+    setReplaceCardRequestError("");
+
+    try {
+      await replaceCardRecord(
+        replacingCard.id,
+        {
+          cardNumber: replaceCardForm.cardNumber.trim(),
+          activatedAt: replaceCardForm.activatedAt,
+          expiresAt: replaceCardForm.expiresAt
+        },
+        authToken
+      );
+
+      closeReplaceCardModal();
+      setCardSuccessMessage("Card replaced successfully.");
+      setCardReloadToken((currentValue) => currentValue + 1);
+    } catch (error) {
+      setReplaceCardRequestError(getApiErrorMessage(error));
+    } finally {
+      setIsReplacingCard(false);
     }
   };
 
@@ -393,18 +483,17 @@ function CardsModule({ authToken, onMetricsChange }) {
       <SectionCard
         title="Cards List"
         actions={
-          <button
-            type="button"
-            className="secondary-button"
+          <IconButton
+            icon="refresh"
+            label="Refresh cards"
+            text="Refresh"
             onClick={() => setCardReloadToken((currentValue) => currentValue + 1)}
-          >
-            Refresh
-          </button>
+          />
         }
       >
         {isLoadingCards ? <div className="feedback-actions">Loading cards...</div> : null}
         <div className="table-wrapper">
-          <table className="data-table">
+          <table className="data-table data-table--dense">
             <thead>
               <tr>
                 <th>Card Number</th>
@@ -413,12 +502,13 @@ function CardsModule({ authToken, onMetricsChange }) {
                 <th>Status</th>
                 <th>Activated At</th>
                 <th>Expires At</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {cardRecords.length === 0 && !isLoadingCards ? (
                 <tr>
-                  <td colSpan="6">No card records found.</td>
+                  <td colSpan="7">No card records found.</td>
                 </tr>
               ) : (
                 cardRecords.map((card) => (
@@ -427,10 +517,27 @@ function CardsModule({ authToken, onMetricsChange }) {
                     <td>{card.member?.fullName || "-"}</td>
                     <td>{card.member?.mobileNumber || "-"}</td>
                     <td>
-                      <span className="status-badge">{card.status}</span>
+                      <StatusChip value={card.status} />
                     </td>
                     <td>{formatDate(card.activatedAt)}</td>
                     <td>{formatDate(card.expiresAt)}</td>
+                    <td>
+                      <div className="table-row-actions">
+                        <IconButton
+                          icon="view"
+                          label={`View ${card.cardNumber}`}
+                          title="View details"
+                          onClick={() => setSelectedCardRecord(card)}
+                        />
+                        <IconButton
+                          icon="edit"
+                          label={`Replace ${card.cardNumber}`}
+                          title="Replace card"
+                          onClick={() => openReplaceCardModal(card)}
+                          disabled={card.status !== "Active"}
+                        />
+                      </div>
+                    </td>
                   </tr>
                 ))
               )}
@@ -438,6 +545,133 @@ function CardsModule({ authToken, onMetricsChange }) {
           </table>
         </div>
       </SectionCard>
+
+      <ModalDialog
+        isOpen={Boolean(selectedCardRecord)}
+        title="Card Details"
+        onClose={() => setSelectedCardRecord(null)}
+        footer={(
+          <button type="button" className="secondary-button" onClick={() => setSelectedCardRecord(null)}>
+            Close
+          </button>
+        )}
+        width="620px"
+      >
+        {selectedCardRecord ? (
+          <div className="details-grid">
+            <div className="details-grid__item">
+              <span>Card Number</span>
+              <strong>{selectedCardRecord.cardNumber}</strong>
+            </div>
+            <div className="details-grid__item">
+              <span>Status</span>
+              <strong><StatusChip value={selectedCardRecord.status} /></strong>
+            </div>
+            <div className="details-grid__item">
+              <span>Member</span>
+              <strong>{selectedCardRecord.member?.fullName || "-"}</strong>
+            </div>
+            <div className="details-grid__item">
+              <span>Mobile Number</span>
+              <strong>{selectedCardRecord.member?.mobileNumber || "-"}</strong>
+            </div>
+            <div className="details-grid__item">
+              <span>Activated At</span>
+              <strong>{formatDate(selectedCardRecord.activatedAt)}</strong>
+            </div>
+            <div className="details-grid__item">
+              <span>Expires At</span>
+              <strong>{formatDate(selectedCardRecord.expiresAt)}</strong>
+            </div>
+            <div className="details-grid__item details-grid__item--wide">
+              <span>Operational Note</span>
+              <strong>{selectedCardRecord.operationalProfile?.blockingReason || "Card is operationally ready."}</strong>
+            </div>
+          </div>
+        ) : null}
+      </ModalDialog>
+
+      <ModalDialog
+        isOpen={Boolean(replacingCard)}
+        title="Replace Card"
+        onClose={closeReplaceCardModal}
+        footer={(
+          <>
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={closeReplaceCardModal}
+              disabled={isReplacingCard}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              form="replace-card-form"
+              className="primary-button"
+              disabled={isReplacingCard}
+            >
+              {isReplacingCard ? "Saving..." : "Replace Card"}
+            </button>
+          </>
+        )}
+        width="620px"
+      >
+        {replacingCard ? (
+          <form id="replace-card-form" className="form-grid" onSubmit={handleReplaceCardSubmit} autoComplete="off">
+            <label className="field-group">
+              <span>Current Card</span>
+              <input type="text" value={replacingCard.cardNumber} readOnly />
+            </label>
+            <label className="field-group">
+              <span>Member</span>
+              <input type="text" value={replacingCard.member?.fullName || ""} readOnly />
+            </label>
+            <label className="field-group">
+              <span>New Card Number</span>
+              <input
+                type="text"
+                name="cardNumber"
+                value={replaceCardForm.cardNumber}
+                onChange={handleReplaceCardInputChange}
+                autoComplete="off"
+              />
+              {replaceCardFormErrors.cardNumber ? (
+                <small className="field-error">{replaceCardFormErrors.cardNumber}</small>
+              ) : null}
+            </label>
+            <label className="field-group">
+              <span>Activated At</span>
+              <input
+                type="date"
+                name="activatedAt"
+                value={replaceCardForm.activatedAt}
+                onChange={handleReplaceCardInputChange}
+                autoComplete="off"
+              />
+              {replaceCardFormErrors.activatedAt ? (
+                <small className="field-error">{replaceCardFormErrors.activatedAt}</small>
+              ) : null}
+            </label>
+            <label className="field-group">
+              <span>Expires At</span>
+              <input
+                type="date"
+                name="expiresAt"
+                value={replaceCardForm.expiresAt}
+                onChange={handleReplaceCardInputChange}
+                autoComplete="off"
+              />
+              {replaceCardFormErrors.expiresAt ? (
+                <small className="field-error">{replaceCardFormErrors.expiresAt}</small>
+              ) : null}
+            </label>
+            {replaceCardRequestError ? (
+              <div className="form-message form-message--error">{replaceCardRequestError}</div>
+            ) : null}
+          </form>
+        ) : null}
+      </ModalDialog>
     </>
   );
 }

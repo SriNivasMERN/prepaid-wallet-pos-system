@@ -6,6 +6,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import IconButton from "../../../components/common/IconButton";
+import ModalDialog from "../../../components/common/ModalDialog";
 import SectionCard from "../../../components/common/SectionCard";
 import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
 import { fetchStaffList } from "../../staff/api/staffApi";
@@ -95,6 +97,7 @@ function RechargesModule({ authToken, onMetricsChange }) {
   const [rechargeFilterForm, setRechargeFilterForm] = useState(rechargeInitialFilters);
   const [appliedRechargeFilters, setAppliedRechargeFilters] = useState(rechargeInitialFilters);
   const [rechargeReloadToken, setRechargeReloadToken] = useState(0);
+  const [selectedRechargeRecord, setSelectedRechargeRecord] = useState(null);
 
   useEffect(() => {
     const loadFormOptions = async () => {
@@ -442,18 +445,17 @@ function RechargesModule({ authToken, onMetricsChange }) {
       <SectionCard
         title="Recharges List"
         actions={
-          <button
-            type="button"
-            className="secondary-button"
+          <IconButton
+            icon="refresh"
+            label="Refresh recharges"
+            text="Refresh"
             onClick={() => setRechargeReloadToken((currentValue) => currentValue + 1)}
-          >
-            Refresh
-          </button>
+          />
         }
       >
         {isLoadingRecharges ? <div className="feedback-actions">Loading recharges...</div> : null}
         <div className="table-wrapper">
-          <table className="data-table">
+          <table className="data-table data-table--dense">
             <thead>
               <tr>
                 <th>Member</th>
@@ -463,12 +465,13 @@ function RechargesModule({ authToken, onMetricsChange }) {
                 <th>Cashier</th>
                 <th>Balance After</th>
                 <th>Created At</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {rechargeRecords.length === 0 && !isLoadingRecharges ? (
                 <tr>
-                  <td colSpan="7">No recharge records found.</td>
+                  <td colSpan="8">No recharge records found.</td>
                 </tr>
               ) : (
                 rechargeRecords.map((recharge) => (
@@ -480,6 +483,16 @@ function RechargesModule({ authToken, onMetricsChange }) {
                     <td>{recharge.createdBy?.fullName || "System"}</td>
                     <td>{formatCurrency(recharge.balanceAfter)}</td>
                     <td>{formatDateTime(recharge.createdAt)}</td>
+                    <td>
+                      <div className="table-row-actions">
+                        <IconButton
+                          icon="view"
+                          label={`View recharge for ${recharge.member?.fullName || "member"}`}
+                          title="View details"
+                          onClick={() => setSelectedRechargeRecord(recharge)}
+                        />
+                      </div>
+                    </td>
                   </tr>
                 ))
               )}
@@ -487,6 +500,51 @@ function RechargesModule({ authToken, onMetricsChange }) {
           </table>
         </div>
       </SectionCard>
+
+      <ModalDialog
+        isOpen={Boolean(selectedRechargeRecord)}
+        title="Recharge Details"
+        onClose={() => setSelectedRechargeRecord(null)}
+        footer={(
+          <button type="button" className="secondary-button" onClick={() => setSelectedRechargeRecord(null)}>
+            Close
+          </button>
+        )}
+        width="680px"
+      >
+        {selectedRechargeRecord ? (
+          <div className="details-grid">
+            <div className="details-grid__item">
+              <span>Member</span>
+              <strong>{selectedRechargeRecord.member?.fullName || "-"}</strong>
+            </div>
+            <div className="details-grid__item">
+              <span>Card</span>
+              <strong>{selectedRechargeRecord.card?.cardNumber || "-"}</strong>
+            </div>
+            <div className="details-grid__item">
+              <span>Amount</span>
+              <strong>{formatCurrency(selectedRechargeRecord.amount)}</strong>
+            </div>
+            <div className="details-grid__item">
+              <span>Payment Mode</span>
+              <strong>{selectedRechargeRecord.paymentMode}</strong>
+            </div>
+            <div className="details-grid__item">
+              <span>Balance Before</span>
+              <strong>{formatCurrency(selectedRechargeRecord.balanceBefore)}</strong>
+            </div>
+            <div className="details-grid__item">
+              <span>Balance After</span>
+              <strong>{formatCurrency(selectedRechargeRecord.balanceAfter)}</strong>
+            </div>
+            <div className="details-grid__item details-grid__item--wide">
+              <span>Notes</span>
+              <strong>{selectedRechargeRecord.notes || "-"}</strong>
+            </div>
+          </div>
+        ) : null}
+      </ModalDialog>
     </>
   );
 }
