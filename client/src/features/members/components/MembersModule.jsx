@@ -10,7 +10,11 @@ import IconButton from "../../../components/common/IconButton";
 import ModalDialog from "../../../components/common/ModalDialog";
 import SectionCard from "../../../components/common/SectionCard";
 import StatusChip from "../../../components/common/StatusChip";
-import { createMemberRecord, fetchMemberList } from "../api/memberApi";
+import {
+  createMemberRecord,
+  fetchMemberList,
+  updateMemberRecord
+} from "../api/memberApi";
 import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
 
 const memberInitialForm = {
@@ -59,6 +63,13 @@ function MembersModule({ authToken, onMetricsChange }) {
   const [appliedMemberFilters, setAppliedMemberFilters] = useState(memberInitialFilters);
   const [memberReloadToken, setMemberReloadToken] = useState(0);
   const [selectedMemberRecord, setSelectedMemberRecord] = useState(null);
+  const [editingMember, setEditingMember] = useState(null);
+  const [editMemberForm, setEditMemberForm] = useState(memberInitialForm);
+  const [editMemberFormErrors, setEditMemberFormErrors] = useState({});
+  const [editMemberRequestError, setEditMemberRequestError] = useState("");
+  const [isUpdatingMember, setIsUpdatingMember] = useState(false);
+  const [memberPendingStatusChange, setMemberPendingStatusChange] = useState(null);
+  const [isUpdatingMemberStatus, setIsUpdatingMemberStatus] = useState(false);
 
   useEffect(() => {
     const loadMembers = async () => {
@@ -120,6 +131,20 @@ function MembersModule({ authToken, onMetricsChange }) {
     }));
   };
 
+  const handleEditMemberInputChange = (event) => {
+    const { name, value } = event.target;
+
+    setEditMemberForm((currentState) => ({
+      ...currentState,
+      [name]: value
+    }));
+    setEditMemberFormErrors((currentErrors) => ({
+      ...currentErrors,
+      [name]: ""
+    }));
+    setEditMemberRequestError("");
+  };
+
   const handleMemberSubmit = async (event) => {
     event.preventDefault();
 
@@ -151,6 +176,99 @@ function MembersModule({ authToken, onMetricsChange }) {
       setMemberRequestError(getApiErrorMessage(error));
     } finally {
       setIsCreatingMember(false);
+    }
+  };
+
+  const openEditMemberModal = (member) => {
+    setEditingMember(member);
+    setEditMemberForm({
+      fullName: member.fullName || "",
+      mobileNumber: member.mobileNumber || "",
+      referenceDetails: member.referenceDetails || "",
+      status: member.status || "Active"
+    });
+    setEditMemberFormErrors({});
+    setEditMemberRequestError("");
+  };
+
+  const closeEditMemberModal = () => {
+    setEditingMember(null);
+    setEditMemberForm(memberInitialForm);
+    setEditMemberFormErrors({});
+    setEditMemberRequestError("");
+  };
+
+  const handleEditMemberSubmit = async (event) => {
+    event.preventDefault();
+
+    const validationErrors = validateMemberForm(editMemberForm);
+
+    if (Object.keys(validationErrors).length > 0) {
+      setEditMemberFormErrors(validationErrors);
+      return;
+    }
+
+    setIsUpdatingMember(true);
+    setEditMemberRequestError("");
+
+    try {
+      const response = await updateMemberRecord(
+        editingMember.id,
+        {
+          fullName: editMemberForm.fullName.trim(),
+          mobileNumber: editMemberForm.mobileNumber.trim(),
+          referenceDetails: editMemberForm.referenceDetails.trim(),
+          status: editMemberForm.status
+        },
+        authToken
+      );
+      const updatedMember = response.data;
+
+      setMemberRecords((currentList) =>
+        currentList.map((member) => (member.id === updatedMember.id ? updatedMember : member))
+      );
+      closeEditMemberModal();
+      setMemberSuccessMessage("Member updated successfully.");
+      setMemberReloadToken((currentValue) => currentValue + 1);
+    } catch (error) {
+      setEditMemberRequestError(getApiErrorMessage(error));
+    } finally {
+      setIsUpdatingMember(false);
+    }
+  };
+
+  const handleMemberStatusChange = async () => {
+    if (!memberPendingStatusChange) {
+      return;
+    }
+
+    setIsUpdatingMemberStatus(true);
+    setMemberRequestError("");
+
+    try {
+      const response = await updateMemberRecord(
+        memberPendingStatusChange.id,
+        {
+          status: memberPendingStatusChange.nextStatus
+        },
+        authToken
+      );
+      const updatedMember = response.data;
+
+      setMemberRecords((currentList) =>
+        currentList.map((member) => (member.id === updatedMember.id ? updatedMember : member))
+      );
+      setMemberSuccessMessage(
+        updatedMember.status === "Inactive"
+          ? "Member marked as inactive successfully."
+          : "Member activated successfully."
+      );
+      setMemberPendingStatusChange(null);
+      setMemberReloadToken((currentValue) => currentValue + 1);
+    } catch (error) {
+      setMemberRequestError(getApiErrorMessage(error));
+    } finally {
+      setIsUpdatingMemberStatus(false);
     }
   };
 
@@ -322,8 +440,21 @@ function MembersModule({ authToken, onMetricsChange }) {
                         <IconButton
                           icon="edit"
                           label={`Edit ${member.fullName}`}
-                          title="Edit flow begins on Day 28."
-                          disabled
+                          title="Edit member"
+                          onClick={() => openEditMemberModal(member)}
+                        />
+                        <IconButton
+                          icon={member.status === "Active" ? "close" : "add"}
+                          label={`${member.status === "Active" ? "Mark inactive" : "Activate"} ${member.fullName}`}
+                          title={member.status === "Active" ? "Mark inactive" : "Activate"}
+                          onClick={() =>
+                            setMemberPendingStatusChange({
+                              id: member.id,
+                              memberName: member.fullName,
+                              currentStatus: member.status,
+                              nextStatus: member.status === "Active" ? "Inactive" : "Active"
+                            })
+                          }
                         />
                       </div>
                     </td>
@@ -368,6 +499,119 @@ function MembersModule({ authToken, onMetricsChange }) {
               <span>Created By</span>
               <strong>{selectedMemberRecord.createdBy?.fullName || "System"}</strong>
             </div>
+          </div>
+        ) : null}
+      </ModalDialog>
+
+      <ModalDialog
+        isOpen={Boolean(editingMember)}
+        title="Edit Member"
+        onClose={closeEditMemberModal}
+        footer={(
+          <>
+            <button type="button" className="secondary-button" onClick={closeEditMemberModal}>
+              Cancel
+            </button>
+            <button type="submit" form="edit-member-form" className="primary-button" disabled={isUpdatingMember}>
+              {isUpdatingMember ? "Saving..." : "Save Changes"}
+            </button>
+          </>
+        )}
+        width="720px"
+      >
+        <form id="edit-member-form" className="form-grid" onSubmit={handleEditMemberSubmit} autoComplete="off">
+          <label className="field-group">
+            <span>Full Name</span>
+            <input
+              type="text"
+              name="fullName"
+              value={editMemberForm.fullName}
+              onChange={handleEditMemberInputChange}
+              placeholder="Enter full name"
+              autoComplete="off"
+            />
+            {editMemberFormErrors.fullName ? (
+              <small className="field-error">{editMemberFormErrors.fullName}</small>
+            ) : null}
+          </label>
+
+          <label className="field-group">
+            <span>Mobile Number</span>
+            <input
+              type="text"
+              name="mobileNumber"
+              value={editMemberForm.mobileNumber}
+              onChange={handleEditMemberInputChange}
+              placeholder="Enter mobile number"
+              autoComplete="off"
+            />
+            {editMemberFormErrors.mobileNumber ? (
+              <small className="field-error">{editMemberFormErrors.mobileNumber}</small>
+            ) : null}
+          </label>
+
+          <label className="field-group field-group--wide">
+            <span>Reference Details</span>
+            <textarea
+              rows="3"
+              name="referenceDetails"
+              value={editMemberForm.referenceDetails}
+              onChange={handleEditMemberInputChange}
+              placeholder="Enter reference details"
+              autoComplete="off"
+            />
+          </label>
+
+          <label className="field-group">
+            <span>Status</span>
+            <select
+              name="status"
+              value={editMemberForm.status}
+              onChange={handleEditMemberInputChange}
+              autoComplete="off"
+            >
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+            {editMemberFormErrors.status ? (
+              <small className="field-error">{editMemberFormErrors.status}</small>
+            ) : null}
+          </label>
+
+          {editMemberRequestError ? (
+            <div className="form-message form-message--error">{editMemberRequestError}</div>
+          ) : null}
+        </form>
+      </ModalDialog>
+
+      <ModalDialog
+        isOpen={Boolean(memberPendingStatusChange)}
+        title={memberPendingStatusChange?.nextStatus === "Inactive" ? "Mark Member Inactive" : "Activate Member"}
+        onClose={() => setMemberPendingStatusChange(null)}
+        footer={(
+          <>
+            <button type="button" className="secondary-button" onClick={() => setMemberPendingStatusChange(null)}>
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="primary-button"
+              onClick={handleMemberStatusChange}
+              disabled={isUpdatingMemberStatus}
+            >
+              {isUpdatingMemberStatus ? "Saving..." : "Confirm"}
+            </button>
+          </>
+        )}
+        width="620px"
+      >
+        {memberPendingStatusChange ? (
+          <div className="dialog-note">
+            <span>
+              This action will change <strong>{memberPendingStatusChange.memberName}</strong> to{" "}
+              <strong>{memberPendingStatusChange.nextStatus}</strong>. If an active card is linked, the backend will
+              also protect operational readiness by inactivating that linked card when the member is marked inactive.
+            </span>
           </div>
         ) : null}
       </ModalDialog>

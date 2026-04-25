@@ -1,7 +1,7 @@
 /**
  * Module: Members API
  * File: memberApi.js
- * Purpose: Handles Members module requests for listing and creating member records.
+ * Purpose: Handles Members module requests for listing, creating, and updating member records.
  */
 
 import { httpRequest } from "../../../api/http";
@@ -36,6 +36,19 @@ export function fetchMemberList(token, filters = {}) {
 export function createMemberRecord(payload, token) {
   return httpRequest("/members", {
     method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`
+    },
+    body: payload
+  });
+}
+
+/**
+ * Updates one member record.
+ */
+export function updateMemberRecord(memberId, payload, token) {
+  return httpRequest(`/members/${memberId}`, {
+    method: "PATCH",
     headers: {
       Authorization: `Bearer ${token}`
     },
