@@ -1,18 +1,18 @@
 /**
  * Module: Staff Controller
  * File: staff.controller.js
- * Purpose: Handles staff creation and staff list responses.
+ * Purpose: Handles staff creation, update, and staff list responses.
  */
 
 const { buildApiResponse } = require("../../utils/apiResponse");
-const { createStaff, getStaffList } = require("./staff.service");
+const { createStaff, getStaffList, updateStaff } = require("./staff.service");
 
 /**
  * Returns the visible staff list for the management module.
  */
 const getStaffListHandler = async (request, response, next) => {
   try {
-    const data = await getStaffList(request.auth);
+    const data = await getStaffList(request.query, request.auth);
 
     response.status(200).json(
       buildApiResponse({
@@ -43,7 +43,26 @@ const createStaffHandler = async (request, response, next) => {
   }
 };
 
+/**
+ * Updates one staff account from the management module.
+ */
+const updateStaffHandler = async (request, response, next) => {
+  try {
+    const data = await updateStaff(request.params.staffId, request.body, request.auth);
+
+    response.status(200).json(
+      buildApiResponse({
+        message: "Staff account updated successfully.",
+        data
+      })
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getStaffListHandler,
-  createStaffHandler
+  createStaffHandler,
+  updateStaffHandler
 };

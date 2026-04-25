@@ -8,7 +8,11 @@ const express = require("express");
 
 const { STAFF_ROLES } = require("../../constants/appConstants");
 const { requireAuth, requireRoles } = require("../../middlewares/authMiddleware");
-const { createStaffHandler, getStaffListHandler } = require("./staff.controller");
+const {
+  createStaffHandler,
+  getStaffListHandler,
+  updateStaffHandler
+} = require("./staff.controller");
 
 const staffRouter = express.Router();
 
@@ -24,6 +28,11 @@ staffRouter.get("/", getStaffListHandler);
  * Creates an allowed staff account for the current role.
  */
 staffRouter.post("/", createStaffHandler);
+
+/**
+ * Updates an allowed staff account for the current role.
+ */
+staffRouter.patch("/:staffId", updateStaffHandler);
 
 module.exports = {
   staffRouter

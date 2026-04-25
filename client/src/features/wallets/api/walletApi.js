@@ -1,7 +1,7 @@
 /**
  * Module: Wallets API
  * File: walletApi.js
- * Purpose: Handles Wallets module requests for listing and creating wallet records.
+ * Purpose: Handles Wallets module requests for listing, creating, and updating wallet records.
  */
 
 import { httpRequest } from "../../../api/http";
@@ -36,6 +36,19 @@ export function fetchWalletList(token, filters = {}) {
 export function createWalletRecord(payload, token) {
   return httpRequest("/wallets", {
     method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`
+    },
+    body: payload
+  });
+}
+
+/**
+ * Updates one wallet record.
+ */
+export function updateWalletRecord(walletId, payload, token) {
+  return httpRequest(`/wallets/${walletId}`, {
+    method: "PATCH",
     headers: {
       Authorization: `Bearer ${token}`
     },

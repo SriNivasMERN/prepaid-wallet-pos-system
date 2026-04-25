@@ -24,7 +24,11 @@ import MembersModule from "../features/members/components/MembersModule";
 import ProductsModule from "../features/products/components/ProductsModule";
 import RechargesModule from "../features/recharges/components/RechargesModule";
 import ReportsModule from "../features/reports/components/ReportsModule";
-import { createStaffAccount, fetchStaffList } from "../features/staff/api/staffApi";
+import {
+  createStaffAccount,
+  fetchStaffList,
+  updateStaffAccount
+} from "../features/staff/api/staffApi";
 import StocksModule from "../features/stocks/components/StocksModule";
 import TransactionsModule from "../features/transactions/components/TransactionsModule";
 import WalletsModule from "../features/wallets/components/WalletsModule";
@@ -36,6 +40,12 @@ const staffInitialForm = {
   password: "",
   role: "Admin",
   status: "Active"
+};
+
+const staffInitialFilters = {
+  search: "",
+  role: "",
+  status: ""
 };
 
 const moduleScreens = {
@@ -227,6 +237,30 @@ function validateStaffForm(formData) {
   return nextErrors;
 }
 
+function validateStaffEditForm(formData) {
+  const nextErrors = {};
+
+  if (!formData.fullName.trim()) {
+    nextErrors.fullName = "Full name is required.";
+  }
+
+  if (!formData.username.trim()) {
+    nextErrors.username = "Username is required.";
+  } else if (formData.username.trim().length < 3) {
+    nextErrors.username = "Minimum 3 characters required.";
+  }
+
+  if (!formData.role) {
+    nextErrors.role = "Role is required.";
+  }
+
+  if (!formData.status) {
+    nextErrors.status = "Status is required.";
+  }
+
+  return nextErrors;
+}
+
 function formatMoney(value) {
   const amount = Number(value);
 
@@ -281,6 +315,8 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
   const [isCreatingStaff, setIsCreatingStaff] = useState(false);
   const [isLoadingStaff, setIsLoadingStaff] = useState(false);
   const [staffRecords, setStaffRecords] = useState([]);
+  const [staffFilterForm, setStaffFilterForm] = useState(staffInitialFilters);
+  const [appliedStaffFilters, setAppliedStaffFilters] = useState(staffInitialFilters);
   const [memberMetrics, setMemberMetrics] = useState({
     total: 0,
     active: 0,
@@ -335,6 +371,18 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
     thirdValue: "0"
   });
   const [selectedStaffRecord, setSelectedStaffRecord] = useState(null);
+  const [editingStaff, setEditingStaff] = useState(null);
+  const [editStaffForm, setEditStaffForm] = useState({
+    fullName: "",
+    username: "",
+    role: roleOptions[0] || staffInitialForm.role,
+    status: "Active"
+  });
+  const [editStaffFormErrors, setEditStaffFormErrors] = useState({});
+  const [editStaffRequestError, setEditStaffRequestError] = useState("");
+  const [isUpdatingStaff, setIsUpdatingStaff] = useState(false);
+  const [staffPendingStatusChange, setStaffPendingStatusChange] = useState(null);
+  const [isUpdatingStaffStatus, setIsUpdatingStaffStatus] = useState(false);
 
   useEffect(() => {
     if (!allowedModules.length) {
@@ -352,6 +400,10 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
       ...currentState,
       role: roleOptions.includes(currentState.role) ? currentState.role : roleOptions[0] || ""
     }));
+    setEditStaffForm((currentState) => ({
+      ...currentState,
+      role: roleOptions.includes(currentState.role) ? currentState.role : roleOptions[0] || ""
+    }));
   }, [currentStaff?.role]);
 
   useEffect(() => {
@@ -364,7 +416,7 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
       setStaffRequestError("");
 
       try {
-        const response = await fetchStaffList(authToken);
+        const response = await fetchStaffList(authToken, appliedStaffFilters);
         setStaffRecords(response.data || []);
       } catch (error) {
         setStaffRequestError(getApiErrorMessage(error));
@@ -374,7 +426,7 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
     };
 
     loadStaff();
-  }, [activeModule, authToken]);
+  }, [activeModule, authToken, appliedStaffFilters]);
 
   const activeScreen = moduleScreens[activeModule];
   const activePrimaryAction = modulePrimaryActions[activeModule] || "Open Module";
@@ -406,6 +458,18 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
     setStaffSuccessMessage("");
   };
 
+  const closeEditStaffModal = () => {
+    setEditingStaff(null);
+    setEditStaffForm({
+      fullName: "",
+      username: "",
+      role: roleOptions[0] || staffInitialForm.role,
+      status: "Active"
+    });
+    setEditStaffFormErrors({});
+    setEditStaffRequestError("");
+  };
+
   const handleLogout = () => {
     onLogout?.();
     navigate("/login", { replace: true });
@@ -424,6 +488,29 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
     }));
     setStaffRequestError("");
     setStaffSuccessMessage("");
+  };
+
+  const handleEditStaffInputChange = (event) => {
+    const { name, value } = event.target;
+
+    setEditStaffForm((currentState) => ({
+      ...currentState,
+      [name]: value
+    }));
+    setEditStaffFormErrors((currentErrors) => ({
+      ...currentErrors,
+      [name]: ""
+    }));
+    setEditStaffRequestError("");
+  };
+
+  const handleStaffFilterChange = (event) => {
+    const { name, value } = event.target;
+
+    setStaffFilterForm((currentState) => ({
+      ...currentState,
+      [name]: value
+    }));
   };
 
   const handleStaffSubmit = async (event) => {
@@ -458,6 +545,108 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
       setStaffRequestError(getApiErrorMessage(error));
     } finally {
       setIsCreatingStaff(false);
+    }
+  };
+
+  const handleStaffFilterSubmit = (event) => {
+    event.preventDefault();
+
+    setAppliedStaffFilters({
+      search: staffFilterForm.search.trim(),
+      role: staffFilterForm.role,
+      status: staffFilterForm.status
+    });
+  };
+
+  const resetStaffFilters = () => {
+    setStaffFilterForm(staffInitialFilters);
+    setAppliedStaffFilters(staffInitialFilters);
+  };
+
+  const openEditStaffModal = (staff) => {
+    setEditingStaff(staff);
+    setEditStaffForm({
+      fullName: staff.fullName || "",
+      username: staff.username || "",
+      role: staff.role || roleOptions[0] || staffInitialForm.role,
+      status: staff.status || "Active"
+    });
+    setEditStaffFormErrors({});
+    setEditStaffRequestError("");
+  };
+
+  const handleEditStaffSubmit = async (event) => {
+    event.preventDefault();
+
+    const validationErrors = validateStaffEditForm(editStaffForm);
+
+    if (Object.keys(validationErrors).length > 0) {
+      setEditStaffFormErrors(validationErrors);
+      return;
+    }
+
+    setIsUpdatingStaff(true);
+    setEditStaffRequestError("");
+
+    try {
+      const response = await updateStaffAccount(
+        editingStaff.id,
+        {
+          fullName: editStaffForm.fullName.trim(),
+          username: editStaffForm.username.trim(),
+          role: editStaffForm.role,
+          status: editStaffForm.status
+        },
+        authToken
+      );
+      const updatedStaff = response.data;
+
+      setStaffRecords((currentList) =>
+        currentList.map((staff) => (staff.id === updatedStaff.id ? updatedStaff : staff))
+      );
+      closeEditStaffModal();
+      setStaffSuccessMessage("Staff account updated successfully.");
+    } catch (error) {
+      setEditStaffRequestError(getApiErrorMessage(error));
+    } finally {
+      setIsUpdatingStaff(false);
+    }
+  };
+
+  const handleStaffStatusChange = async () => {
+    if (!staffPendingStatusChange) {
+      return;
+    }
+
+    setIsUpdatingStaffStatus(true);
+    setStaffRequestError("");
+
+    try {
+      const response = await updateStaffAccount(
+        staffPendingStatusChange.id,
+        {
+          fullName: staffPendingStatusChange.fullName,
+          username: staffPendingStatusChange.username,
+          role: staffPendingStatusChange.role,
+          status: staffPendingStatusChange.nextStatus
+        },
+        authToken
+      );
+      const updatedStaff = response.data;
+
+      setStaffRecords((currentList) =>
+        currentList.map((staff) => (staff.id === updatedStaff.id ? updatedStaff : staff))
+      );
+      setStaffSuccessMessage(
+        updatedStaff.status === "Inactive"
+          ? "Staff account marked as inactive successfully."
+          : "Staff account activated successfully."
+      );
+      setStaffPendingStatusChange(null);
+    } catch (error) {
+      setStaffRequestError(getApiErrorMessage(error));
+    } finally {
+      setIsUpdatingStaffStatus(false);
     }
   };
 
@@ -762,7 +951,91 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
               </form>
             </SectionCard>
 
-            <SectionCard title="Staff List">
+            <SectionCard title="Filters">
+              <form className="filter-grid" onSubmit={handleStaffFilterSubmit} autoComplete="off">
+                <label className="field-group field-group--wide">
+                  <span>Search Staff</span>
+                  <input
+                    type="search"
+                    name="search"
+                    value={staffFilterForm.search}
+                    onChange={handleStaffFilterChange}
+                    placeholder="Search by full name or username"
+                    autoComplete="off"
+                  />
+                </label>
+
+                <label className="field-group">
+                  <span>Role</span>
+                  <select
+                    name="role"
+                    value={staffFilterForm.role}
+                    onChange={handleStaffFilterChange}
+                    autoComplete="off"
+                  >
+                    <option value="">All</option>
+                    {roleOptions.map((role) => (
+                      <option key={role} value={role}>
+                        {role}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="field-group">
+                  <span>Status</span>
+                  <select
+                    name="status"
+                    value={staffFilterForm.status}
+                    onChange={handleStaffFilterChange}
+                    autoComplete="off"
+                  >
+                    <option value="">All</option>
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                </label>
+
+                <div className="form-actions form-actions--full">
+                  <button type="submit" className="primary-button">
+                    Apply Filters
+                  </button>
+                  <button type="button" className="secondary-button" onClick={resetStaffFilters}>
+                    Reset
+                  </button>
+                </div>
+              </form>
+            </SectionCard>
+
+            <SectionCard
+              title="Staff List"
+              actions={(
+                <IconButton
+                  icon="refresh"
+                  label="Refresh staff"
+                  text="Refresh"
+                  onClick={async () => {
+                    if (!authToken) {
+                      return;
+                    }
+
+                    setIsLoadingStaff(true);
+                    setStaffRequestError("");
+
+                    try {
+                      const response = await fetchStaffList(authToken, appliedStaffFilters);
+                      setStaffRecords(response.data || []);
+                    } catch (error) {
+                      setStaffRequestError(getApiErrorMessage(error));
+                    } finally {
+                      setIsLoadingStaff(false);
+                    }
+                  }}
+                />
+              )}
+            >
+              {staffRequestError ? <div className="form-message form-message--error">{staffRequestError}</div> : null}
+              {staffSuccessMessage ? <div className="form-message">{staffSuccessMessage}</div> : null}
               {isLoadingStaff ? <div className="feedback-actions">Loading staff...</div> : null}
               <div className="table-wrapper">
                 <table className="data-table data-table--dense">
@@ -802,8 +1075,22 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
                               <IconButton
                                 icon="edit"
                                 label={`Edit ${staff.fullName}`}
-                                title="Edit pattern is prepared; staff edit flow is scheduled for Day 29."
-                                disabled
+                                title="Edit staff"
+                                onClick={() => openEditStaffModal(staff)}
+                              />
+                              <IconButton
+                                icon={staff.status === "Active" ? "close" : "add"}
+                                label={`${staff.status === "Active" ? "Mark inactive" : "Activate"} ${staff.fullName}`}
+                                title={staff.status === "Active" ? "Mark inactive" : "Activate"}
+                                onClick={() =>
+                                  setStaffPendingStatusChange({
+                                    id: staff.id,
+                                    fullName: staff.fullName,
+                                    username: staff.username,
+                                    role: staff.role,
+                                    nextStatus: staff.status === "Active" ? "Inactive" : "Active"
+                                  })
+                                }
                               />
                             </div>
                           </td>
@@ -959,6 +1246,142 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
             <div className="details-grid__item details-grid__item--wide">
               <span>Created By</span>
               <strong>{selectedStaffRecord.createdBy?.fullName || "System"}</strong>
+            </div>
+          </div>
+        ) : null}
+      </ModalDialog>
+
+      <ModalDialog
+        isOpen={Boolean(editingStaff)}
+        title="Edit Staff"
+        onClose={closeEditStaffModal}
+        footer={(
+          <>
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={closeEditStaffModal}
+              disabled={isUpdatingStaff}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              form="edit-staff-form"
+              className="primary-button"
+              disabled={isUpdatingStaff}
+            >
+              {isUpdatingStaff ? "Saving..." : "Save Changes"}
+            </button>
+          </>
+        )}
+        width="620px"
+      >
+        {editingStaff ? (
+          <form id="edit-staff-form" className="form-grid" onSubmit={handleEditStaffSubmit} autoComplete="off">
+            <label className="field-group">
+              <span>Full Name</span>
+              <input
+                type="text"
+                name="fullName"
+                value={editStaffForm.fullName}
+                onChange={handleEditStaffInputChange}
+                autoComplete="off"
+              />
+              {editStaffFormErrors.fullName ? (
+                <small className="field-error">{editStaffFormErrors.fullName}</small>
+              ) : null}
+            </label>
+            <label className="field-group">
+              <span>Username</span>
+              <input
+                type="text"
+                name="username"
+                value={editStaffForm.username}
+                onChange={handleEditStaffInputChange}
+                autoComplete="off"
+              />
+              {editStaffFormErrors.username ? (
+                <small className="field-error">{editStaffFormErrors.username}</small>
+              ) : null}
+            </label>
+            <label className="field-group">
+              <span>Role</span>
+              <select
+                name="role"
+                value={editStaffForm.role}
+                onChange={handleEditStaffInputChange}
+                autoComplete="off"
+              >
+                {roleOptions.map((role) => (
+                  <option key={role} value={role}>
+                    {role}
+                  </option>
+                ))}
+              </select>
+              {editStaffFormErrors.role ? (
+                <small className="field-error">{editStaffFormErrors.role}</small>
+              ) : null}
+            </label>
+            <label className="field-group">
+              <span>Status</span>
+              <select
+                name="status"
+                value={editStaffForm.status}
+                onChange={handleEditStaffInputChange}
+                autoComplete="off"
+              >
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+              </select>
+              {editStaffFormErrors.status ? (
+                <small className="field-error">{editStaffFormErrors.status}</small>
+              ) : null}
+            </label>
+            {editStaffRequestError ? (
+              <div className="form-message form-message--error">{editStaffRequestError}</div>
+            ) : null}
+          </form>
+        ) : null}
+      </ModalDialog>
+
+      <ModalDialog
+        isOpen={Boolean(staffPendingStatusChange)}
+        title={staffPendingStatusChange?.nextStatus === "Inactive" ? "Mark Staff Inactive" : "Activate Staff"}
+        onClose={() => setStaffPendingStatusChange(null)}
+        footer={(
+          <>
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={() => setStaffPendingStatusChange(null)}
+              disabled={isUpdatingStaffStatus}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="primary-button"
+              onClick={handleStaffStatusChange}
+              disabled={isUpdatingStaffStatus}
+            >
+              {isUpdatingStaffStatus ? "Saving..." : "Confirm"}
+            </button>
+          </>
+        )}
+        width="520px"
+      >
+        {staffPendingStatusChange ? (
+          <div className="details-grid">
+            <div className="details-grid__item details-grid__item--wide">
+              <span>Staff Account</span>
+              <strong>{staffPendingStatusChange.fullName}</strong>
+            </div>
+            <div className="details-grid__item details-grid__item--wide">
+              <span>Lifecycle Note</span>
+              <strong>
+                Staff accounts stay in the system for audit visibility. This action changes only status.
+              </strong>
             </div>
           </div>
         ) : null}

@@ -6,11 +6,18 @@
 
 import { useEffect, useState } from "react";
 
+import IconButton from "../../../components/common/IconButton";
+import ModalDialog from "../../../components/common/ModalDialog";
 import SectionCard from "../../../components/common/SectionCard";
+import StatusChip from "../../../components/common/StatusChip";
 import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
 import { fetchCardList } from "../../cards/api/cardApi";
 import { fetchMemberList } from "../../members/api/memberApi";
-import { createWalletRecord, fetchWalletList } from "../api/walletApi";
+import {
+  createWalletRecord,
+  fetchWalletList,
+  updateWalletRecord
+} from "../api/walletApi";
 
 const walletInitialForm = {
   memberId: "",
@@ -20,6 +27,10 @@ const walletInitialForm = {
 const walletInitialFilters = {
   search: "",
   status: ""
+};
+
+const walletEditInitialForm = {
+  status: "Active"
 };
 
 function validateWalletForm(formData) {
@@ -78,6 +89,14 @@ function WalletsModule({ authToken, onMetricsChange }) {
   const [walletFilterForm, setWalletFilterForm] = useState(walletInitialFilters);
   const [appliedWalletFilters, setAppliedWalletFilters] = useState(walletInitialFilters);
   const [walletReloadToken, setWalletReloadToken] = useState(0);
+  const [selectedWalletRecord, setSelectedWalletRecord] = useState(null);
+  const [editingWallet, setEditingWallet] = useState(null);
+  const [editWalletForm, setEditWalletForm] = useState(walletEditInitialForm);
+  const [editWalletFormErrors, setEditWalletFormErrors] = useState({});
+  const [editWalletRequestError, setEditWalletRequestError] = useState("");
+  const [isUpdatingWallet, setIsUpdatingWallet] = useState(false);
+  const [walletPendingStatusChange, setWalletPendingStatusChange] = useState(null);
+  const [isUpdatingWalletStatus, setIsUpdatingWalletStatus] = useState(false);
 
   useEffect(() => {
     const loadMembers = async () => {
@@ -169,6 +188,22 @@ function WalletsModule({ authToken, onMetricsChange }) {
     setWalletSuccessMessage("");
   };
 
+  const closeEditWalletModal = () => {
+    setEditingWallet(null);
+    setEditWalletForm(walletEditInitialForm);
+    setEditWalletFormErrors({});
+    setEditWalletRequestError("");
+  };
+
+  const openEditWalletModal = (wallet) => {
+    setEditingWallet(wallet);
+    setEditWalletForm({
+      status: wallet.status || "Active"
+    });
+    setEditWalletFormErrors({});
+    setEditWalletRequestError("");
+  };
+
   const handleWalletInputChange = (event) => {
     const { name, value } = event.target;
 
@@ -191,6 +226,20 @@ function WalletsModule({ authToken, onMetricsChange }) {
       ...currentState,
       [name]: value
     }));
+  };
+
+  const handleEditWalletInputChange = (event) => {
+    const { name, value } = event.target;
+
+    setEditWalletForm((currentState) => ({
+      ...currentState,
+      [name]: value
+    }));
+    setEditWalletFormErrors((currentErrors) => ({
+      ...currentErrors,
+      [name]: ""
+    }));
+    setEditWalletRequestError("");
   };
 
   const handleWalletSubmit = async (event) => {
@@ -236,6 +285,81 @@ function WalletsModule({ authToken, onMetricsChange }) {
   const resetWalletFilters = () => {
     setWalletFilterForm(walletInitialFilters);
     setAppliedWalletFilters(walletInitialFilters);
+  };
+
+  const handleEditWalletSubmit = async (event) => {
+    event.preventDefault();
+
+    const validationErrors = {};
+
+    if (!editWalletForm.status) {
+      validationErrors.status = "Status is required.";
+    }
+
+    if (Object.keys(validationErrors).length > 0) {
+      setEditWalletFormErrors(validationErrors);
+      return;
+    }
+
+    setIsUpdatingWallet(true);
+    setEditWalletRequestError("");
+
+    try {
+      const response = await updateWalletRecord(
+        editingWallet.id,
+        {
+          status: editWalletForm.status
+        },
+        authToken
+      );
+      const updatedWallet = response.data;
+
+      setWalletRecords((currentList) =>
+        currentList.map((wallet) => (wallet.id === updatedWallet.id ? updatedWallet : wallet))
+      );
+      closeEditWalletModal();
+      setWalletSuccessMessage("Wallet updated successfully.");
+      setWalletReloadToken((currentValue) => currentValue + 1);
+    } catch (error) {
+      setEditWalletRequestError(getApiErrorMessage(error));
+    } finally {
+      setIsUpdatingWallet(false);
+    }
+  };
+
+  const handleWalletStatusChange = async () => {
+    if (!walletPendingStatusChange) {
+      return;
+    }
+
+    setIsUpdatingWalletStatus(true);
+    setWalletRequestError("");
+
+    try {
+      const response = await updateWalletRecord(
+        walletPendingStatusChange.id,
+        {
+          status: walletPendingStatusChange.nextStatus
+        },
+        authToken
+      );
+      const updatedWallet = response.data;
+
+      setWalletRecords((currentList) =>
+        currentList.map((wallet) => (wallet.id === updatedWallet.id ? updatedWallet : wallet))
+      );
+      setWalletSuccessMessage(
+        updatedWallet.status === "Inactive"
+          ? "Wallet marked as inactive successfully."
+          : "Wallet activated successfully."
+      );
+      setWalletPendingStatusChange(null);
+      setWalletReloadToken((currentValue) => currentValue + 1);
+    } catch (error) {
+      setWalletRequestError(getApiErrorMessage(error));
+    } finally {
+      setIsUpdatingWalletStatus(false);
+    }
   };
 
   return (
@@ -337,18 +461,17 @@ function WalletsModule({ authToken, onMetricsChange }) {
       <SectionCard
         title="Wallets List"
         actions={
-          <button
-            type="button"
-            className="secondary-button"
+          <IconButton
+            icon="refresh"
+            label="Refresh wallets"
+            text="Refresh"
             onClick={() => setWalletReloadToken((currentValue) => currentValue + 1)}
-          >
-            Refresh
-          </button>
+          />
         }
       >
         {isLoadingWallets ? <div className="feedback-actions">Loading wallets...</div> : null}
         <div className="table-wrapper">
-          <table className="data-table">
+          <table className="data-table data-table--dense">
             <thead>
               <tr>
                 <th>Member</th>
@@ -357,12 +480,13 @@ function WalletsModule({ authToken, onMetricsChange }) {
                 <th>Balance</th>
                 <th>Status</th>
                 <th>Updated At</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {walletRecords.length === 0 && !isLoadingWallets ? (
                 <tr>
-                  <td colSpan="6">No wallet records found.</td>
+                  <td colSpan="7">No wallet records found.</td>
                 </tr>
               ) : (
                 walletRecords.map((wallet) => (
@@ -372,9 +496,39 @@ function WalletsModule({ authToken, onMetricsChange }) {
                     <td>{cardNumberByMemberId[wallet.member?.id] || "-"}</td>
                     <td>{formatCurrency(wallet.balance)}</td>
                     <td>
-                      <span className="status-badge">{wallet.status}</span>
+                      <StatusChip value={wallet.status} />
                     </td>
                     <td>{formatDate(wallet.updatedAt)}</td>
+                    <td>
+                      <div className="table-row-actions">
+                        <IconButton
+                          icon="view"
+                          label={`View wallet of ${wallet.member?.fullName || "member"}`}
+                          title="View details"
+                          onClick={() => setSelectedWalletRecord(wallet)}
+                        />
+                        <IconButton
+                          icon="edit"
+                          label={`Edit wallet of ${wallet.member?.fullName || "member"}`}
+                          title="Edit wallet"
+                          onClick={() => openEditWalletModal(wallet)}
+                        />
+                        <IconButton
+                          icon={wallet.status === "Active" ? "close" : "add"}
+                          label={`${wallet.status === "Active" ? "Mark inactive" : "Activate"} wallet of ${wallet.member?.fullName || "member"}`}
+                          title={wallet.status === "Active" ? "Mark inactive" : "Activate"}
+                          onClick={() =>
+                            setWalletPendingStatusChange({
+                              id: wallet.id,
+                              memberName: wallet.member?.fullName || "Member",
+                              currentStatus: wallet.status,
+                              nextStatus:
+                                wallet.status === "Active" ? "Inactive" : "Active"
+                            })
+                          }
+                        />
+                      </div>
+                    </td>
                   </tr>
                 ))
               )}
@@ -382,6 +536,151 @@ function WalletsModule({ authToken, onMetricsChange }) {
           </table>
         </div>
       </SectionCard>
+
+      <ModalDialog
+        isOpen={Boolean(selectedWalletRecord)}
+        title="Wallet Details"
+        onClose={() => setSelectedWalletRecord(null)}
+        footer={(
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={() => setSelectedWalletRecord(null)}
+          >
+            Close
+          </button>
+        )}
+        width="620px"
+      >
+        {selectedWalletRecord ? (
+          <div className="details-grid">
+            <div className="details-grid__item">
+              <span>Member</span>
+              <strong>{selectedWalletRecord.member?.fullName || "-"}</strong>
+            </div>
+            <div className="details-grid__item">
+              <span>Mobile Number</span>
+              <strong>{selectedWalletRecord.member?.mobileNumber || "-"}</strong>
+            </div>
+            <div className="details-grid__item">
+              <span>Linked Card</span>
+              <strong>{cardNumberByMemberId[selectedWalletRecord.member?.id] || "-"}</strong>
+            </div>
+            <div className="details-grid__item">
+              <span>Balance</span>
+              <strong>{formatCurrency(selectedWalletRecord.balance)}</strong>
+            </div>
+            <div className="details-grid__item">
+              <span>Status</span>
+              <strong><StatusChip value={selectedWalletRecord.status} /></strong>
+            </div>
+            <div className="details-grid__item">
+              <span>Updated At</span>
+              <strong>{formatDate(selectedWalletRecord.updatedAt)}</strong>
+            </div>
+          </div>
+        ) : null}
+      </ModalDialog>
+
+      <ModalDialog
+        isOpen={Boolean(editingWallet)}
+        title="Edit Wallet"
+        onClose={closeEditWalletModal}
+        footer={(
+          <>
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={closeEditWalletModal}
+              disabled={isUpdatingWallet}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              form="edit-wallet-form"
+              className="primary-button"
+              disabled={isUpdatingWallet}
+            >
+              {isUpdatingWallet ? "Saving..." : "Save Changes"}
+            </button>
+          </>
+        )}
+        width="560px"
+      >
+        {editingWallet ? (
+          <form id="edit-wallet-form" className="form-grid" onSubmit={handleEditWalletSubmit} autoComplete="off">
+            <label className="field-group">
+              <span>Member</span>
+              <input type="text" value={editingWallet.member?.fullName || ""} readOnly />
+            </label>
+            <label className="field-group">
+              <span>Balance</span>
+              <input type="text" value={formatCurrency(editingWallet.balance)} readOnly />
+            </label>
+            <label className="field-group">
+              <span>Status</span>
+              <select
+                name="status"
+                value={editWalletForm.status}
+                onChange={handleEditWalletInputChange}
+                autoComplete="off"
+              >
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+              </select>
+              {editWalletFormErrors.status ? (
+                <small className="field-error">{editWalletFormErrors.status}</small>
+              ) : null}
+            </label>
+            {editWalletRequestError ? (
+              <div className="form-message form-message--error">{editWalletRequestError}</div>
+            ) : null}
+          </form>
+        ) : null}
+      </ModalDialog>
+
+      <ModalDialog
+        isOpen={Boolean(walletPendingStatusChange)}
+        title={walletPendingStatusChange?.nextStatus === "Inactive" ? "Mark Wallet Inactive" : "Activate Wallet"}
+        onClose={() => setWalletPendingStatusChange(null)}
+        footer={(
+          <>
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={() => setWalletPendingStatusChange(null)}
+              disabled={isUpdatingWalletStatus}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="primary-button"
+              onClick={handleWalletStatusChange}
+              disabled={isUpdatingWalletStatus}
+            >
+              {isUpdatingWalletStatus ? "Saving..." : "Confirm"}
+            </button>
+          </>
+        )}
+        width="520px"
+      >
+        {walletPendingStatusChange ? (
+          <div className="details-grid">
+            <div className="details-grid__item details-grid__item--wide">
+              <span>Wallet Owner</span>
+              <strong>{walletPendingStatusChange.memberName}</strong>
+            </div>
+            <div className="details-grid__item details-grid__item--wide">
+              <span>Lifecycle Note</span>
+              <strong>
+                Wallet status updates are administrative only. Balance history remains unchanged.
+              </strong>
+            </div>
+          </div>
+        ) : null}
+      </ModalDialog>
     </>
   );
 }
