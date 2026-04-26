@@ -31,6 +31,7 @@ import ReportsModule from "../features/reports/components/ReportsModule";
 import {
   createStaffAccount,
   fetchStaffList,
+  resetStaffPassword,
   updateStaffAccount
 } from "../features/staff/api/staffApi";
 import StocksModule from "../features/stocks/components/StocksModule";
@@ -59,6 +60,11 @@ const accountProfileInitialForm = {
 
 const accountPasswordInitialForm = {
   currentPassword: "",
+  newPassword: "",
+  confirmPassword: ""
+};
+
+const resetStaffPasswordInitialForm = {
   newPassword: "",
   confirmPassword: ""
 };
@@ -320,6 +326,24 @@ function validateAccountPasswordForm(formData) {
   return nextErrors;
 }
 
+function validateResetStaffPasswordForm(formData) {
+  const nextErrors = {};
+
+  if (!formData.newPassword) {
+    nextErrors.newPassword = "New password is required.";
+  } else if (formData.newPassword.length < 8) {
+    nextErrors.newPassword = "Minimum 8 characters required.";
+  }
+
+  if (!formData.confirmPassword) {
+    nextErrors.confirmPassword = "Confirm password is required.";
+  } else if (formData.confirmPassword !== formData.newPassword) {
+    nextErrors.confirmPassword = "Passwords do not match.";
+  }
+
+  return nextErrors;
+}
+
 function formatMoney(value) {
   const amount = Number(value);
 
@@ -442,6 +466,11 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
   const [isUpdatingStaff, setIsUpdatingStaff] = useState(false);
   const [staffPendingStatusChange, setStaffPendingStatusChange] = useState(null);
   const [isUpdatingStaffStatus, setIsUpdatingStaffStatus] = useState(false);
+  const [staffPasswordResetTarget, setStaffPasswordResetTarget] = useState(null);
+  const [resetStaffPasswordForm, setResetStaffPasswordForm] = useState(resetStaffPasswordInitialForm);
+  const [resetStaffPasswordErrors, setResetStaffPasswordErrors] = useState({});
+  const [resetStaffPasswordRequestError, setResetStaffPasswordRequestError] = useState("");
+  const [isResettingStaffPassword, setIsResettingStaffPassword] = useState(false);
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
   const [accountProfileForm, setAccountProfileForm] = useState(accountProfileInitialForm);
   const [accountProfileErrors, setAccountProfileErrors] = useState({});
@@ -547,6 +576,24 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
     setEditStaffRequestError("");
   };
 
+  const openResetStaffPasswordModal = (staff) => {
+    setStaffPasswordResetTarget(staff);
+    setResetStaffPasswordForm(resetStaffPasswordInitialForm);
+    setResetStaffPasswordErrors({});
+    setResetStaffPasswordRequestError("");
+  };
+
+  const closeResetStaffPasswordModal = () => {
+    if (isResettingStaffPassword) {
+      return;
+    }
+
+    setStaffPasswordResetTarget(null);
+    setResetStaffPasswordForm(resetStaffPasswordInitialForm);
+    setResetStaffPasswordErrors({});
+    setResetStaffPasswordRequestError("");
+  };
+
   const handleLogout = () => {
     onLogout?.();
     navigate("/login", { replace: true });
@@ -632,6 +679,20 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
       [name]: ""
     }));
     setEditStaffRequestError("");
+  };
+
+  const handleResetStaffPasswordInputChange = (event) => {
+    const { name, value } = event.target;
+
+    setResetStaffPasswordForm((currentState) => ({
+      ...currentState,
+      [name]: value
+    }));
+    setResetStaffPasswordErrors((currentErrors) => ({
+      ...currentErrors,
+      [name]: ""
+    }));
+    setResetStaffPasswordRequestError("");
   };
 
   const handleStaffFilterChange = (event) => {
@@ -777,6 +838,44 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
       setStaffRequestError(getApiErrorMessage(error));
     } finally {
       setIsUpdatingStaffStatus(false);
+    }
+  };
+
+  const handleResetStaffPasswordSubmit = async (event) => {
+    event.preventDefault();
+
+    const validationErrors = validateResetStaffPasswordForm(resetStaffPasswordForm);
+
+    if (Object.keys(validationErrors).length > 0) {
+      setResetStaffPasswordErrors(validationErrors);
+      return;
+    }
+
+    if (!staffPasswordResetTarget) {
+      return;
+    }
+
+    setIsResettingStaffPassword(true);
+    setResetStaffPasswordRequestError("");
+
+    try {
+      await resetStaffPassword(
+        staffPasswordResetTarget.id,
+        {
+          newPassword: resetStaffPasswordForm.newPassword,
+          confirmPassword: resetStaffPasswordForm.confirmPassword
+        },
+        authToken
+      );
+      setStaffSuccessMessage(`Password reset successfully for ${staffPasswordResetTarget.fullName}.`);
+      setStaffPasswordResetTarget(null);
+      setResetStaffPasswordForm(resetStaffPasswordInitialForm);
+      setResetStaffPasswordErrors({});
+      setResetStaffPasswordRequestError("");
+    } catch (error) {
+      setResetStaffPasswordRequestError(getApiErrorMessage(error));
+    } finally {
+      setIsResettingStaffPassword(false);
     }
   };
 
@@ -1278,6 +1377,12 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
                                 onClick={() => openEditStaffModal(staff)}
                               />
                               <IconButton
+                                icon="key"
+                                label={`Reset password for ${staff.fullName}`}
+                                title="Reset password"
+                                onClick={() => openResetStaffPasswordModal(staff)}
+                              />
+                              <IconButton
                                 icon={staff.status === "Active" ? "close" : "add"}
                                 label={`${staff.status === "Active" ? "Mark inactive" : "Activate"} ${staff.fullName}`}
                                 title={staff.status === "Active" ? "Mark inactive" : "Activate"}
@@ -1665,6 +1770,82 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
             </label>
             {editStaffRequestError ? (
               <div className="form-message form-message--error">{editStaffRequestError}</div>
+            ) : null}
+          </form>
+        ) : null}
+      </ModalDialog>
+
+      <ModalDialog
+        isOpen={Boolean(staffPasswordResetTarget)}
+        title="Reset Staff Password"
+        onClose={closeResetStaffPasswordModal}
+        footer={(
+          <>
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={closeResetStaffPasswordModal}
+              disabled={isResettingStaffPassword}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              form="reset-staff-password-form"
+              className="primary-button"
+              disabled={isResettingStaffPassword}
+            >
+              {isResettingStaffPassword ? "Saving..." : "Reset Password"}
+            </button>
+          </>
+        )}
+        width="560px"
+      >
+        {staffPasswordResetTarget ? (
+          <form
+            id="reset-staff-password-form"
+            className="form-grid"
+            onSubmit={handleResetStaffPasswordSubmit}
+            autoComplete="off"
+          >
+            <div className="details-grid__item details-grid__item--wide">
+              <span>Staff Account</span>
+              <strong>{staffPasswordResetTarget.fullName}</strong>
+            </div>
+            <div className="details-grid__item details-grid__item--wide">
+              <span>Security Note</span>
+              <strong>
+                This resets the selected staff account password only. Role and status stay unchanged.
+              </strong>
+            </div>
+            <label className="field-group">
+              <span>New Password</span>
+              <input
+                type="password"
+                name="newPassword"
+                value={resetStaffPasswordForm.newPassword}
+                onChange={handleResetStaffPasswordInputChange}
+                autoComplete="new-password"
+              />
+              {resetStaffPasswordErrors.newPassword ? (
+                <small className="field-error">{resetStaffPasswordErrors.newPassword}</small>
+              ) : null}
+            </label>
+            <label className="field-group">
+              <span>Confirm Password</span>
+              <input
+                type="password"
+                name="confirmPassword"
+                value={resetStaffPasswordForm.confirmPassword}
+                onChange={handleResetStaffPasswordInputChange}
+                autoComplete="new-password"
+              />
+              {resetStaffPasswordErrors.confirmPassword ? (
+                <small className="field-error">{resetStaffPasswordErrors.confirmPassword}</small>
+              ) : null}
+            </label>
+            {resetStaffPasswordRequestError ? (
+              <div className="form-message form-message--error">{resetStaffPasswordRequestError}</div>
             ) : null}
           </form>
         ) : null}

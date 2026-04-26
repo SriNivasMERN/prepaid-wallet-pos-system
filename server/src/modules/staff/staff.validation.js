@@ -119,8 +119,37 @@ const validateUpdateStaffPayload = (payload = {}) => {
   };
 };
 
+/**
+ * Validates password reset fields for one manageable staff account.
+ */
+const validateResetStaffPasswordPayload = (payload = {}) => {
+  const errors = [];
+  const newPassword = payload.newPassword || "";
+  const confirmPassword = payload.confirmPassword || "";
+
+  if (!newPassword) {
+    errors.push({ field: "newPassword", message: "New password is required." });
+  } else if (newPassword.length < 8) {
+    errors.push({ field: "newPassword", message: "Password must be at least 8 characters." });
+  }
+
+  if (!confirmPassword) {
+    errors.push({ field: "confirmPassword", message: "Confirm password is required." });
+  } else if (newPassword && confirmPassword && newPassword !== confirmPassword) {
+    errors.push({ field: "confirmPassword", message: "Passwords do not match." });
+  }
+
+  return {
+    errors,
+    values: {
+      newPassword
+    }
+  };
+};
+
 module.exports = {
   CREATABLE_STAFF_ROLES,
   validateCreateStaffPayload,
-  validateUpdateStaffPayload
+  validateUpdateStaffPayload,
+  validateResetStaffPasswordPayload
 };

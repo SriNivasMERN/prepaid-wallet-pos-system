@@ -12,6 +12,7 @@ const { buildAccessProfile } = require("../../constants/accessControl");
 const { Staff } = require("./staff.model");
 const {
   validateCreateStaffPayload,
+  validateResetStaffPasswordPayload,
   validateUpdateStaffPayload
 } = require("./staff.validation");
 
@@ -288,6 +289,27 @@ const updateStaff = async (staffId, payload, currentAuth) => {
 };
 
 /**
+ * Resets the password of one manageable staff account inside the allowed role boundary.
+ */
+const resetStaffPassword = async (staffId, payload, currentAuth) => {
+  const { errors, values } = validateResetStaffPasswordPayload(payload);
+
+  if (errors.length > 0) {
+    throw createValidationError(errors, "Password reset validation failed.");
+  }
+
+  const staff = await getManageableStaffDocumentById(staffId, currentAuth);
+
+  staff.passwordHash = await bcrypt.hash(values.newPassword, 10);
+  staff.updatedBy = currentAuth.staffId;
+  await staff.save();
+
+  const hydratedStaff = await Staff.findById(staff._id).populate("createdBy", "fullName username role");
+
+  return toStaffResponse(hydratedStaff);
+};
+
+/**
  * Returns the visible staff records for the current role.
  */
 const getStaffList = async (filters = {}, currentAuth) => {
@@ -327,5 +349,6 @@ module.exports = {
   getStaffList,
   getCreatableRolesForCurrentStaff,
   getManageableRolesForCurrentStaff,
-  updateStaff
+  updateStaff,
+  resetStaffPassword
 };

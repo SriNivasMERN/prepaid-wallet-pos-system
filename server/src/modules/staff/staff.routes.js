@@ -11,6 +11,7 @@ const { requireAuth, requireRoles } = require("../../middlewares/authMiddleware"
 const {
   createStaffHandler,
   getStaffListHandler,
+  resetStaffPasswordHandler,
   updateStaffHandler
 } = require("./staff.controller");
 
@@ -33,6 +34,7 @@ staffRouter.post("/", createStaffHandler);
  * Updates an allowed staff account for the current role.
  */
 staffRouter.patch("/:staffId", updateStaffHandler);
+staffRouter.patch("/:staffId/reset-password", resetStaffPasswordHandler);
 
 module.exports = {
   staffRouter

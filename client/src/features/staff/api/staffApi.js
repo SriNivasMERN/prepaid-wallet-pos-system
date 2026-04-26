@@ -50,3 +50,13 @@ export function updateStaffAccount(staffId, payload, token) {
     body: payload
   });
 }
+
+export function resetStaffPassword(staffId, payload, token) {
+  return httpRequest(`/staff/${staffId}/reset-password`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`
+    },
+    body: payload
+  });
+}

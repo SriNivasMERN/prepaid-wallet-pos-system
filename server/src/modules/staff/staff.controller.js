@@ -5,7 +5,7 @@
  */
 
 const { buildApiResponse } = require("../../utils/apiResponse");
-const { createStaff, getStaffList, updateStaff } = require("./staff.service");
+const { createStaff, getStaffList, resetStaffPassword, updateStaff } = require("./staff.service");
 
 /**
  * Returns the visible staff list for the management module.
@@ -61,8 +61,27 @@ const updateStaffHandler = async (request, response, next) => {
   }
 };
 
+/**
+ * Resets one staff account password from the management module.
+ */
+const resetStaffPasswordHandler = async (request, response, next) => {
+  try {
+    const data = await resetStaffPassword(request.params.staffId, request.body, request.auth);
+
+    response.status(200).json(
+      buildApiResponse({
+        message: "Staff password reset successfully.",
+        data
+      })
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getStaffListHandler,
   createStaffHandler,
-  updateStaffHandler
+  updateStaffHandler,
+  resetStaffPasswordHandler
 };
