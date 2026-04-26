@@ -20,6 +20,10 @@ import {
 import BillingModule from "../features/billing/components/BillingModule";
 import CardsModule from "../features/cards/components/CardsModule";
 import DebitsModule from "../features/debits/components/DebitsModule";
+import {
+  changeCurrentStaffPassword,
+  updateCurrentStaffProfile
+} from "../features/auth/api/authApi";
 import MembersModule from "../features/members/components/MembersModule";
 import ProductsModule from "../features/products/components/ProductsModule";
 import RechargesModule from "../features/recharges/components/RechargesModule";
@@ -46,6 +50,17 @@ const staffInitialFilters = {
   search: "",
   role: "",
   status: ""
+};
+
+const accountProfileInitialForm = {
+  fullName: "",
+  username: ""
+};
+
+const accountPasswordInitialForm = {
+  currentPassword: "",
+  newPassword: "",
+  confirmPassword: ""
 };
 
 const moduleScreens = {
@@ -261,6 +276,50 @@ function validateStaffEditForm(formData) {
   return nextErrors;
 }
 
+function validateAccountProfileForm(formData) {
+  const nextErrors = {};
+
+  if (!formData.fullName.trim()) {
+    nextErrors.fullName = "Full name is required.";
+  } else if (formData.fullName.trim().length < 2) {
+    nextErrors.fullName = "Minimum 2 characters required.";
+  }
+
+  if (!formData.username.trim()) {
+    nextErrors.username = "Username is required.";
+  } else if (formData.username.trim().length < 3) {
+    nextErrors.username = "Minimum 3 characters required.";
+  }
+
+  return nextErrors;
+}
+
+function validateAccountPasswordForm(formData) {
+  const nextErrors = {};
+
+  if (!formData.currentPassword) {
+    nextErrors.currentPassword = "Current password is required.";
+  }
+
+  if (!formData.newPassword) {
+    nextErrors.newPassword = "New password is required.";
+  } else if (formData.newPassword.length < 8) {
+    nextErrors.newPassword = "Minimum 8 characters required.";
+  }
+
+  if (!formData.confirmPassword) {
+    nextErrors.confirmPassword = "Confirm password is required.";
+  } else if (formData.confirmPassword !== formData.newPassword) {
+    nextErrors.confirmPassword = "Passwords do not match.";
+  }
+
+  if (formData.currentPassword && formData.newPassword && formData.currentPassword === formData.newPassword) {
+    nextErrors.newPassword = "New password must be different from current password.";
+  }
+
+  return nextErrors;
+}
+
 function formatMoney(value) {
   const amount = Number(value);
 
@@ -293,7 +352,7 @@ const modulePrimaryActions = {
   Reports: "View Reports"
 };
 
-function DashboardPage({ currentStaff, authToken, onLogout }) {
+function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
   const navigate = useNavigate();
   const allowedModules = currentStaff?.allowedModules?.length
     ? currentStaff.allowedModules
@@ -383,6 +442,17 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
   const [isUpdatingStaff, setIsUpdatingStaff] = useState(false);
   const [staffPendingStatusChange, setStaffPendingStatusChange] = useState(null);
   const [isUpdatingStaffStatus, setIsUpdatingStaffStatus] = useState(false);
+  const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+  const [accountProfileForm, setAccountProfileForm] = useState(accountProfileInitialForm);
+  const [accountProfileErrors, setAccountProfileErrors] = useState({});
+  const [accountProfileRequestError, setAccountProfileRequestError] = useState("");
+  const [accountProfileSuccessMessage, setAccountProfileSuccessMessage] = useState("");
+  const [isUpdatingAccountProfile, setIsUpdatingAccountProfile] = useState(false);
+  const [accountPasswordForm, setAccountPasswordForm] = useState(accountPasswordInitialForm);
+  const [accountPasswordErrors, setAccountPasswordErrors] = useState({});
+  const [accountPasswordRequestError, setAccountPasswordRequestError] = useState("");
+  const [accountPasswordSuccessMessage, setAccountPasswordSuccessMessage] = useState("");
+  const [isUpdatingAccountPassword, setIsUpdatingAccountPassword] = useState(false);
 
   useEffect(() => {
     if (!allowedModules.length) {
@@ -405,6 +475,13 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
       role: roleOptions.includes(currentState.role) ? currentState.role : roleOptions[0] || ""
     }));
   }, [currentStaff?.role]);
+
+  useEffect(() => {
+    setAccountProfileForm({
+      fullName: currentStaff?.fullName || "",
+      username: currentStaff?.username || ""
+    });
+  }, [currentStaff?.fullName, currentStaff?.username]);
 
   useEffect(() => {
     const loadStaff = async () => {
@@ -475,6 +552,29 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
     navigate("/login", { replace: true });
   };
 
+  const openAccountModal = () => {
+    setIsAccountModalOpen(true);
+    setAccountProfileForm({
+      fullName: currentStaff?.fullName || "",
+      username: currentStaff?.username || ""
+    });
+    setAccountProfileErrors({});
+    setAccountProfileRequestError("");
+    setAccountProfileSuccessMessage("");
+    setAccountPasswordForm(accountPasswordInitialForm);
+    setAccountPasswordErrors({});
+    setAccountPasswordRequestError("");
+    setAccountPasswordSuccessMessage("");
+  };
+
+  const closeAccountModal = () => {
+    if (isUpdatingAccountProfile || isUpdatingAccountPassword) {
+      return;
+    }
+
+    setIsAccountModalOpen(false);
+  };
+
   const handleStaffInputChange = (event) => {
     const { name, value } = event.target;
 
@@ -488,6 +588,36 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
     }));
     setStaffRequestError("");
     setStaffSuccessMessage("");
+  };
+
+  const handleAccountProfileInputChange = (event) => {
+    const { name, value } = event.target;
+
+    setAccountProfileForm((currentState) => ({
+      ...currentState,
+      [name]: value
+    }));
+    setAccountProfileErrors((currentErrors) => ({
+      ...currentErrors,
+      [name]: ""
+    }));
+    setAccountProfileRequestError("");
+    setAccountProfileSuccessMessage("");
+  };
+
+  const handleAccountPasswordInputChange = (event) => {
+    const { name, value } = event.target;
+
+    setAccountPasswordForm((currentState) => ({
+      ...currentState,
+      [name]: value
+    }));
+    setAccountPasswordErrors((currentErrors) => ({
+      ...currentErrors,
+      [name]: ""
+    }));
+    setAccountPasswordRequestError("");
+    setAccountPasswordSuccessMessage("");
   };
 
   const handleEditStaffInputChange = (event) => {
@@ -650,6 +780,72 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
     }
   };
 
+  const handleAccountProfileSubmit = async (event) => {
+    event.preventDefault();
+
+    const validationErrors = validateAccountProfileForm(accountProfileForm);
+
+    if (Object.keys(validationErrors).length > 0) {
+      setAccountProfileErrors(validationErrors);
+      return;
+    }
+
+    setIsUpdatingAccountProfile(true);
+    setAccountProfileRequestError("");
+    setAccountProfileSuccessMessage("");
+
+    try {
+      const response = await updateCurrentStaffProfile(
+        {
+          fullName: accountProfileForm.fullName.trim(),
+          username: accountProfileForm.username.trim()
+        },
+        authToken
+      );
+      const updatedStaff = response.data;
+
+      onSessionUpdate?.({
+        token: authToken,
+        staff: updatedStaff
+      });
+      setAccountProfileForm({
+        fullName: updatedStaff.fullName || "",
+        username: updatedStaff.username || ""
+      });
+      setAccountProfileSuccessMessage("Account profile updated successfully.");
+    } catch (error) {
+      setAccountProfileRequestError(getApiErrorMessage(error));
+    } finally {
+      setIsUpdatingAccountProfile(false);
+    }
+  };
+
+  const handleAccountPasswordSubmit = async (event) => {
+    event.preventDefault();
+
+    const validationErrors = validateAccountPasswordForm(accountPasswordForm);
+
+    if (Object.keys(validationErrors).length > 0) {
+      setAccountPasswordErrors(validationErrors);
+      return;
+    }
+
+    setIsUpdatingAccountPassword(true);
+    setAccountPasswordRequestError("");
+    setAccountPasswordSuccessMessage("");
+
+    try {
+      await changeCurrentStaffPassword(accountPasswordForm, authToken);
+      setAccountPasswordForm(accountPasswordInitialForm);
+      setAccountPasswordErrors({});
+      setAccountPasswordSuccessMessage("Password updated successfully.");
+    } catch (error) {
+      setAccountPasswordRequestError(getApiErrorMessage(error));
+    } finally {
+      setIsUpdatingAccountPassword(false);
+    }
+  };
+
   if (!activeScreen) {
     return null;
   }
@@ -688,6 +884,9 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
             <span>{currentStaff?.fullName || "Staff Session"}</span>
           </div>
           <div className="header-actions">
+            <button type="button" className="secondary-button" onClick={openAccountModal}>
+              My Account
+            </button>
             <button type="button" className="secondary-button" onClick={handleLogout}>
               Logout
             </button>
@@ -1213,6 +1412,132 @@ function DashboardPage({ currentStaff, authToken, onLogout }) {
           </>
         )}
       </main>
+
+      <ModalDialog
+        isOpen={isAccountModalOpen}
+        title="My Account"
+        onClose={closeAccountModal}
+        footer={(
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={closeAccountModal}
+            disabled={isUpdatingAccountProfile || isUpdatingAccountPassword}
+          >
+            Close
+          </button>
+        )}
+        width="760px"
+      >
+        <div className="account-dialog">
+          <form className="form-grid" onSubmit={handleAccountProfileSubmit} autoComplete="off">
+            <div className="account-dialog__section-title">Profile Details</div>
+            <label className="field-group">
+              <span>Full Name</span>
+              <input
+                type="text"
+                name="fullName"
+                value={accountProfileForm.fullName}
+                onChange={handleAccountProfileInputChange}
+                autoComplete="off"
+              />
+              {accountProfileErrors.fullName ? (
+                <small className="field-error">{accountProfileErrors.fullName}</small>
+              ) : null}
+            </label>
+            <label className="field-group">
+              <span>Username</span>
+              <input
+                type="text"
+                name="username"
+                value={accountProfileForm.username}
+                onChange={handleAccountProfileInputChange}
+                autoComplete="off"
+              />
+              {accountProfileErrors.username ? (
+                <small className="field-error">{accountProfileErrors.username}</small>
+              ) : null}
+            </label>
+            <label className="field-group">
+              <span>Role</span>
+              <input type="text" value={currentStaff?.role || ""} readOnly />
+            </label>
+            <label className="field-group">
+              <span>Status</span>
+              <input type="text" value={currentStaff?.status || ""} readOnly />
+            </label>
+            {accountProfileRequestError ? (
+              <div className="form-message form-message--error">{accountProfileRequestError}</div>
+            ) : null}
+            {accountProfileSuccessMessage ? (
+              <div className="form-message">{accountProfileSuccessMessage}</div>
+            ) : null}
+            <div className="form-actions form-actions--full">
+              <button type="submit" className="primary-button" disabled={isUpdatingAccountProfile}>
+                {isUpdatingAccountProfile ? "Saving..." : "Save Profile"}
+              </button>
+            </div>
+          </form>
+
+          <form className="form-grid" onSubmit={handleAccountPasswordSubmit} autoComplete="off">
+            <div className="account-dialog__section-title">Change Password</div>
+            <label className="field-group">
+              <span>Current Password</span>
+              <input
+                type="password"
+                name="currentPassword"
+                value={accountPasswordForm.currentPassword}
+                onChange={handleAccountPasswordInputChange}
+                autoComplete="current-password"
+              />
+              {accountPasswordErrors.currentPassword ? (
+                <small className="field-error">{accountPasswordErrors.currentPassword}</small>
+              ) : null}
+            </label>
+            <label className="field-group">
+              <span>New Password</span>
+              <input
+                type="password"
+                name="newPassword"
+                value={accountPasswordForm.newPassword}
+                onChange={handleAccountPasswordInputChange}
+                autoComplete="new-password"
+              />
+              {accountPasswordErrors.newPassword ? (
+                <small className="field-error">{accountPasswordErrors.newPassword}</small>
+              ) : null}
+            </label>
+            <label className="field-group">
+              <span>Confirm Password</span>
+              <input
+                type="password"
+                name="confirmPassword"
+                value={accountPasswordForm.confirmPassword}
+                onChange={handleAccountPasswordInputChange}
+                autoComplete="new-password"
+              />
+              {accountPasswordErrors.confirmPassword ? (
+                <small className="field-error">{accountPasswordErrors.confirmPassword}</small>
+              ) : null}
+            </label>
+            <div className="details-grid__item">
+              <span>Security Note</span>
+              <strong>Your current session stays active after password change.</strong>
+            </div>
+            {accountPasswordRequestError ? (
+              <div className="form-message form-message--error">{accountPasswordRequestError}</div>
+            ) : null}
+            {accountPasswordSuccessMessage ? (
+              <div className="form-message">{accountPasswordSuccessMessage}</div>
+            ) : null}
+            <div className="form-actions form-actions--full">
+              <button type="submit" className="primary-button" disabled={isUpdatingAccountPassword}>
+                {isUpdatingAccountPassword ? "Updating..." : "Update Password"}
+              </button>
+            </div>
+          </form>
+        </div>
+      </ModalDialog>
 
       <ModalDialog
         isOpen={Boolean(selectedStaffRecord)}

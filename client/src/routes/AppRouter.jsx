@@ -117,6 +117,7 @@ function AppRouter() {
                   currentStaff={session?.staff}
                   authToken={session?.token}
                   onLogout={removeSession}
+                  onSessionUpdate={updateSession}
                 />
               </AuthorizationGuard>
             </AuthGuard>

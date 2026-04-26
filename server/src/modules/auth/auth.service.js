@@ -15,7 +15,12 @@ const {
   STAFF_ROLES
 } = require("../../constants/appConstants");
 const { Staff } = require("../staff/staff.model");
-const { validateLoginPayload, validateSetupPayload } = require("./auth.validation");
+const {
+  validateLoginPayload,
+  validatePasswordChangePayload,
+  validateProfileUpdatePayload,
+  validateSetupPayload
+} = require("./auth.validation");
 
 /**
  * Reads whether the initial Super Admin account already exists.
@@ -58,6 +63,16 @@ const createAuthError = (field, message, topMessage = "Login could not be comple
       message
     }
   ];
+  return error;
+};
+
+/**
+ * Creates a standard validation error payload.
+ */
+const createValidationError = (errors, topMessage) => {
+  const error = new Error(topMessage);
+  error.statusCode = 400;
+  error.errors = errors;
   return error;
 };
 
@@ -225,9 +240,109 @@ const getCurrentStaff = async (staffId) => {
   };
 };
 
+/**
+ * Updates the authenticated staff member's own profile fields.
+ */
+const updateCurrentStaffProfile = async (staffId, payload) => {
+  const { errors, values } = validateProfileUpdatePayload(payload);
+
+  if (errors.length > 0) {
+    throw createValidationError(errors, "Profile validation failed.");
+  }
+
+  const staff = await Staff.findOne({
+    _id: staffId,
+    isDeleted: false
+  });
+
+  if (!staff || staff.status !== RECORD_STATUS.ACTIVE) {
+    throw createAuthError("authorization", "Login again to continue.", "Session is not valid.");
+  }
+
+  if (values.username !== staff.username) {
+    const existingUsername = await Staff.exists({
+      _id: { $ne: staff._id },
+      username: values.username,
+      isDeleted: false
+    });
+
+    if (existingUsername) {
+      throw createConflictError(
+        "username",
+        "Choose a different username.",
+        "Username is already in use."
+      );
+    }
+  }
+
+  staff.fullName = values.fullName;
+  staff.username = values.username;
+  staff.updatedBy = staff._id;
+
+  try {
+    await staff.save();
+  } catch (error) {
+    if (error?.code === 11000 && error.keyPattern?.username) {
+      throw createConflictError(
+        "username",
+        "Choose a different username.",
+        "Username is already in use."
+      );
+    }
+
+    throw error;
+  }
+
+  return getCurrentStaff(staff._id);
+};
+
+/**
+ * Changes the authenticated staff member's password after confirming the current password.
+ */
+const changeCurrentStaffPassword = async (staffId, payload) => {
+  const { errors, values } = validatePasswordChangePayload(payload);
+
+  if (errors.length > 0) {
+    throw createValidationError(errors, "Password change validation failed.");
+  }
+
+  const staff = await Staff.findOne({
+    _id: staffId,
+    isDeleted: false
+  }).select("+passwordHash");
+
+  if (!staff || staff.status !== RECORD_STATUS.ACTIVE) {
+    throw createAuthError("authorization", "Login again to continue.", "Session is not valid.");
+  }
+
+  const isCurrentPasswordValid = await bcrypt.compare(values.currentPassword, staff.passwordHash);
+
+  if (!isCurrentPasswordValid) {
+    throw createAuthError(
+      "currentPassword",
+      "Current password is incorrect.",
+      "Password change could not be completed."
+    );
+  }
+
+  staff.passwordHash = await bcrypt.hash(values.newPassword, 10);
+  staff.updatedBy = staff._id;
+  await staff.save();
+
+  return {
+    id: staff._id,
+    fullName: staff.fullName,
+    username: staff.username,
+    role: staff.role,
+    status: staff.status
+  };
+};
+
 module.exports = {
   getSetupStatus,
   createInitialSuperAdmin,
   loginStaff,
-  getCurrentStaff
+  getCurrentStaff,
+  updateCurrentStaffProfile,
+  changeCurrentStaffPassword
 };

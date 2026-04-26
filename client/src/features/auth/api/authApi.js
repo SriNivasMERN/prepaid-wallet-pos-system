@@ -43,3 +43,29 @@ export function fetchCurrentStaff(token) {
     }
   });
 }
+
+/**
+ * Updates the current authenticated staff member's profile.
+ */
+export function updateCurrentStaffProfile(payload, token) {
+  return httpRequest("/auth/me/profile", {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`
+    },
+    body: payload
+  });
+}
+
+/**
+ * Changes the current authenticated staff member's password.
+ */
+export function changeCurrentStaffPassword(payload, token) {
+  return httpRequest("/auth/me/password", {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`
+    },
+    body: payload
+  });
+}

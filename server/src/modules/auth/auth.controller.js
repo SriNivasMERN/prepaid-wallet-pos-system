@@ -6,10 +6,12 @@
 
 const { buildApiResponse } = require("../../utils/apiResponse");
 const {
+  changeCurrentStaffPassword,
   createInitialSuperAdmin,
   getCurrentStaff,
   getSetupStatus,
-  loginStaff
+  loginStaff,
+  updateCurrentStaffProfile
 } = require("./auth.service");
 
 /**
@@ -84,9 +86,47 @@ const getCurrentStaffHandler = async (request, response, next) => {
   }
 };
 
+/**
+ * Updates the authenticated staff member's own profile.
+ */
+const updateCurrentStaffProfileHandler = async (request, response, next) => {
+  try {
+    const data = await updateCurrentStaffProfile(request.auth.staffId, request.body);
+
+    response.status(200).json(
+      buildApiResponse({
+        message: "Account profile updated successfully.",
+        data
+      })
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Changes the authenticated staff member's own password.
+ */
+const changeCurrentStaffPasswordHandler = async (request, response, next) => {
+  try {
+    const data = await changeCurrentStaffPassword(request.auth.staffId, request.body);
+
+    response.status(200).json(
+      buildApiResponse({
+        message: "Password updated successfully.",
+        data
+      })
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getSetupStatusHandler,
   setupSuperAdminHandler,
   loginHandler,
-  getCurrentStaffHandler
+  getCurrentStaffHandler,
+  updateCurrentStaffProfileHandler,
+  changeCurrentStaffPasswordHandler
 };

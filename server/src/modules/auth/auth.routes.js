@@ -8,10 +8,12 @@ const express = require("express");
 
 const { requireAuth } = require("../../middlewares/authMiddleware");
 const {
+  changeCurrentStaffPasswordHandler,
   getCurrentStaffHandler,
   getSetupStatusHandler,
   loginHandler,
-  setupSuperAdminHandler
+  setupSuperAdminHandler,
+  updateCurrentStaffProfileHandler
 } = require("./auth.controller");
 
 const authRouter = express.Router();
@@ -35,6 +37,8 @@ authRouter.post("/login", loginHandler);
  * Returns the current authenticated staff profile.
  */
 authRouter.get("/me", requireAuth, getCurrentStaffHandler);
+authRouter.patch("/me/profile", requireAuth, updateCurrentStaffProfileHandler);
+authRouter.patch("/me/password", requireAuth, changeCurrentStaffPasswordHandler);
 
 module.exports = {
   authRouter
