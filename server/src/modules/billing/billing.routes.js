@@ -10,6 +10,7 @@ const { STAFF_ROLES } = require("../../constants/appConstants");
 const { requireAuth, requireRoles } = require("../../middlewares/authMiddleware");
 const {
   createBillHandler,
+  getBillingPrecheckHandler,
   getBillByIdHandler,
   getBillListHandler
 } = require("./billing.controller");
@@ -29,6 +30,7 @@ billingRouter.use(
  * Returns the bill list.
  */
 billingRouter.get("/", getBillListHandler);
+billingRouter.get("/precheck", getBillingPrecheckHandler);
 
 /**
  * Returns one bill by id.

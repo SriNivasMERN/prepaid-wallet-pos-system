@@ -48,6 +48,20 @@ export function createBillRecord(payload, token) {
 }
 
 /**
+ * Fetches the billing readiness profile for one card number.
+ */
+export function fetchBillingPrecheck(cardNumber, token) {
+  const searchParams = new URLSearchParams();
+  searchParams.set("cardNumber", cardNumber.trim());
+
+  return httpRequest(`/billing/precheck?${searchParams.toString()}`, {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+}
+
+/**
  * Loads active product options for billing line items.
  */
 export function fetchBillingProductOptions(token) {

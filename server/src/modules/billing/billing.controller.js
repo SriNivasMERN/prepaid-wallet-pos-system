@@ -5,7 +5,7 @@
  */
 
 const { buildApiResponse } = require("../../utils/apiResponse");
-const { createBill, getBillById, getBillList } = require("./billing.service");
+const { createBill, getBillingPrecheck, getBillById, getBillList } = require("./billing.service");
 
 /**
  * Returns the bill list for the Billing module.
@@ -44,6 +44,24 @@ const getBillByIdHandler = async (request, response, next) => {
 };
 
 /**
+ * Returns the billing readiness profile for one card number.
+ */
+const getBillingPrecheckHandler = async (request, response, next) => {
+  try {
+    const data = await getBillingPrecheck(request.query.cardNumber);
+
+    response.status(200).json(
+      buildApiResponse({
+        message: "Billing precheck fetched successfully.",
+        data
+      })
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Creates a new bill.
  */
 const createBillHandler = async (request, response, next) => {
@@ -63,6 +81,7 @@ const createBillHandler = async (request, response, next) => {
 
 module.exports = {
   getBillListHandler,
+  getBillingPrecheckHandler,
   getBillByIdHandler,
   createBillHandler
 };

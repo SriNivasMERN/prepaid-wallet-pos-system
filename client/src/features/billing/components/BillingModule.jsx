@@ -13,6 +13,7 @@ import StatusChip from "../../../components/common/StatusChip";
 import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
 import {
   createBillRecord,
+  fetchBillingPrecheck,
   fetchBillList,
   fetchBillingProductOptions
 } from "../api/billingApi";
@@ -109,6 +110,9 @@ function BillingModule({ authToken, onMetricsChange }) {
   const [appliedBillFilters, setAppliedBillFilters] = useState(billingInitialFilters);
   const [billReloadToken, setBillReloadToken] = useState(0);
   const [selectedBillRecord, setSelectedBillRecord] = useState(null);
+  const [billingPrecheck, setBillingPrecheck] = useState(null);
+  const [isLoadingBillingPrecheck, setIsLoadingBillingPrecheck] = useState(false);
+  const [billingPrecheckError, setBillingPrecheckError] = useState("");
 
   useEffect(() => {
     const loadProductOptions = async () => {
@@ -194,6 +198,8 @@ function BillingModule({ authToken, onMetricsChange }) {
     setBillingFormErrors({});
     setBillingRequestError("");
     setBillingSuccessMessage("");
+    setBillingPrecheck(null);
+    setBillingPrecheckError("");
   };
 
   const handleBillingInputChange = (event) => {
@@ -210,6 +216,11 @@ function BillingModule({ authToken, onMetricsChange }) {
     }));
     setBillingRequestError("");
     setBillingSuccessMessage("");
+
+    if (name === "cardNumber") {
+      setBillingPrecheck(null);
+      setBillingPrecheckError("");
+    }
   };
 
   const handleBillFilterChange = (event) => {
@@ -302,6 +313,13 @@ function BillingModule({ authToken, onMetricsChange }) {
       return;
     }
 
+    if (billingPrecheck && !billingPrecheck.canBill) {
+      setBillingRequestError(
+        billingPrecheck.blockingReason || "Billing is not allowed for the supplied card."
+      );
+      return;
+    }
+
     setIsCreatingBill(true);
     setBillingRequestError("");
     setBillingSuccessMessage("");
@@ -341,6 +359,32 @@ function BillingModule({ authToken, onMetricsChange }) {
   const resetBillFilters = () => {
     setBillFilterForm(billingInitialFilters);
     setAppliedBillFilters(billingInitialFilters);
+  };
+
+  const handleBillingPrecheck = async () => {
+    const trimmedCardNumber = billingForm.cardNumber.trim();
+
+    if (!trimmedCardNumber) {
+      setBillingFormErrors((currentErrors) => ({
+        ...currentErrors,
+        cardNumber: "Card number is required."
+      }));
+      return;
+    }
+
+    setIsLoadingBillingPrecheck(true);
+    setBillingPrecheck(null);
+    setBillingPrecheckError("");
+    setBillingRequestError("");
+
+    try {
+      const response = await fetchBillingPrecheck(trimmedCardNumber, authToken);
+      setBillingPrecheck(response.data || null);
+    } catch (error) {
+      setBillingPrecheckError(getApiErrorMessage(error));
+    } finally {
+      setIsLoadingBillingPrecheck(false);
+    }
   };
 
   return (
@@ -420,10 +464,55 @@ function BillingModule({ authToken, onMetricsChange }) {
           </label>
 
           <div className="form-actions form-actions--full">
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={handleBillingPrecheck}
+              disabled={isLoadingBillingPrecheck}
+            >
+              {isLoadingBillingPrecheck ? "Checking..." : "Check Card"}
+            </button>
             <button type="button" className="secondary-button" onClick={handleAddBillItem}>
               Add Item
             </button>
           </div>
+
+          {billingPrecheckError ? (
+            <div className="form-message form-message--error">{billingPrecheckError}</div>
+          ) : null}
+
+          {billingPrecheck ? (
+            <div className="details-grid">
+              <div className="details-grid__item">
+                <span>Member</span>
+                <strong>{billingPrecheck.member?.fullName || "-"}</strong>
+              </div>
+              <div className="details-grid__item">
+                <span>Mobile Number</span>
+                <strong>{billingPrecheck.member?.mobileNumber || "-"}</strong>
+              </div>
+              <div className="details-grid__item">
+                <span>Card Status</span>
+                <strong>{billingPrecheck.card?.status || "-"}</strong>
+              </div>
+              <div className="details-grid__item">
+                <span>Wallet Balance</span>
+                <strong>{formatCurrency(billingPrecheck.wallet?.balance || 0)}</strong>
+              </div>
+              <div className="details-grid__item">
+                <span>Wallet Status</span>
+                <strong>{billingPrecheck.wallet?.status || "-"}</strong>
+              </div>
+              <div className="details-grid__item">
+                <span>Billing Ready</span>
+                <strong>{billingPrecheck.canBill ? "Yes" : "No"}</strong>
+              </div>
+              <div className="details-grid__item details-grid__item--wide">
+                <span>Blocking Reason</span>
+                <strong>{billingPrecheck.blockingReason || "Card is ready for billing."}</strong>
+              </div>
+            </div>
+          ) : null}
 
           {billingFormErrors.items ? (
             <div className="form-message form-message--error">{billingFormErrors.items}</div>
@@ -477,7 +566,11 @@ function BillingModule({ authToken, onMetricsChange }) {
           </div>
 
           <div className="form-actions form-actions--full">
-            <button type="submit" className="primary-button" disabled={isCreatingBill}>
+            <button
+              type="submit"
+              className="primary-button"
+              disabled={isCreatingBill || isLoadingBillingPrecheck || (billingPrecheck && !billingPrecheck.canBill)}
+            >
               {isCreatingBill ? "Creating..." : "Create Bill"}
             </button>
             <button type="button" className="secondary-button" onClick={resetBillingForm}>

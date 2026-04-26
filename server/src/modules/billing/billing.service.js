@@ -239,6 +239,46 @@ const getBillingContextByCardNumber = async (cardNumber) => {
 };
 
 /**
+ * Builds a readable operational billing precheck from the resolved billing context.
+ */
+const buildBillingPrecheck = ({ card, member, wallet }) => {
+  const cardUsable = card.status === RECORD_STATUS.ACTIVE && !isCardExpired(card.expiresAt);
+  const memberActive = member.status === RECORD_STATUS.ACTIVE;
+  const walletActive = wallet.status === RECORD_STATUS.ACTIVE;
+  const canBill = cardUsable && memberActive && walletActive;
+
+  return {
+    canBill,
+    blockingReason:
+      !cardUsable
+        ? "Member must have a usable active card before billing."
+        : !memberActive
+          ? "Only an active member can be billed."
+          : !walletActive
+            ? "Only an active wallet can be billed."
+            : null,
+    card: {
+      id: card._id,
+      cardNumber: card.cardNumber,
+      status: card.status,
+      expiresAt: card.expiresAt,
+      expired: isCardExpired(card.expiresAt)
+    },
+    member: {
+      id: member._id,
+      fullName: member.fullName,
+      mobileNumber: member.mobileNumber,
+      status: member.status
+    },
+    wallet: {
+      id: wallet._id,
+      balance: wallet.balance,
+      status: wallet.status
+    }
+  };
+};
+
+/**
  * Returns validated bill line items from requested products.
  */
 const buildBillItems = async (requestedItems) => {
@@ -443,6 +483,29 @@ const createBill = async (payload, currentAuth) => {
 };
 
 /**
+ * Returns the billing readiness profile for a supplied card number.
+ */
+const getBillingPrecheck = async (cardNumber) => {
+  const normalizedCardNumber = typeof cardNumber === "string" ? cardNumber.trim() : "";
+
+  if (!normalizedCardNumber) {
+    throw createValidationError(
+      [
+        {
+          field: "cardNumber",
+          message: "Card number is required."
+        }
+      ],
+      "Billing precheck validation failed."
+    );
+  }
+
+  const context = await getBillingContextByCardNumber(normalizedCardNumber);
+
+  return buildBillingPrecheck(context);
+};
+
+/**
  * Returns the bill list with optional search, status, cashier, and date filters.
  */
 const getBillList = async (query = {}) => {
@@ -522,6 +585,7 @@ const getBillById = async (billId) => {
 
 module.exports = {
   createBill,
+  getBillingPrecheck,
   getBillList,
   getBillById
 };
