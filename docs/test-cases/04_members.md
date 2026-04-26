@@ -72,6 +72,7 @@
    - Expected Result:
      - Member details modal opens.
      - Member profile information is shown.
+     - Live readiness details such as linked card state, card-operation readiness, and blocking reason are shown where applicable.
 
 8. Edit action updates member successfully
    - Steps:

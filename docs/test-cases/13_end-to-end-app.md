@@ -114,7 +114,25 @@
      - Staff status changes between `Active` and `Inactive`.
      - Staff record remains visible in the list.
 
-9. Super Admin creates products needed for downstream operations
+9. Super Admin can reset a manageable staff password
+   - Steps:
+     1. In `Staff`, click `Reset Password` on the Cashier row.
+     2. Enter valid new password values.
+     3. Submit the reset.
+   - Expected Result:
+     - Password reset succeeds.
+     - Cashier account remains otherwise unchanged.
+
+10. Super Admin can manage own account through `My Account`
+    - Steps:
+      1. Open `My Account`.
+      2. Update one safe profile field.
+      3. Change password using valid current and new password values.
+    - Expected Result:
+      - Profile update succeeds and current session reflects the updated values.
+      - Password change succeeds.
+
+11. Super Admin creates products needed for downstream operations
    - Steps:
      1. Open `Products`.
      2. Create at least two active products with valid code, unit, and selling price.
@@ -122,7 +140,7 @@
      - Products are created successfully.
      - Product rows appear in the list.
 
-10. Products search, filter, view, edit, and status change all work
+12. Products search, filter, view, edit, and status change all work
    - Steps:
      1. Search by product name or code.
      2. Filter by `Status` and `Unit`.
@@ -135,7 +153,7 @@
      - Edit saves successfully.
      - Product lifecycle remains visible through `Active` and `Inactive`.
 
-11. Super Admin creates members needed for card and wallet operations
+13. Super Admin creates members needed for card and wallet operations
    - Steps:
      1. Open `Members`.
      2. Create at least two active member records with valid profile data.
@@ -143,7 +161,7 @@
      - Members are created successfully.
      - Member rows appear in the list.
 
-12. Members search, view, edit, and status change work correctly
+14. Members search, view, edit, and status change work correctly
    - Steps:
      1. Search members using approved QA data.
      2. Filter by `Status`.
@@ -153,10 +171,11 @@
    - Expected Result:
      - List behavior is correct.
      - Member details modal opens correctly.
+     - Readiness details are visible in member details.
      - Edit saves successfully.
      - Member remains visible after status change.
 
-13. Card is assigned to an eligible active member
+15. Card is assigned to an eligible active member
    - Steps:
      1. Open `Cards`.
      2. Assign a new valid card to Member A.
@@ -164,7 +183,7 @@
      - Card assignment succeeds.
      - Card row appears in the list as `Active`.
 
-14. Cards search, filter, and details flow work correctly
+16. Cards search, filter, and details flow work correctly
    - Steps:
      1. Search by card number, member name, or mobile number.
      2. Filter by member and status.
@@ -173,8 +192,9 @@
    - Expected Result:
      - Filters work correctly.
      - Card details modal opens correctly.
+     - Live readiness details are visible in card details.
 
-15. Card replacement flow works correctly for an active card
+17. Card replacement flow works correctly for an active card
    - Steps:
      1. Click `Replace` on the active card.
      2. Enter a new valid card number and valid dates.
@@ -185,7 +205,7 @@
      - Replacement card becomes `Active`.
      - Member linkage remains correct.
 
-16. Wallet is created for eligible member
+18. Wallet is created for eligible member
    - Steps:
      1. Open `Wallets`.
      2. Create a wallet for Member A.
@@ -193,7 +213,7 @@
      - Wallet is created successfully.
      - Wallet row appears in the list.
 
-17. Wallet search, view, edit, and lifecycle flow work correctly
+19. Wallet search, view, edit, and lifecycle flow work correctly
    - Steps:
      1. Search and filter wallet records.
      2. Open `View` on the wallet row.
@@ -205,7 +225,7 @@
      - Wallet remains visible after lifecycle changes.
      - No balance history is mutated by admin lifecycle actions.
 
-18. Opening stock is created for active products
+20. Opening stock is created for active products
    - Steps:
      1. Open `Stock`.
      2. Record valid opening stock for at least one active product.
@@ -213,7 +233,7 @@
      - Stock movement succeeds.
      - Stock list shows current quantity.
 
-19. Additional stock movement works and stock details can be viewed
+21. Additional stock movement works and stock details can be viewed
    - Steps:
      1. Record one valid manual stock update for an active product.
      2. Search and filter stock rows.
@@ -224,7 +244,7 @@
      - Stock details modal opens correctly.
      - No edit/delete action exists for stock history.
 
-20. Cashier login works and restricted modules remain unavailable
+22. Cashier login works and restricted modules remain unavailable
    - Steps:
      1. Log out from Super Admin.
      2. Log in as the created Cashier.
@@ -234,7 +254,7 @@
      - Cashier can access allowed operational modules only.
      - `Staff`, `Products`, `Stock`, and `Reports` remain unavailable.
 
-21. Cashier creates a recharge successfully
+23. Cashier creates a recharge successfully
    - Steps:
      1. Open `Recharges`.
      2. Create a valid recharge for Member A.
@@ -243,7 +263,7 @@
      - Wallet balance increases correctly.
      - Recharge row appears in the list.
 
-22. Recharge list filters and details flow work correctly
+24. Recharge list filters and details flow work correctly
    - Steps:
      1. Search and filter recharge records.
      2. Use `Refresh`.
@@ -253,7 +273,16 @@
      - Recharge details modal opens correctly.
      - Recharge record remains immutable.
 
-23. Cashier creates a bill successfully using stocked product and funded wallet
+25. Billing precheck confirms readiness before bill creation
+   - Steps:
+     1. Open `Billing`.
+     2. Enter Member A's valid card number.
+     3. Click `Check Card`.
+   - Expected Result:
+     - Billing precheck shows member, card, wallet, and readiness state clearly.
+     - No blocking reason is shown for the valid funded scenario.
+
+26. Cashier creates a bill successfully using stocked product and funded wallet
    - Steps:
      1. Open `Billing`.
      2. Create a bill for Member A using available product stock and wallet balance.
@@ -263,7 +292,7 @@
      - Product stock reduces correctly.
      - Wallet balance updates correctly.
 
-24. Billing list details flow works correctly
+27. Billing list details flow works correctly
    - Steps:
      1. Search and filter bill records if filters are available.
      2. Use `Refresh`.
@@ -274,7 +303,7 @@
      - Bill line items and balances are shown clearly.
      - Bill record remains immutable after creation.
 
-25. Cashier creates a debit successfully
+28. Cashier creates a debit successfully
    - Steps:
      1. Open `Debits`.
      2. Create a valid debit for Member A.
@@ -283,7 +312,7 @@
      - Wallet balance decreases correctly.
      - Debit row appears in the list.
 
-26. Debits list details flow works correctly
+29. Debits list details flow works correctly
    - Steps:
      1. Search and filter debit records if applicable.
      2. Use `Refresh`.
@@ -293,7 +322,7 @@
      - Debit details modal opens correctly.
      - Debit record remains immutable after creation.
 
-27. Transaction ledger shows both recharge credit and debit records
+30. Transaction ledger shows both recharge credit and debit records
    - Steps:
      1. Open `Transactions`.
      2. Review the ledger after the recharge and debit are created.
@@ -304,7 +333,7 @@
      - Debit appears as `Debit`.
      - Reference values and balances match source operations.
 
-28. Admin login works and admin role restrictions are enforced
+31. Admin login works and admin role restrictions are enforced
    - Steps:
      1. Log out from Cashier.
      2. Log in as the created Admin.
@@ -316,7 +345,7 @@
      - Admin can manage allowed subordinate staff only.
      - Restricted role-management boundaries remain enforced.
 
-29. Reports module shows derived data from completed end-to-end flow
+32. Reports module shows derived data from completed end-to-end flow
    - Steps:
      1. While logged in as Super Admin or Admin, open `Reports`.
      2. Review default `Sales`.
@@ -329,7 +358,7 @@
      - Stock report shows stock-movement-derived data.
      - Summary metrics change correctly by report type.
 
-30. Final data integrity check across all modules passes
+33. Final data integrity check across all modules passes
    - Steps:
      1. Review created records across `Members`, `Cards`, `Wallets`, `Stock`, `Recharges`, `Billing`, `Debits`, `Transactions`, and `Reports`.
      2. Cross-check one full member journey end to end.

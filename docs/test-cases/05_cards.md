@@ -81,6 +81,7 @@
    - Expected Result:
      - `Card Details` modal opens.
      - Card number, status, member, mobile number, dates, and operational note are shown.
+     - Live readiness details such as expiry state, operational usability, and blocking reason are shown where applicable.
 
 9. Replace an eligible active card successfully through UI
    - Steps:

@@ -5,6 +5,7 @@
 - Verify login succeeds only for valid active staff credentials.
 - Verify invalid login and invalid setup attempts are rejected correctly.
 - Verify protected access to the current authenticated staff session.
+- Verify authenticated staff can manage their own account through `My Account`.
 
 ## Preconditions
 - Approved QA environment and approved QA test data are available for execution.
@@ -67,6 +68,28 @@
    - Expected Result:
      - The request succeeds.
      - The response returns the current staff profile with role, status, allowed modules, and allowed permissions.
+
+7. Logged-in active user can update own profile through `My Account`
+   - Steps:
+     1. Log in with a valid active staff account.
+     2. Open `My Account`.
+     3. Update `Full Name` or `Username` with approved valid QA values.
+     4. Save the profile.
+   - Expected Result:
+     - Profile update succeeds.
+     - Success message is shown.
+     - Updated profile values are reflected in the current session view.
+
+8. Logged-in active user can change own password through `My Account`
+   - Steps:
+     1. Log in with a valid active staff account.
+     2. Open `My Account`.
+     3. Enter valid values for `Current Password`, `New Password`, and `Confirm Password`.
+     4. Submit the password change.
+   - Expected Result:
+     - Password update succeeds.
+     - Success message is shown.
+     - Current session remains usable.
 
 ## Negative Test Cases
 1. Setup form rejects submission when all fields are empty
@@ -160,6 +183,37 @@
      - The dashboard is not shown.
      - The application redirects to `/login` when setup is already complete.
 
+11. `My Account` profile update rejects duplicate username
+   - Steps:
+     1. Log in with a valid active staff account.
+     2. Open `My Account`.
+     3. Enter a username already used by another staff account.
+     4. Save the profile.
+   - Expected Result:
+     - Profile update is rejected.
+     - Duplicate-username error is shown.
+
+12. `My Account` password change rejects incorrect current password
+   - Steps:
+     1. Log in with a valid active staff account.
+     2. Open `My Account`.
+     3. Enter an incorrect `Current Password`.
+     4. Enter valid new password values.
+     5. Submit the password change.
+   - Expected Result:
+     - Password update is rejected.
+     - Error indicates the current password is incorrect.
+
+13. `My Account` password change rejects invalid new password input
+   - Steps:
+     1. Log in with a valid active staff account.
+     2. Open `My Account`.
+     3. Enter a too-short new password or mismatched confirm password.
+     4. Submit the password change.
+   - Expected Result:
+     - Password update is rejected.
+     - Field validation is shown.
+
 ## Edge Cases
 1. Username is entered with different letter casing
    - Steps:
@@ -194,6 +248,15 @@
      2. Enter `/login` in the browser address bar.
    - Expected Result:
      - The application redirects the user to `/dashboard`.
+
+5. Profile update changes session-visible account identity immediately
+   - Steps:
+     1. Log in successfully.
+     2. Open `My Account`.
+     3. Update `Full Name` or `Username`.
+     4. Save the profile and observe the dashboard header or session-visible account area.
+   - Expected Result:
+     - Updated account information is reflected immediately without requiring a fresh login.
 
 ## API Verification Steps
 - Endpoint: `GET /api/v1/auth/setup-status`
@@ -230,6 +293,25 @@
   - Response status is `200` for a valid active session.
   - Missing, invalid, or expired token requests are rejected.
 
+- Endpoint: `PATCH /api/v1/auth/me/profile`
+- Payload:
+  1. Send a `PATCH` request to `/api/v1/auth/me/profile`.
+  2. Include header `Authorization: Bearer <valid token>`.
+  3. Use approved valid QA values for `fullName` and `username`.
+- Expected Response:
+  - Response status is `200` for a valid profile update.
+  - Updated current staff profile is returned.
+  - Invalid payload, duplicate username, or invalid session requests are rejected.
+
+- Endpoint: `PATCH /api/v1/auth/me/password`
+- Payload:
+  1. Send a `PATCH` request to `/api/v1/auth/me/password`.
+  2. Include header `Authorization: Bearer <valid token>`.
+  3. Use approved valid QA values for `currentPassword`, `newPassword`, and `confirmPassword`.
+- Expected Response:
+  - Response status is `200` for a valid password change.
+  - Invalid payload, incorrect current password, or invalid session requests are rejected.
+
 ## UI Verification Steps
 - Page/Screen: First-Time Setup
 - Steps:
@@ -265,3 +347,15 @@
   - Unauthenticated users cannot access the dashboard.
   - Authenticated users can access the dashboard.
   - Logged-in users are redirected away from the login screen.
+
+- Page/Screen: `My Account`
+- Steps:
+  1. Log in with a valid active staff account.
+  2. Open `My Account`.
+  3. Update valid profile values and save.
+  4. Submit invalid profile values such as duplicate username.
+  5. Submit valid and invalid password-change combinations.
+- Expected Result:
+  - Profile and password actions are available only for the current authenticated user.
+  - Valid self-service updates succeed.
+  - Invalid profile and password updates are blocked with clear validation or request errors.

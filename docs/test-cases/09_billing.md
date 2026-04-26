@@ -2,6 +2,7 @@
 ## Test Objectives
 - Verify only allowed roles can access and use the Billing module.
 - Verify bill creation works correctly with valid card-linked wallet and valid bill items.
+- Verify billing precheck and readiness visibility work correctly before bill submission.
 - Verify billing list, search, status, and date filters work correctly.
 - Verify bill `View Details` flow behaves correctly while keeping completed bills immutable.
 - Verify frontend validation, duplicate-item protection, and backend billing validation behavior.
@@ -31,16 +32,27 @@
    - Steps:
      1. Open `Billing`.
      2. Enter a valid linked card number.
-     3. Add one or more valid products with valid quantities.
-     4. Optionally enter valid notes.
-     5. Click `Create Bill`.
+     3. Optionally click `Check Card`.
+     4. Add one or more valid products with valid quantities.
+     5. Optionally enter valid notes.
+     6. Click `Create Bill`.
    - Expected Result:
      - Bill creation succeeds.
      - Success message is shown.
      - The bills list reloads successfully.
      - A new completed bill appears in the list.
 
-3. Search bills by bill number, member name, or card number
+3. Billing precheck shows readiness details for valid card
+   - Steps:
+     1. Open `Billing`.
+     2. Enter a valid linked card number.
+     3. Click `Check Card`.
+   - Expected Result:
+     - Readiness information is shown for member, card, and wallet.
+     - Billing-ready state is shown clearly.
+     - No blocking reason is shown when the card is ready for billing.
+
+4. Search bills by bill number, member name, or card number
    - Steps:
      1. Open `Billing`.
      2. Use `Search Bill`.
@@ -48,7 +60,7 @@
    - Expected Result:
      - Matching bill records are shown.
 
-4. Filter bills by status
+5. Filter bills by status
    - Steps:
      1. Open `Billing`.
      2. Select `Completed` in the status filter.
@@ -56,7 +68,7 @@
    - Expected Result:
      - Only completed bill rows are shown.
 
-5. Filter bills by date
+6. Filter bills by date
    - Steps:
      1. Open `Billing`.
      2. Select a valid billing date in the `Date` filter.
@@ -64,7 +76,7 @@
    - Expected Result:
      - Only bills created on the selected date are shown.
 
-6. Reset billing filters restores default listing
+7. Reset billing filters restores default listing
    - Steps:
      1. Apply one or more billing filters.
      2. Click `Reset`.
@@ -72,7 +84,7 @@
      - Filter inputs return to default values.
      - The bills list reloads without previous filters.
 
-7. Refresh reloads the bills list with current filters
+8. Refresh reloads the bills list with current filters
    - Steps:
      1. Apply one or more filters.
      2. Click `Refresh`.
@@ -80,7 +92,7 @@
      - The list reloads successfully.
      - Currently applied filters remain effective.
 
-8. View action opens bill details modal
+9. View action opens bill details modal
    - Steps:
      1. Open `Billing`.
      2. Click `View` on a bill row.
@@ -151,6 +163,25 @@
    - Expected Result:
      - No edit or delete action is exposed for completed bills.
 
+8. Billing precheck rejects empty card number
+   - Steps:
+     1. Open `Billing`.
+     2. Leave `Card Number` empty.
+     3. Click `Check Card`.
+   - Expected Result:
+     - Precheck does not proceed.
+     - Card-number validation is shown.
+
+9. Billing precheck shows blocking reason for ineligible card or wallet state
+   - Steps:
+     1. Open `Billing`.
+     2. Enter a card number tied to an ineligible operational state such as inactive member, inactive wallet, or unusable card.
+     3. Click `Check Card`.
+   - Expected Result:
+     - Readiness summary is shown with billing blocked.
+     - Blocking reason explains the actual business issue.
+     - Create action remains unavailable while blocked state is known.
+
 ## Edge Cases
 1. Search remains case-insensitive for member name and card number
    - Steps:
@@ -175,6 +206,13 @@
    - Expected Result:
      - The total always reflects the exact current pending item list.
 
+4. Create action stays guarded when precheck shows blocked readiness
+   - Steps:
+     1. Run `Check Card` using a blocked card or wallet state.
+     2. Review the create action area.
+   - Expected Result:
+     - The create action does not allow a normal bill submission while blocked readiness is shown.
+
 ## API Verification Steps
 - Endpoint: `GET /api/v1/billing`
 - Payload:
@@ -197,6 +235,16 @@
   - `404 Not Found` for missing linked records.
   - `409 Conflict` for insufficient balance, insufficient stock, duplicate product, inactive product, or other billing-not-allowed conditions.
 
+- Endpoint: `GET /api/v1/billing/precheck`
+- Payload:
+  1. Send a `GET` request to `/api/v1/billing/precheck?cardNumber=<valid card number>`.
+  2. Include header `Authorization: Bearer <valid token>`.
+- Expected Response:
+  - `200 OK` for a valid precheck request.
+  - Response returns card, member, wallet, `canBill`, and `blockingReason`.
+  - `400 Bad Request` for missing card number.
+  - Ineligible readiness states are returned clearly in the response data.
+
 - Endpoint: `GET /api/v1/billing/:billId`
 - Payload:
   1. Send a `GET` request to `/api/v1/billing/<valid bill id>`.
@@ -211,13 +259,15 @@
 - Steps:
   1. Open `Billing` from the sidebar.
   2. Verify the bill form, filters, and bills list are visible.
-  3. Add valid pending items and verify total calculation.
-  4. Submit invalid values.
-  5. Submit valid approved QA billing values.
-  6. Use search, status, and date filters.
-  7. Use `View`, `Reset`, and `Refresh`.
+  3. Use `Check Card` with valid and invalid readiness scenarios.
+  4. Add valid pending items and verify total calculation.
+  5. Submit invalid values.
+  6. Submit valid approved QA billing values.
+  7. Use search, status, and date filters.
+  8. Use `View`, `Reset`, and `Refresh`.
 - Expected Result:
   - Billing module opens for allowed roles.
+  - Billing precheck shows readiness and blocking details correctly.
   - Invalid submissions are blocked with clear validation.
   - Valid bill creation succeeds.
   - Bill details modal works correctly.
