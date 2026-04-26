@@ -59,3 +59,14 @@ export function replaceCardRecord(cardId, payload, token) {
     body: payload
   });
 }
+
+/**
+ * Fetches the operational readiness profile for one card.
+ */
+export function fetchCardOperationalProfile(cardId, token) {
+  return httpRequest(`/cards/${cardId}/operational-profile`, {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+}

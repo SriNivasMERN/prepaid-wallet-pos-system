@@ -12,6 +12,7 @@ import SectionCard from "../../../components/common/SectionCard";
 import StatusChip from "../../../components/common/StatusChip";
 import {
   createMemberRecord,
+  fetchMemberOperationalProfile,
   fetchMemberList,
   updateMemberRecord
 } from "../api/memberApi";
@@ -70,6 +71,9 @@ function MembersModule({ authToken, onMetricsChange }) {
   const [isUpdatingMember, setIsUpdatingMember] = useState(false);
   const [memberPendingStatusChange, setMemberPendingStatusChange] = useState(null);
   const [isUpdatingMemberStatus, setIsUpdatingMemberStatus] = useState(false);
+  const [memberProfileRecord, setMemberProfileRecord] = useState(null);
+  const [isLoadingMemberProfile, setIsLoadingMemberProfile] = useState(false);
+  const [memberProfileRequestError, setMemberProfileRequestError] = useState("");
 
   useEffect(() => {
     const loadMembers = async () => {
@@ -272,6 +276,22 @@ function MembersModule({ authToken, onMetricsChange }) {
     }
   };
 
+  const openMemberDetailsModal = async (member) => {
+    setSelectedMemberRecord(member);
+    setMemberProfileRecord(null);
+    setMemberProfileRequestError("");
+    setIsLoadingMemberProfile(true);
+
+    try {
+      const response = await fetchMemberOperationalProfile(member.id, authToken);
+      setMemberProfileRecord(response.data || null);
+    } catch (error) {
+      setMemberProfileRequestError(getApiErrorMessage(error));
+    } finally {
+      setIsLoadingMemberProfile(false);
+    }
+  };
+
   const handleMemberFilterSubmit = (event) => {
     event.preventDefault();
     setAppliedMemberFilters({
@@ -435,7 +455,7 @@ function MembersModule({ authToken, onMetricsChange }) {
                           icon="view"
                           label={`View ${member.fullName}`}
                           title="View details"
-                          onClick={() => setSelectedMemberRecord(member)}
+                          onClick={() => openMemberDetailsModal(member)}
                         />
                         <IconButton
                           icon="edit"
@@ -469,9 +489,21 @@ function MembersModule({ authToken, onMetricsChange }) {
       <ModalDialog
         isOpen={Boolean(selectedMemberRecord)}
         title="Member Details"
-        onClose={() => setSelectedMemberRecord(null)}
+        onClose={() => {
+          setSelectedMemberRecord(null);
+          setMemberProfileRecord(null);
+          setMemberProfileRequestError("");
+        }}
         footer={(
-          <button type="button" className="secondary-button" onClick={() => setSelectedMemberRecord(null)}>
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={() => {
+              setSelectedMemberRecord(null);
+              setMemberProfileRecord(null);
+              setMemberProfileRequestError("");
+            }}
+          >
             Close
           </button>
         )}
@@ -499,6 +531,50 @@ function MembersModule({ authToken, onMetricsChange }) {
               <span>Created By</span>
               <strong>{selectedMemberRecord.createdBy?.fullName || "System"}</strong>
             </div>
+            {isLoadingMemberProfile ? (
+              <div className="details-grid__item details-grid__item--wide">
+                <span>Operational Readiness</span>
+                <strong>Loading operational profile...</strong>
+              </div>
+            ) : null}
+            {memberProfileRequestError ? (
+              <div className="details-grid__item details-grid__item--wide">
+                <span>Operational Readiness</span>
+                <strong>{memberProfileRequestError}</strong>
+              </div>
+            ) : null}
+            {memberProfileRecord?.operationalProfile ? (
+              <>
+                <div className="details-grid__item">
+                  <span>Linked Card</span>
+                  <strong>{memberProfileRecord.operationalProfile.linkedCardNumber || "No linked card"}</strong>
+                </div>
+                <div className="details-grid__item">
+                  <span>Linked Card Status</span>
+                  <strong>{memberProfileRecord.operationalProfile.linkedCardStatus || "-"}</strong>
+                </div>
+                <div className="details-grid__item">
+                  <span>Can Assign New Card</span>
+                  <strong>{memberProfileRecord.operationalProfile.canAssignNewCard ? "Yes" : "No"}</strong>
+                </div>
+                <div className="details-grid__item">
+                  <span>Can Replace Card</span>
+                  <strong>{memberProfileRecord.operationalProfile.canReplaceCard ? "Yes" : "No"}</strong>
+                </div>
+                <div className="details-grid__item">
+                  <span>Card Operations Ready</span>
+                  <strong>{memberProfileRecord.operationalProfile.canUseCardOperations ? "Yes" : "No"}</strong>
+                </div>
+                <div className="details-grid__item">
+                  <span>Card Expired</span>
+                  <strong>{memberProfileRecord.operationalProfile.linkedCardExpired ? "Yes" : "No"}</strong>
+                </div>
+                <div className="details-grid__item details-grid__item--wide">
+                  <span>Blocking Reason</span>
+                  <strong>{memberProfileRecord.operationalProfile.blockingReason || "Member is operationally ready."}</strong>
+                </div>
+              </>
+            ) : null}
           </div>
         ) : null}
       </ModalDialog>

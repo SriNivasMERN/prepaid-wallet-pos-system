@@ -14,6 +14,7 @@ import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
 import { fetchMemberList } from "../../members/api/memberApi";
 import {
   assignCardToMember,
+  fetchCardOperationalProfile,
   fetchCardList,
   replaceCardRecord
 } from "../api/cardApi";
@@ -117,6 +118,9 @@ function CardsModule({ authToken, onMetricsChange }) {
   const [replaceCardFormErrors, setReplaceCardFormErrors] = useState({});
   const [replaceCardRequestError, setReplaceCardRequestError] = useState("");
   const [isReplacingCard, setIsReplacingCard] = useState(false);
+  const [cardProfileRecord, setCardProfileRecord] = useState(null);
+  const [isLoadingCardProfile, setIsLoadingCardProfile] = useState(false);
+  const [cardProfileRequestError, setCardProfileRequestError] = useState("");
 
   useEffect(() => {
     const loadMembers = async () => {
@@ -325,6 +329,22 @@ function CardsModule({ authToken, onMetricsChange }) {
     }
   };
 
+  const openCardDetailsModal = async (card) => {
+    setSelectedCardRecord(card);
+    setCardProfileRecord(null);
+    setCardProfileRequestError("");
+    setIsLoadingCardProfile(true);
+
+    try {
+      const response = await fetchCardOperationalProfile(card.id, authToken);
+      setCardProfileRecord(response.data || null);
+    } catch (error) {
+      setCardProfileRequestError(getApiErrorMessage(error));
+    } finally {
+      setIsLoadingCardProfile(false);
+    }
+  };
+
   const handleCardFilterSubmit = (event) => {
     event.preventDefault();
     setAppliedCardFilters({
@@ -527,7 +547,7 @@ function CardsModule({ authToken, onMetricsChange }) {
                           icon="view"
                           label={`View ${card.cardNumber}`}
                           title="View details"
-                          onClick={() => setSelectedCardRecord(card)}
+                          onClick={() => openCardDetailsModal(card)}
                         />
                         <IconButton
                           icon="edit"
@@ -549,9 +569,21 @@ function CardsModule({ authToken, onMetricsChange }) {
       <ModalDialog
         isOpen={Boolean(selectedCardRecord)}
         title="Card Details"
-        onClose={() => setSelectedCardRecord(null)}
+        onClose={() => {
+          setSelectedCardRecord(null);
+          setCardProfileRecord(null);
+          setCardProfileRequestError("");
+        }}
         footer={(
-          <button type="button" className="secondary-button" onClick={() => setSelectedCardRecord(null)}>
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={() => {
+              setSelectedCardRecord(null);
+              setCardProfileRecord(null);
+              setCardProfileRequestError("");
+            }}
+          >
             Close
           </button>
         )}
@@ -587,6 +619,38 @@ function CardsModule({ authToken, onMetricsChange }) {
               <span>Operational Note</span>
               <strong>{selectedCardRecord.operationalProfile?.blockingReason || "Card is operationally ready."}</strong>
             </div>
+            {isLoadingCardProfile ? (
+              <div className="details-grid__item details-grid__item--wide">
+                <span>Operational Readiness</span>
+                <strong>Loading operational profile...</strong>
+              </div>
+            ) : null}
+            {cardProfileRequestError ? (
+              <div className="details-grid__item details-grid__item--wide">
+                <span>Operational Readiness</span>
+                <strong>{cardProfileRequestError}</strong>
+              </div>
+            ) : null}
+            {cardProfileRecord?.operationalProfile ? (
+              <>
+                <div className="details-grid__item">
+                  <span>Active Member</span>
+                  <strong>{cardProfileRecord.operationalProfile.activeMember ? "Yes" : "No"}</strong>
+                </div>
+                <div className="details-grid__item">
+                  <span>Expired</span>
+                  <strong>{cardProfileRecord.operationalProfile.expired ? "Yes" : "No"}</strong>
+                </div>
+                <div className="details-grid__item">
+                  <span>Operations Ready</span>
+                  <strong>{cardProfileRecord.operationalProfile.canUseInOperations ? "Yes" : "No"}</strong>
+                </div>
+                <div className="details-grid__item details-grid__item--wide">
+                  <span>Blocking Reason</span>
+                  <strong>{cardProfileRecord.operationalProfile.blockingReason || "Card is operationally ready."}</strong>
+                </div>
+              </>
+            ) : null}
           </div>
         ) : null}
       </ModalDialog>

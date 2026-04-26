@@ -55,3 +55,14 @@ export function updateMemberRecord(memberId, payload, token) {
     body: payload
   });
 }
+
+/**
+ * Fetches the operational readiness profile for one member.
+ */
+export function fetchMemberOperationalProfile(memberId, token) {
+  return httpRequest(`/members/${memberId}/operational-profile`, {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+}
