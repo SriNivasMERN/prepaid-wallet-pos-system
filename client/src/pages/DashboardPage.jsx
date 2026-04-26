@@ -12,7 +12,7 @@ import IconButton from "../components/common/IconButton";
 import ModalDialog from "../components/common/ModalDialog";
 import SectionCard from "../components/common/SectionCard";
 import StatusChip from "../components/common/StatusChip";
-import { APP_NAME, DASHBOARD_METRICS } from "../constants/appConstants";
+import { APP_NAME, DASHBOARD_METRICS, STAFF_ROLES } from "../constants/appConstants";
 import {
   getAllowedModulesForRole,
   getAllowedPermissionsForRole
@@ -355,11 +355,43 @@ function formatMoney(value) {
 }
 
 function getStaffRoleOptions(role) {
-  if (role === "Admin") {
-    return ["Cashier"];
+  if (role === STAFF_ROLES.ADMIN) {
+    return [STAFF_ROLES.CASHIER];
   }
 
-  return ["Admin", "Cashier"];
+  return [STAFF_ROLES.ADMIN, STAFF_ROLES.CASHIER];
+}
+
+function getStaffFilterRoleOptions(role) {
+  if (role === STAFF_ROLES.ADMIN) {
+    return [STAFF_ROLES.CASHIER];
+  }
+
+  return [STAFF_ROLES.SUPER_ADMIN, STAFF_ROLES.ADMIN, STAFF_ROLES.CASHIER];
+}
+
+function canManageStaffRecord(currentStaff, targetStaff) {
+  if (!currentStaff?.role || !targetStaff?.role || !targetStaff?.id) {
+    return false;
+  }
+
+  if (String(currentStaff.id) === String(targetStaff.id)) {
+    return false;
+  }
+
+  if (targetStaff.role === STAFF_ROLES.SUPER_ADMIN) {
+    return false;
+  }
+
+  if (currentStaff.role === STAFF_ROLES.SUPER_ADMIN) {
+    return [STAFF_ROLES.ADMIN, STAFF_ROLES.CASHIER].includes(targetStaff.role);
+  }
+
+  if (currentStaff.role === STAFF_ROLES.ADMIN) {
+    return targetStaff.role === STAFF_ROLES.CASHIER;
+  }
+
+  return false;
 }
 
 const modulePrimaryActions = {
@@ -388,6 +420,7 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
     allowedModules.includes("Billing") ? "Billing" : allowedModules[0] || ""
   );
   const roleOptions = getStaffRoleOptions(currentStaff?.role);
+  const staffFilterRoleOptions = getStaffFilterRoleOptions(currentStaff?.role);
   const [staffForm, setStaffForm] = useState({
     ...staffInitialForm,
     role: roleOptions[0] || staffInitialForm.role
@@ -1272,7 +1305,7 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
                     autoComplete="off"
                   >
                     <option value="">All</option>
-                    {roleOptions.map((role) => (
+                    {staffFilterRoleOptions.map((role) => (
                       <option key={role} value={role}>
                         {role}
                       </option>
@@ -1370,32 +1403,36 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
                                 title="View details"
                                 onClick={() => setSelectedStaffRecord(staff)}
                               />
-                              <IconButton
-                                icon="edit"
-                                label={`Edit ${staff.fullName}`}
-                                title="Edit staff"
-                                onClick={() => openEditStaffModal(staff)}
-                              />
-                              <IconButton
-                                icon="key"
-                                label={`Reset password for ${staff.fullName}`}
-                                title="Reset password"
-                                onClick={() => openResetStaffPasswordModal(staff)}
-                              />
-                              <IconButton
-                                icon={staff.status === "Active" ? "close" : "add"}
-                                label={`${staff.status === "Active" ? "Mark inactive" : "Activate"} ${staff.fullName}`}
-                                title={staff.status === "Active" ? "Mark inactive" : "Activate"}
-                                onClick={() =>
-                                  setStaffPendingStatusChange({
-                                    id: staff.id,
-                                    fullName: staff.fullName,
-                                    username: staff.username,
-                                    role: staff.role,
-                                    nextStatus: staff.status === "Active" ? "Inactive" : "Active"
-                                  })
-                                }
-                              />
+                              {canManageStaffRecord(currentStaff, staff) ? (
+                                <>
+                                  <IconButton
+                                    icon="edit"
+                                    label={`Edit ${staff.fullName}`}
+                                    title="Edit staff"
+                                    onClick={() => openEditStaffModal(staff)}
+                                  />
+                                  <IconButton
+                                    icon="key"
+                                    label={`Reset password for ${staff.fullName}`}
+                                    title="Reset password"
+                                    onClick={() => openResetStaffPasswordModal(staff)}
+                                  />
+                                  <IconButton
+                                    icon={staff.status === "Active" ? "close" : "add"}
+                                    label={`${staff.status === "Active" ? "Mark inactive" : "Activate"} ${staff.fullName}`}
+                                    title={staff.status === "Active" ? "Mark inactive" : "Activate"}
+                                    onClick={() =>
+                                      setStaffPendingStatusChange({
+                                        id: staff.id,
+                                        fullName: staff.fullName,
+                                        username: staff.username,
+                                        role: staff.role,
+                                        nextStatus: staff.status === "Active" ? "Inactive" : "Active"
+                                      })
+                                    }
+                                  />
+                                </>
+                              ) : null}
                             </div>
                           </td>
                         </tr>
