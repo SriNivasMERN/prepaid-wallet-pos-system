@@ -12,7 +12,7 @@ import IconButton from "../components/common/IconButton";
 import ModalDialog from "../components/common/ModalDialog";
 import SectionCard from "../components/common/SectionCard";
 import StatusChip from "../components/common/StatusChip";
-import { APP_NAME, DASHBOARD_METRICS, STAFF_ROLES } from "../constants/appConstants";
+import { APP_NAME, STAFF_ROLES } from "../constants/appConstants";
 import {
   getAllowedModulesForRole,
   getAllowedPermissionsForRole
@@ -575,6 +575,12 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
     admins: staffRecords.filter((staff) => staff.role === "Admin").length,
     cashiers: staffRecords.filter((staff) => staff.role === "Cashier").length
   };
+  const dashboardMetrics = [
+    { label: "Total Members", value: String(memberMetrics.total) },
+    { label: "Active Cards", value: String(cardMetrics.active) },
+    { label: "Today Recharges", value: String(rechargeMetrics.todayCount) },
+    { label: "Stock Alerts", value: String(productMetrics.stockAlerts || stockMetrics.lowStock) }
+  ];
 
   const handlePrimaryActionClick = () => {
     const firstSectionCard = document.querySelector(".app-shell__content .section-card");
@@ -1016,28 +1022,32 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
             <span>{currentStaff?.fullName || "Staff Session"}</span>
           </div>
           <div className="header-actions">
-            <button type="button" className="secondary-button" onClick={openAccountModal}>
-              My Account
-            </button>
-            <button type="button" className="secondary-button" onClick={handleLogout}>
-              Logout
-            </button>
-            <button
-              type="button"
-              className="primary-button"
-              onClick={handlePrimaryActionClick}
-              disabled={!canCreateEntries}
-            >
-              <span className="button-content">
-                <AdminIcon name="add" />
-                <span>{activePrimaryAction}</span>
-              </span>
-            </button>
+            <div className="header-actions__module">
+              <button
+                type="button"
+                className="primary-button header-actions__primary-action"
+                onClick={handlePrimaryActionClick}
+                disabled={!canCreateEntries}
+              >
+                <span className="button-content">
+                  <AdminIcon name="add" />
+                  <span>{activePrimaryAction}</span>
+                </span>
+              </button>
+            </div>
+            <div className="header-actions__utility">
+              <button type="button" className="secondary-button" onClick={openAccountModal}>
+                My Account
+              </button>
+              <button type="button" className="secondary-button secondary-button--quiet" onClick={handleLogout}>
+                Logout
+              </button>
+            </div>
           </div>
         </header>
 
         <section className="metric-grid">
-          {DASHBOARD_METRICS.map((metric) => (
+          {dashboardMetrics.map((metric) => (
             <button key={metric.label} type="button" className="metric-card">
               <span>{metric.label}</span>
               <strong>{metric.value}</strong>
@@ -1171,23 +1181,6 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
                   </button>
                 ))}
         </section>
-
-        <SectionCard title="Access Summary">
-          <div className="filter-grid">
-            <label className="field-group">
-              <span>Role</span>
-              <input type="text" value={currentStaff?.role || ""} readOnly />
-            </label>
-            <label className="field-group">
-              <span>Allowed Modules</span>
-              <input type="text" value={String(allowedModules.length)} readOnly />
-            </label>
-            <label className="field-group">
-              <span>Allowed Permissions</span>
-              <input type="text" value={String(allowedPermissions.length)} readOnly />
-            </label>
-          </div>
-        </SectionCard>
 
         {activeModule === "Staff" ? (
           <>

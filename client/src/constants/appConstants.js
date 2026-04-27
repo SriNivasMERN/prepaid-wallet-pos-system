@@ -27,9 +27,3 @@ export const APP_MODULES = [
   "Reports"
 ];
 
-export const DASHBOARD_METRICS = [
-  { label: "Total Members", value: "1,248" },
-  { label: "Active Cards", value: "1,204" },
-  { label: "Today Recharges", value: "186" },
-  { label: "Stock Alerts", value: "09" }
-];

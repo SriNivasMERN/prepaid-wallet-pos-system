@@ -45,7 +45,6 @@ button {
 
 button:disabled {
   cursor: not-allowed;
-  opacity: 0.72;
 }
 
 a {
@@ -303,6 +302,10 @@ small {
   border-color: #cdd8e4;
 }
 
+.secondary-button--quiet {
+  color: #5a7184;
+}
+
 .secondary-button:hover {
   background: rgba(242, 247, 252, 0.95);
   border-color: #bdd0df;
@@ -310,6 +313,21 @@ small {
 
 .primary-button:hover {
   background: linear-gradient(135deg, #173c55, #235f86);
+}
+
+.primary-button:disabled {
+  background: linear-gradient(135deg, #edf3f8, #e2ebf3);
+  color: #31506a;
+  border-color: #c7d4e0;
+  box-shadow: none;
+  opacity: 1;
+}
+
+.secondary-button:disabled {
+  background: rgba(238, 244, 249, 0.88);
+  color: #7790a5;
+  border-color: #d6e0e8;
+  box-shadow: none;
 }
 
 .button-content {
@@ -449,8 +467,60 @@ small {
 
 .header-actions {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 0.85rem;
   flex-wrap: wrap;
+}
+
+.header-actions__module,
+.header-actions__utility {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.header-actions__utility {
+  justify-content: flex-end;
+}
+
+.header-actions__primary-action {
+  min-width: 176px;
+  background: linear-gradient(180deg, rgba(249, 252, 255, 0.96), rgba(232, 241, 249, 0.98));
+  color: #244760;
+  border-color: #bfd0de;
+  box-shadow: 0 12px 24px rgba(38, 72, 104, 0.12);
+}
+
+.header-actions__primary-action .button-content {
+  color: inherit;
+}
+
+.header-actions__primary-action .admin-icon {
+  opacity: 0.88;
+}
+
+.header-actions__primary-action:hover {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(236, 244, 251, 1));
+  color: #1f425b;
+  border-color: #aec4d7;
+  box-shadow: 0 16px 28px rgba(38, 72, 104, 0.16);
+}
+
+.header-actions__primary-action:disabled {
+  background: linear-gradient(180deg, rgba(241, 246, 250, 0.96), rgba(231, 239, 246, 0.98));
+  color: #5a7286;
+  border-color: #ccd8e3;
+  box-shadow: none;
+}
+
+.header-actions__primary-action:disabled .button-content {
+  color: inherit;
+}
+
+.header-actions__primary-action:disabled .admin-icon {
+  opacity: 0.7;
 }
 
 .metric-grid {
@@ -571,10 +641,14 @@ small {
   background: rgba(12, 26, 39, 0.48);
   padding: 1.5rem;
   backdrop-filter: blur(10px);
+  overflow-y: auto;
 }
 
 .dialog-card {
   width: min(100%, 1000px);
+  max-height: calc(100vh - 3rem);
+  display: flex;
+  flex-direction: column;
   border-radius: 24px;
   border: 1px solid rgba(180, 197, 212, 0.9);
   background: rgba(255, 255, 255, 0.96);
@@ -603,6 +677,7 @@ small {
 
 .dialog-card__body {
   padding: 1.35rem;
+  overflow-y: auto;
 }
 
 .dialog-card__footer {
