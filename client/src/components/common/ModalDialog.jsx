@@ -4,12 +4,32 @@
  * Purpose: Provides a shared admin-style dialog shell with title, close button, and footer actions.
  */
 
+import { useEffect, useRef } from "react";
+
 import IconButton from "./IconButton";
 
 /**
  * Displays a reusable modal dialog when open.
  */
 function ModalDialog({ isOpen, title, onClose, children, footer = null, width = "720px" }) {
+  const dialogRef = useRef(null);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const focusTarget = dialogRef.current?.querySelector(
+      'input:not([type="hidden"]):not([readonly]):not([disabled]), select:not([disabled]), textarea:not([readonly]):not([disabled]), button:not([disabled])'
+    );
+
+    if (focusTarget instanceof HTMLElement) {
+      window.requestAnimationFrame(() => {
+        focusTarget.focus();
+      });
+    }
+  }, [isOpen]);
+
   if (!isOpen) {
     return null;
   }
@@ -17,6 +37,7 @@ function ModalDialog({ isOpen, title, onClose, children, footer = null, width = 
   return (
     <div className="dialog-overlay" role="presentation" onClick={onClose}>
       <section
+        ref={dialogRef}
         className="dialog-card"
         role="dialog"
         aria-modal="true"

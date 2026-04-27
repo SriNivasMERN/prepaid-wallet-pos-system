@@ -52,7 +52,7 @@ function validateMemberForm(formData) {
   return nextErrors;
 }
 
-function MembersModule({ authToken, onMetricsChange }) {
+function MembersModule({ authToken, onMetricsChange, onRecordsChange }) {
   const [memberForm, setMemberForm] = useState(memberInitialForm);
   const [memberFormErrors, setMemberFormErrors] = useState({});
   const [memberRequestError, setMemberRequestError] = useState("");
@@ -89,6 +89,7 @@ function MembersModule({ authToken, onMetricsChange }) {
         const nextRecords = response.data || [];
 
         setMemberRecords(nextRecords);
+        onRecordsChange?.(nextRecords);
         onMetricsChange?.({
           total: nextRecords.length,
           active: nextRecords.filter((member) => member.status === "Active").length,
@@ -102,7 +103,7 @@ function MembersModule({ authToken, onMetricsChange }) {
     };
 
     loadMembers();
-  }, [authToken, appliedMemberFilters, memberReloadToken, onMetricsChange]);
+  }, [authToken, appliedMemberFilters, memberReloadToken, onMetricsChange, onRecordsChange]);
 
   const resetMemberForm = () => {
     setMemberForm(memberInitialForm);

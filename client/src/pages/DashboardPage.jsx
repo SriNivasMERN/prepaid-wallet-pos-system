@@ -4,7 +4,7 @@
  * Purpose: Provides the authenticated operational layout with module navigation, staff management, member management, card management, and logout control.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import AdminIcon from "../components/common/AdminIcon";
@@ -258,6 +258,420 @@ function validateStaffForm(formData) {
   return nextErrors;
 }
 
+function formatMetricValue(value) {
+  if (typeof value === "number") {
+    return String(value);
+  }
+
+  return String(value ?? "0");
+}
+
+function buildMetricDetails(activeModule, data) {
+  if (activeModule === "Dashboard") {
+    return [
+      {
+        label: "Total Members",
+        title: "All Members",
+        records: data.members,
+        columns: ["Member", "Mobile Number", "Status"],
+        getRow: (member) => [member.fullName, member.mobileNumber, member.status]
+      },
+      {
+        label: "Active Cards",
+        title: "Active Cards",
+        records: data.cards.filter((card) => card.status === "Active"),
+        columns: ["Card Number", "Member", "Status"],
+        getRow: (card) => [card.cardNumber, card.member?.fullName || "No Member", card.status]
+      },
+      {
+        label: "Today Recharges",
+        title: "Today's Recharges",
+        records: data.recharges.filter((recharge) => {
+          const createdAt = new Date(recharge.createdAt);
+          const today = new Date();
+
+          today.setHours(0, 0, 0, 0);
+
+          return !Number.isNaN(createdAt.getTime()) && createdAt >= today;
+        }),
+        columns: ["Member", "Amount", "Payment Mode"],
+        getRow: (recharge) => [
+          recharge.member?.fullName || "Member",
+          `Rs ${Number(recharge.amount || 0).toFixed(2)}`,
+          recharge.paymentMode || "-"
+        ]
+      },
+      {
+        label: "Stock Alerts",
+        title: "Stock Alerts",
+        records: data.stock.filter((item) => item.stockStatus === "Low Stock" || item.stockStatus === "Negative Stock"),
+        columns: ["Product", "Current Quantity", "Stock Status"],
+        getRow: (item) => [
+          item.product?.productName || "Product",
+          String(item.currentQuantity ?? 0),
+          item.stockStatus
+        ]
+      }
+    ];
+  }
+
+  if (activeModule === "Members") {
+    return [
+      {
+        label: "Total Members",
+        title: "All Members",
+        records: data.members,
+        columns: ["Member", "Mobile Number", "Status"],
+        getRow: (member) => [member.fullName, member.mobileNumber, member.status]
+      },
+      {
+        label: "Active Members",
+        title: "Active Members",
+        records: data.members.filter((member) => member.status === "Active"),
+        columns: ["Member", "Mobile Number"],
+        getRow: (member) => [member.fullName, member.mobileNumber]
+      },
+      {
+        label: "Inactive Members",
+        title: "Inactive Members",
+        records: data.members.filter((member) => member.status === "Inactive"),
+        columns: ["Member", "Mobile Number"],
+        getRow: (member) => [member.fullName, member.mobileNumber]
+      }
+    ];
+  }
+
+  if (activeModule === "Cards") {
+    const todayValue = new Date();
+    todayValue.setHours(0, 0, 0, 0);
+
+    return [
+      {
+        label: "Active Cards",
+        title: "Active Cards",
+        records: data.cards.filter((card) => card.status === "Active"),
+        columns: ["Card Number", "Member", "Status"],
+        getRow: (card) => [card.cardNumber, card.member?.fullName || "No Member", card.status]
+      },
+      {
+        label: "Expired Cards",
+        title: "Expired Cards",
+        records: data.cards.filter((card) => {
+          const expiresAt = new Date(card.expiresAt);
+          return card.status === "Active" && !Number.isNaN(expiresAt.getTime()) && expiresAt < todayValue;
+        }),
+        columns: ["Card Number", "Member", "Expires At"],
+        getRow: (card) => [card.cardNumber, card.member?.fullName || "No Member", card.expiresAt || "-"]
+      },
+      {
+        label: "Replaced Cards",
+        title: "Inactive Cards",
+        records: data.cards.filter((card) => card.status === "Inactive"),
+        columns: ["Card Number", "Member", "Status"],
+        getRow: (card) => [card.cardNumber, card.member?.fullName || "No Member", card.status]
+      }
+    ];
+  }
+
+  if (activeModule === "Wallets") {
+    return [
+      {
+        label: "Active Wallets",
+        title: "Active Wallets",
+        records: data.wallets.filter((wallet) => wallet.status === "Active"),
+        columns: ["Member", "Balance", "Status"],
+        getRow: (wallet) => [
+          wallet.member?.fullName || "Member",
+          `Rs ${Number(wallet.balance || 0).toFixed(2)}`,
+          wallet.status
+        ]
+      },
+      {
+        label: "Low Balance",
+        title: "Low Balance Wallets",
+        records: data.wallets.filter(
+          (wallet) => wallet.status === "Active" && Number(wallet.balance || 0) <= 100
+        ),
+        columns: ["Member", "Balance", "Status"],
+        getRow: (wallet) => [
+          wallet.member?.fullName || "Member",
+          `Rs ${Number(wallet.balance || 0).toFixed(2)}`,
+          wallet.status
+        ]
+      },
+      {
+        label: "Inactive Wallets",
+        title: "Inactive Wallets",
+        records: data.wallets.filter((wallet) => wallet.status === "Inactive"),
+        columns: ["Member", "Balance", "Status"],
+        getRow: (wallet) => [
+          wallet.member?.fullName || "Member",
+          `Rs ${Number(wallet.balance || 0).toFixed(2)}`,
+          wallet.status
+        ]
+      }
+    ];
+  }
+
+  if (activeModule === "Recharges") {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return [
+      {
+        label: "Today Recharges",
+        title: "Today's Recharges",
+        records: data.recharges.filter((recharge) => {
+          const createdAt = new Date(recharge.createdAt);
+          return !Number.isNaN(createdAt.getTime()) && createdAt >= today;
+        }),
+        columns: ["Member", "Amount", "Payment Mode"],
+        getRow: (recharge) => [
+          recharge.member?.fullName || "Member",
+          `Rs ${Number(recharge.amount || 0).toFixed(2)}`,
+          recharge.paymentMode || "-"
+        ]
+      },
+      {
+        label: "Recharge Value",
+        title: "Recharge Records",
+        records: data.recharges,
+        columns: ["Member", "Amount", "Payment Mode"],
+        getRow: (recharge) => [
+          recharge.member?.fullName || "Member",
+          `Rs ${Number(recharge.amount || 0).toFixed(2)}`,
+          recharge.paymentMode || "-"
+        ]
+      },
+      {
+        label: "Recent Credit Entries",
+        title: "Recent Recharges",
+        records: data.recharges,
+        columns: ["Reference", "Member", "Amount"],
+        getRow: (recharge) => [
+          recharge.reference || "Recharge",
+          recharge.member?.fullName || "Member",
+          `Rs ${Number(recharge.amount || 0).toFixed(2)}`
+        ]
+      }
+    ];
+  }
+
+  if (activeModule === "Debits") {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return [
+      {
+        label: "Today Debits",
+        title: "Today's Debits",
+        records: data.debits.filter((debit) => {
+          const createdAt = new Date(debit.createdAt);
+          return !Number.isNaN(createdAt.getTime()) && createdAt >= today;
+        }),
+        columns: ["Member", "Amount", "Reason"],
+        getRow: (debit) => [
+          debit.member?.fullName || "Member",
+          `Rs ${Number(debit.amount || 0).toFixed(2)}`,
+          debit.reason || "-"
+        ]
+      },
+      {
+        label: "Debit Value",
+        title: "Debit Records",
+        records: data.debits,
+        columns: ["Member", "Amount", "Reason"],
+        getRow: (debit) => [
+          debit.member?.fullName || "Member",
+          `Rs ${Number(debit.amount || 0).toFixed(2)}`,
+          debit.reason || "-"
+        ]
+      },
+      {
+        label: "Recent Debit Entries",
+        title: "Recent Debits",
+        records: data.debits,
+        columns: ["Reason", "Member", "Amount"],
+        getRow: (debit) => [
+          debit.reason || "Debit",
+          debit.member?.fullName || "Member",
+          `Rs ${Number(debit.amount || 0).toFixed(2)}`
+        ]
+      }
+    ];
+  }
+
+  if (activeModule === "Products") {
+    return [
+      {
+        label: "Active Products",
+        title: "Active Products",
+        records: data.products.filter((product) => product.status === "Active"),
+        columns: ["Product", "Code", "Status"],
+        getRow: (product) => [product.productName, product.productCode, product.status]
+      },
+      {
+        label: "Inactive Products",
+        title: "Inactive Products",
+        records: data.products.filter((product) => product.status === "Inactive"),
+        columns: ["Product", "Code", "Status"],
+        getRow: (product) => [product.productName, product.productCode, product.status]
+      },
+      {
+        label: "Stock Alerts",
+        title: "Stock Alert Products",
+        records: data.stock.filter((item) => item.stockStatus === "Low Stock" || item.stockStatus === "Negative Stock"),
+        columns: ["Product", "Current Quantity", "Stock Status"],
+        getRow: (item) => [
+          item.product?.productName || "Product",
+          String(item.currentQuantity ?? 0),
+          item.stockStatus
+        ]
+      }
+    ];
+  }
+
+  if (activeModule === "Billing") {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return [
+      {
+        label: "Today Bills",
+        title: "Today's Bills",
+        records: data.bills.filter((bill) => {
+          const createdAt = new Date(bill.createdAt);
+          return !Number.isNaN(createdAt.getTime()) && createdAt >= today;
+        }),
+        columns: ["Bill Number", "Member", "Total"],
+        getRow: (bill) => [
+          bill.billNumber || "Bill",
+          bill.member?.fullName || "Member",
+          `Rs ${Number(bill.totalAmount || 0).toFixed(2)}`
+        ]
+      },
+      {
+        label: "Collected Amount",
+        title: "Collected Bills",
+        records: data.bills,
+        columns: ["Bill Number", "Member", "Total"],
+        getRow: (bill) => [
+          bill.billNumber || "Bill",
+          bill.member?.fullName || "Member",
+          `Rs ${Number(bill.totalAmount || 0).toFixed(2)}`
+        ]
+      },
+      {
+        label: "Stock Warnings",
+        title: "Stock Warning Records",
+        records: data.stock.filter((item) => item.stockStatus === "Low Stock" || item.stockStatus === "Negative Stock"),
+        columns: ["Product", "Current Quantity", "Stock Status"],
+        getRow: (item) => [
+          item.product?.productName || "Product",
+          String(item.currentQuantity ?? 0),
+          item.stockStatus
+        ]
+      }
+    ];
+  }
+
+  if (activeModule === "Transactions") {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return [
+      {
+        label: "Today Transactions",
+        title: "Today's Transactions",
+        records: data.transactions.filter((transaction) => {
+          const createdAt = new Date(transaction.createdAt);
+          return !Number.isNaN(createdAt.getTime()) && createdAt >= today;
+        }),
+        columns: ["Reference", "Member", "Type"],
+        getRow: (transaction) => [
+          transaction.reference,
+          transaction.member?.fullName || "Member",
+          transaction.type
+        ]
+      },
+      {
+        label: "Credits",
+        title: "Credit Transactions",
+        records: data.transactions.filter((transaction) => transaction.type === "Credit"),
+        columns: ["Reference", "Member", "Amount"],
+        getRow: (transaction) => [
+          transaction.reference,
+          transaction.member?.fullName || "Member",
+          `Rs ${Number(transaction.amount || 0).toFixed(2)}`
+        ]
+      },
+      {
+        label: "Debits",
+        title: "Debit Transactions",
+        records: data.transactions.filter((transaction) => transaction.type === "Debit"),
+        columns: ["Reference", "Member", "Amount"],
+        getRow: (transaction) => [
+          transaction.reference,
+          transaction.member?.fullName || "Member",
+          `Rs ${Number(transaction.amount || 0).toFixed(2)}`
+        ]
+      }
+    ];
+  }
+
+  if (activeModule === "Stock") {
+    return [
+      {
+        label: "Available Items",
+        title: "Available Stock",
+        records: data.stock.filter((item) => item.stockStatus === "Available"),
+        columns: ["Product", "Current Quantity", "Stock Status"],
+        getRow: (item) => [item.product?.productName || "Product", String(item.currentQuantity ?? 0), item.stockStatus]
+      },
+      {
+        label: "Low Stock",
+        title: "Low Stock",
+        records: data.stock.filter((item) => item.stockStatus === "Low Stock"),
+        columns: ["Product", "Current Quantity", "Stock Status"],
+        getRow: (item) => [item.product?.productName || "Product", String(item.currentQuantity ?? 0), item.stockStatus]
+      },
+      {
+        label: "Negative Stock",
+        title: "Negative Stock",
+        records: data.stock.filter((item) => item.stockStatus === "Negative Stock"),
+        columns: ["Product", "Current Quantity", "Stock Status"],
+        getRow: (item) => [item.product?.productName || "Product", String(item.currentQuantity ?? 0), item.stockStatus]
+      }
+    ];
+  }
+
+  if (activeModule === "Reports") {
+    return [
+      {
+        label: data.reportMetrics.firstLabel,
+        title: `${data.reportRecords.reportType || "Report"} Records`,
+        records: data.reportRecords.records,
+        columns: ["Reference"],
+        getRow: (record) => [record.reference || record.product?.productName || "Record"]
+      },
+      {
+        label: data.reportMetrics.secondLabel,
+        title: `${data.reportMetrics.secondLabel} Source Records`,
+        records: data.reportRecords.records,
+        columns: ["Reference"],
+        getRow: (record) => [record.reference || record.product?.productName || "Record"]
+      },
+      {
+        label: data.reportMetrics.thirdLabel,
+        title: `${data.reportMetrics.thirdLabel} Source Records`,
+        records: data.reportRecords.records,
+        columns: ["Reference"],
+        getRow: (record) => [record.reference || record.product?.productName || "Record"]
+      }
+    ];
+  }
+
+  return [];
+}
+
 function validateStaffEditForm(formData) {
   const nextErrors = {};
 
@@ -486,6 +900,17 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
     thirdLabel: "Details",
     thirdValue: "0"
   });
+  const [memberRecordsSnapshot, setMemberRecordsSnapshot] = useState([]);
+  const [cardRecordsSnapshot, setCardRecordsSnapshot] = useState([]);
+  const [walletRecordsSnapshot, setWalletRecordsSnapshot] = useState([]);
+  const [rechargeRecordsSnapshot, setRechargeRecordsSnapshot] = useState([]);
+  const [debitRecordsSnapshot, setDebitRecordsSnapshot] = useState([]);
+  const [productRecordsSnapshot, setProductRecordsSnapshot] = useState([]);
+  const [billRecordsSnapshot, setBillRecordsSnapshot] = useState([]);
+  const [transactionRecordsSnapshot, setTransactionRecordsSnapshot] = useState([]);
+  const [stockRecordsSnapshot, setStockRecordsSnapshot] = useState([]);
+  const [reportRecordsSnapshot, setReportRecordsSnapshot] = useState({ reportType: "Sales", records: [] });
+  const [selectedMetricCard, setSelectedMetricCard] = useState(null);
   const [selectedStaffRecord, setSelectedStaffRecord] = useState(null);
   const [editingStaff, setEditingStaff] = useState(null);
   const [editStaffForm, setEditStaffForm] = useState({
@@ -581,6 +1006,50 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
     { label: "Today Recharges", value: String(rechargeMetrics.todayCount) },
     { label: "Stock Alerts", value: String(productMetrics.stockAlerts || stockMetrics.lowStock) }
   ];
+  const metricDetailGroups = useMemo(
+    () =>
+      buildMetricDetails(activeModule, {
+        members: memberRecordsSnapshot,
+        cards: cardRecordsSnapshot,
+        wallets: walletRecordsSnapshot,
+        recharges: rechargeRecordsSnapshot,
+        debits: debitRecordsSnapshot,
+        products: productRecordsSnapshot,
+        bills: billRecordsSnapshot,
+        transactions: transactionRecordsSnapshot,
+        stock: stockRecordsSnapshot,
+        reportRecords: reportRecordsSnapshot,
+        reportMetrics
+      }),
+    [
+      activeModule,
+      memberRecordsSnapshot,
+      cardRecordsSnapshot,
+      walletRecordsSnapshot,
+      rechargeRecordsSnapshot,
+      debitRecordsSnapshot,
+      productRecordsSnapshot,
+      billRecordsSnapshot,
+      transactionRecordsSnapshot,
+      stockRecordsSnapshot,
+      reportRecordsSnapshot,
+      reportMetrics
+    ]
+  );
+
+  useEffect(() => {
+    const focusTimer = window.setTimeout(() => {
+      const firstEditableField = document.querySelector(
+        '.app-shell__content input:not([type="hidden"]):not([readonly]):not([disabled]), .app-shell__content select:not([disabled]), .app-shell__content textarea:not([readonly]):not([disabled])'
+      );
+
+      if (firstEditableField instanceof HTMLElement) {
+        firstEditableField.focus();
+      }
+    }, 50);
+
+    return () => window.clearTimeout(focusTimer);
+  }, [activeModule]);
 
   const handlePrimaryActionClick = () => {
     const firstSectionCard = document.querySelector(".app-shell__content .section-card");
@@ -590,6 +1059,16 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
         behavior: "smooth",
         block: "start"
       });
+
+      window.setTimeout(() => {
+        const firstEditableField = firstSectionCard.querySelector(
+          'input:not([type="hidden"]):not([readonly]):not([disabled]), select:not([disabled]), textarea:not([readonly]):not([disabled])'
+        );
+
+        if (firstEditableField instanceof HTMLElement) {
+          firstEditableField.focus();
+        }
+      }, 250);
     }
   };
 
@@ -992,8 +1471,8 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
     <div className="app-shell">
       <aside className="app-shell__sidebar">
         <div className="sidebar-brand">
-          <span className="brand-badge">POS</span>
-          <div>
+          <span className="brand-badge">PWP</span>
+          <div className="sidebar-brand__text">
             <h1>{APP_NAME}</h1>
             <span>{currentStaff?.role || "Staff"}</span>
           </div>
@@ -1019,7 +1498,6 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
         <header className="page-header">
           <div>
             <h2>{activeScreen.title}</h2>
-            <span>{currentStaff?.fullName || "Staff Session"}</span>
           </div>
           <div className="header-actions">
             <div className="header-actions__module">
@@ -1048,132 +1526,87 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
 
         <section className="metric-grid">
           {dashboardMetrics.map((metric) => (
-            <button key={metric.label} type="button" className="metric-card">
+            <button
+              key={metric.label}
+              type="button"
+              className="metric-card"
+              onClick={() => {
+                const matchedMetric = buildMetricDetails("Dashboard", {
+                  members: memberRecordsSnapshot,
+                  cards: cardRecordsSnapshot,
+                  recharges: rechargeRecordsSnapshot,
+                  stock: stockRecordsSnapshot
+                }).find((item) => item.label === metric.label);
+
+                if (matchedMetric) {
+                  setSelectedMetricCard(matchedMetric);
+                }
+              }}
+            >
               <span>{metric.label}</span>
               <strong>{metric.value}</strong>
             </button>
           ))}
           {activeModule === "Staff"
             ? [
-                { label: "Active Staff", value: String(staffMetrics.active) },
-                { label: "Admins", value: String(staffMetrics.admins) },
-                { label: "Cashiers", value: String(staffMetrics.cashiers) }
+                { label: "Active Staff", value: String(staffMetrics.active), records: staffRecords.filter((staff) => staff.status === "Active"), title: "Active Staff", render: (staff) => `${staff.fullName} | ${staff.role}` },
+                { label: "Admins", value: String(staffMetrics.admins), records: staffRecords.filter((staff) => staff.role === "Admin"), title: "Admins", render: (staff) => `${staff.fullName} | ${staff.username}` },
+                { label: "Cashiers", value: String(staffMetrics.cashiers), records: staffRecords.filter((staff) => staff.role === "Cashier"), title: "Cashiers", render: (staff) => `${staff.fullName} | ${staff.username}` }
               ].map((metric) => (
-                <button key={metric.label} type="button" className="metric-card metric-card--muted">
+                <button
+                  key={metric.label}
+                  type="button"
+                  className="metric-card metric-card--muted"
+                  onClick={() => setSelectedMetricCard(metric)}
+                >
                   <span>{metric.label}</span>
                   <strong>{metric.value}</strong>
                 </button>
               ))
-            : activeModule === "Members"
-              ? [
-                  { label: "Total Members", value: String(memberMetrics.total) },
-                  { label: "Active Members", value: String(memberMetrics.active) },
-                  { label: "Inactive Members", value: String(memberMetrics.inactive) }
-                ].map((metric) => (
-                  <button key={metric.label} type="button" className="metric-card metric-card--muted">
+            : metricDetailGroups.length > 0
+              ? metricDetailGroups.map((metric) => (
+                  <button
+                    key={metric.label}
+                    type="button"
+                    className="metric-card metric-card--muted"
+                    onClick={() => setSelectedMetricCard(metric)}
+                  >
                     <span>{metric.label}</span>
-                    <strong>{metric.value}</strong>
+                    <strong>{formatMetricValue(
+                      activeModule === "Members"
+                        ? metric.records.length
+                        : activeModule === "Cards"
+                          ? metric.records.length
+                          : activeModule === "Wallets"
+                            ? metric.records.length
+                            : activeModule === "Recharges"
+                              ? metric.label === "Recharge Value"
+                                ? `Rs ${Number(rechargeMetrics.todayValue || 0).toFixed(2)}`
+                                : metric.records.length
+                              : activeModule === "Debits"
+                                ? metric.label === "Debit Value"
+                                  ? `Rs ${Number(debitMetrics.todayValue || 0).toFixed(2)}`
+                                  : metric.records.length
+                                : activeModule === "Products"
+                                  ? metric.records.length
+                                  : activeModule === "Billing"
+                                    ? metric.label === "Collected Amount"
+                                      ? formatMoney(billingMetrics.collectedAmount)
+                                      : metric.records.length
+                                    : activeModule === "Transactions"
+                                      ? metric.records.length
+                                      : activeModule === "Stock"
+                                        ? metric.records.length
+                                        : activeModule === "Reports"
+                                          ? metric.label === reportMetrics.firstLabel
+                                            ? reportMetrics.firstValue
+                                            : metric.label === reportMetrics.secondLabel
+                                              ? reportMetrics.secondValue
+                                              : reportMetrics.thirdValue
+                                          : metric.records.length
+                    )}</strong>
                   </button>
                 ))
-              : activeModule === "Cards"
-                ? [
-                    { label: "Active Cards", value: String(cardMetrics.active) },
-                    { label: "Expired Cards", value: String(cardMetrics.expired) },
-                    { label: "Replaced Cards", value: String(cardMetrics.replaced) }
-                  ].map((metric) => (
-                    <button key={metric.label} type="button" className="metric-card metric-card--muted">
-                      <span>{metric.label}</span>
-                      <strong>{metric.value}</strong>
-                    </button>
-                  ))
-                : activeModule === "Wallets"
-                  ? [
-                      { label: "Active Wallets", value: String(walletMetrics.active) },
-                      { label: "Low Balance", value: String(walletMetrics.lowBalance) },
-                      { label: "Inactive Wallets", value: String(walletMetrics.inactive) }
-                    ].map((metric) => (
-                      <button key={metric.label} type="button" className="metric-card metric-card--muted">
-                        <span>{metric.label}</span>
-                        <strong>{metric.value}</strong>
-                      </button>
-                    ))
-                : activeModule === "Recharges"
-                  ? [
-                      { label: "Today Recharges", value: String(rechargeMetrics.todayCount) },
-                      { label: "Recharge Value", value: `Rs ${Number(rechargeMetrics.todayValue || 0).toFixed(2)}` },
-                      { label: "Recent Credit Entries", value: String(rechargeMetrics.recentEntries) }
-                    ].map((metric) => (
-                      <button key={metric.label} type="button" className="metric-card metric-card--muted">
-                        <span>{metric.label}</span>
-                        <strong>{metric.value}</strong>
-                      </button>
-                    ))
-                : activeModule === "Debits"
-                  ? [
-                      { label: "Today Debits", value: String(debitMetrics.todayCount) },
-                      { label: "Debit Value", value: `Rs ${Number(debitMetrics.todayValue || 0).toFixed(2)}` },
-                      { label: "Recent Debit Entries", value: String(debitMetrics.recentEntries) }
-                    ].map((metric) => (
-                      <button key={metric.label} type="button" className="metric-card metric-card--muted">
-                        <span>{metric.label}</span>
-                        <strong>{metric.value}</strong>
-                      </button>
-                    ))
-                : activeModule === "Products"
-                  ? [
-                      { label: "Active Products", value: String(productMetrics.active) },
-                      { label: "Inactive Products", value: String(productMetrics.inactive) },
-                      { label: "Stock Alerts", value: String(productMetrics.stockAlerts) }
-                    ].map((metric) => (
-                      <button key={metric.label} type="button" className="metric-card metric-card--muted">
-                        <span>{metric.label}</span>
-                        <strong>{metric.value}</strong>
-                      </button>
-                    ))
-                : activeModule === "Billing"
-                  ? [
-                      { label: "Today Bills", value: String(billingMetrics.todayCount) },
-                      { label: "Collected Amount", value: formatMoney(billingMetrics.collectedAmount) },
-                      { label: "Stock Warnings", value: String(billingMetrics.stockWarnings) }
-                    ].map((metric) => (
-                      <button key={metric.label} type="button" className="metric-card metric-card--muted">
-                        <span>{metric.label}</span>
-                        <strong>{metric.value}</strong>
-                      </button>
-                    ))
-                : activeModule === "Transactions"
-                  ? [
-                      { label: "Today Transactions", value: String(transactionMetrics.today) },
-                      { label: "Credits", value: String(transactionMetrics.credits) },
-                      { label: "Debits", value: String(transactionMetrics.debits) }
-                    ].map((metric) => (
-                      <button key={metric.label} type="button" className="metric-card metric-card--muted">
-                        <span>{metric.label}</span>
-                        <strong>{metric.value}</strong>
-                      </button>
-                    ))
-                  : activeModule === "Stock"
-                  ? [
-                      { label: "Available Items", value: String(stockMetrics.available) },
-                      { label: "Low Stock", value: String(stockMetrics.lowStock) },
-                      { label: "Negative Stock", value: String(stockMetrics.negative) }
-                    ].map((metric) => (
-                        <button key={metric.label} type="button" className="metric-card metric-card--muted">
-                          <span>{metric.label}</span>
-                          <strong>{metric.value}</strong>
-                        </button>
-                      ))
-                    : activeModule === "Reports"
-                      ? [
-                          { label: reportMetrics.firstLabel, value: reportMetrics.firstValue },
-                          { label: reportMetrics.secondLabel, value: reportMetrics.secondValue },
-                          { label: reportMetrics.thirdLabel, value: reportMetrics.thirdValue }
-                        ].map((metric) => (
-                          <button key={metric.label} type="button" className="metric-card metric-card--muted">
-                            <span>{metric.label}</span>
-                            <strong>{metric.value}</strong>
-                          </button>
-                        ))
               : activeScreen.metrics.map((metric) => (
                   <button key={metric} type="button" className="metric-card metric-card--muted">
                     <span>{metric}</span>
@@ -1437,25 +1870,25 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
             </SectionCard>
           </>
         ) : activeModule === "Members" ? (
-          <MembersModule authToken={authToken} onMetricsChange={setMemberMetrics} />
+          <MembersModule authToken={authToken} onMetricsChange={setMemberMetrics} onRecordsChange={setMemberRecordsSnapshot} />
         ) : activeModule === "Cards" ? (
-          <CardsModule authToken={authToken} onMetricsChange={setCardMetrics} />
+          <CardsModule authToken={authToken} onMetricsChange={setCardMetrics} onRecordsChange={setCardRecordsSnapshot} />
         ) : activeModule === "Wallets" ? (
-          <WalletsModule authToken={authToken} onMetricsChange={setWalletMetrics} />
+          <WalletsModule authToken={authToken} onMetricsChange={setWalletMetrics} onRecordsChange={setWalletRecordsSnapshot} />
         ) : activeModule === "Recharges" ? (
-          <RechargesModule authToken={authToken} onMetricsChange={setRechargeMetrics} />
+          <RechargesModule authToken={authToken} onMetricsChange={setRechargeMetrics} onRecordsChange={setRechargeRecordsSnapshot} />
         ) : activeModule === "Debits" ? (
-          <DebitsModule authToken={authToken} onMetricsChange={setDebitMetrics} />
+          <DebitsModule authToken={authToken} onMetricsChange={setDebitMetrics} onRecordsChange={setDebitRecordsSnapshot} />
         ) : activeModule === "Products" ? (
-          <ProductsModule authToken={authToken} onMetricsChange={setProductMetrics} />
+          <ProductsModule authToken={authToken} onMetricsChange={setProductMetrics} onRecordsChange={setProductRecordsSnapshot} />
         ) : activeModule === "Billing" ? (
-          <BillingModule authToken={authToken} onMetricsChange={setBillingMetrics} />
+          <BillingModule authToken={authToken} onMetricsChange={setBillingMetrics} onRecordsChange={setBillRecordsSnapshot} />
         ) : activeModule === "Transactions" ? (
-          <TransactionsModule authToken={authToken} onMetricsChange={setTransactionMetrics} />
+          <TransactionsModule authToken={authToken} onMetricsChange={setTransactionMetrics} onRecordsChange={setTransactionRecordsSnapshot} />
         ) : activeModule === "Stock" ? (
-          <StocksModule authToken={authToken} onMetricsChange={setStockMetrics} />
+          <StocksModule authToken={authToken} onMetricsChange={setStockMetrics} onRecordsChange={setStockRecordsSnapshot} />
         ) : activeModule === "Reports" ? (
-          <ReportsModule authToken={authToken} onMetricsChange={setReportMetrics} />
+          <ReportsModule authToken={authToken} onMetricsChange={setReportMetrics} onRecordsChange={setReportRecordsSnapshot} />
         ) : (
           <>
             <SectionCard title={activeScreen.title}>
@@ -1547,6 +1980,47 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
           </>
         )}
       </main>
+
+      <ModalDialog
+        isOpen={Boolean(selectedMetricCard)}
+        title={selectedMetricCard?.title || "Metric Details"}
+        onClose={() => setSelectedMetricCard(null)}
+        footer={(
+          <button type="button" className="secondary-button" onClick={() => setSelectedMetricCard(null)}>
+            Close
+          </button>
+        )}
+        width="760px"
+      >
+        {selectedMetricCard ? (
+          <div className="table-wrapper">
+            {selectedMetricCard.records.length === 0 ? (
+              <div className="feedback-actions">No matching records found.</div>
+            ) : (
+              <table className="data-table data-table--dense">
+                <thead>
+                  <tr>
+                    {(selectedMetricCard.columns || ["Details"]).map((column) => (
+                      <th key={column}>{column}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {selectedMetricCard.records.map((record, index) => (
+                    <tr key={record.id || record.reference || index}>
+                      {(selectedMetricCard.getRow ? selectedMetricCard.getRow(record) : [selectedMetricCard.render(record)]).map(
+                        (value, cellIndex) => (
+                          <td key={`${record.id || record.reference || index}-${cellIndex}`}>{value}</td>
+                        )
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        ) : null}
+      </ModalDialog>
 
       <ModalDialog
         isOpen={isAccountModalOpen}

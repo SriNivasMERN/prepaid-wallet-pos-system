@@ -75,7 +75,7 @@ function formatCurrency(value) {
   return `Rs ${amount.toFixed(2)}`;
 }
 
-function ProductsModule({ authToken, onMetricsChange }) {
+function ProductsModule({ authToken, onMetricsChange, onRecordsChange }) {
   const [productForm, setProductForm] = useState(productInitialForm);
   const [productFormErrors, setProductFormErrors] = useState({});
   const [productRequestError, setProductRequestError] = useState("");
@@ -109,6 +109,7 @@ function ProductsModule({ authToken, onMetricsChange }) {
         const nextRecords = response.data || [];
 
         setProductRecords(nextRecords);
+        onRecordsChange?.(nextRecords);
         onMetricsChange?.({
           active: nextRecords.filter((product) => product.status === "Active").length,
           inactive: nextRecords.filter((product) => product.status === "Inactive").length,
@@ -122,7 +123,7 @@ function ProductsModule({ authToken, onMetricsChange }) {
     };
 
     loadProducts();
-  }, [authToken, appliedProductFilters, productReloadToken, onMetricsChange]);
+  }, [authToken, appliedProductFilters, productReloadToken, onMetricsChange, onRecordsChange]);
 
   const resetProductForm = () => {
     setProductForm(productInitialForm);

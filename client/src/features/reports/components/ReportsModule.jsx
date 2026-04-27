@@ -134,7 +134,7 @@ function getReportColumns(reportType) {
   return ["Reference", "Product", "Code", "Qty Before", "Qty Change", "Qty After", "Created At"];
 }
 
-function ReportsModule({ authToken, onMetricsChange }) {
+function ReportsModule({ authToken, onMetricsChange, onRecordsChange }) {
   const [reportRequestError, setReportRequestError] = useState("");
   const [isLoadingReport, setIsLoadingReport] = useState(false);
   const [reportFilterForm, setReportFilterForm] = useState(reportInitialFilters);
@@ -166,6 +166,10 @@ function ReportsModule({ authToken, onMetricsChange }) {
         };
 
         setReportData(nextReport);
+        onRecordsChange?.({
+          reportType: nextReport.reportType,
+          records: Array.isArray(nextReport.records) ? nextReport.records : []
+        });
         onMetricsChange?.(
           buildDashboardMetrics(
             nextReport.reportType,
@@ -181,7 +185,7 @@ function ReportsModule({ authToken, onMetricsChange }) {
     };
 
     loadReport();
-  }, [authToken, appliedReportFilters, reportReloadToken, onMetricsChange]);
+  }, [authToken, appliedReportFilters, reportReloadToken, onMetricsChange, onRecordsChange]);
 
   const handleReportFilterChange = (event) => {
     const { name, value } = event.target;

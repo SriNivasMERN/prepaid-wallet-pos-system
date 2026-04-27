@@ -83,7 +83,7 @@ function formatDateTime(value) {
   })}`;
 }
 
-function RechargesModule({ authToken, onMetricsChange }) {
+function RechargesModule({ authToken, onMetricsChange, onRecordsChange }) {
   const [rechargeForm, setRechargeForm] = useState(rechargeInitialForm);
   const [rechargeFormErrors, setRechargeFormErrors] = useState({});
   const [rechargeRequestError, setRechargeRequestError] = useState("");
@@ -159,6 +159,7 @@ function RechargesModule({ authToken, onMetricsChange }) {
         });
 
         setRechargeRecords(nextRecords);
+        onRecordsChange?.(nextRecords);
         onMetricsChange?.({
           todayCount: todayRecords.length,
           todayValue: todayRecords.reduce(
@@ -175,7 +176,7 @@ function RechargesModule({ authToken, onMetricsChange }) {
     };
 
     loadRecharges();
-  }, [authToken, appliedRechargeFilters, rechargeReloadToken, onMetricsChange]);
+  }, [authToken, appliedRechargeFilters, rechargeReloadToken, onMetricsChange, onRecordsChange]);
 
   const selectedWallet = useMemo(
     () => walletOptions.find((wallet) => wallet.id === rechargeForm.walletId) || null,

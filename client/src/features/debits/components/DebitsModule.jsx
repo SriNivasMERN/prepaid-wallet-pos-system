@@ -85,7 +85,7 @@ function formatDateTime(value) {
   })}`;
 }
 
-function DebitsModule({ authToken, onMetricsChange }) {
+function DebitsModule({ authToken, onMetricsChange, onRecordsChange }) {
   const [debitForm, setDebitForm] = useState(debitInitialForm);
   const [debitFormErrors, setDebitFormErrors] = useState({});
   const [debitRequestError, setDebitRequestError] = useState("");
@@ -161,6 +161,7 @@ function DebitsModule({ authToken, onMetricsChange }) {
         });
 
         setDebitRecords(nextRecords);
+        onRecordsChange?.(nextRecords);
         onMetricsChange?.({
           todayCount: todayRecords.length,
           todayValue: todayRecords.reduce(
@@ -177,7 +178,7 @@ function DebitsModule({ authToken, onMetricsChange }) {
     };
 
     loadDebits();
-  }, [authToken, appliedDebitFilters, debitReloadToken, onMetricsChange]);
+  }, [authToken, appliedDebitFilters, debitReloadToken, onMetricsChange, onRecordsChange]);
 
   const selectedWallet = useMemo(
     () => walletOptions.find((wallet) => wallet.id === debitForm.walletId) || null,

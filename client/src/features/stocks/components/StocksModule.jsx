@@ -98,7 +98,7 @@ function formatQuantityChange(value) {
   return quantity > 0 ? `+${quantity}` : String(quantity);
 }
 
-function StocksModule({ authToken, onMetricsChange }) {
+function StocksModule({ authToken, onMetricsChange, onRecordsChange }) {
   const [stockForm, setStockForm] = useState(stockInitialForm);
   const [stockFormErrors, setStockFormErrors] = useState({});
   const [stockRequestError, setStockRequestError] = useState("");
@@ -152,6 +152,7 @@ function StocksModule({ authToken, onMetricsChange }) {
         const nextRecords = response.data || [];
 
         setStockRecords(nextRecords);
+        onRecordsChange?.(nextRecords);
         onMetricsChange?.({
           available: nextRecords.filter((stock) => stock.stockStatus === "Available").length,
           lowStock: nextRecords.filter((stock) => stock.stockStatus === "Low Stock").length,
@@ -165,7 +166,7 @@ function StocksModule({ authToken, onMetricsChange }) {
     };
 
     loadStocks();
-  }, [authToken, appliedStockFilters, stockReloadToken, onMetricsChange]);
+  }, [authToken, appliedStockFilters, stockReloadToken, onMetricsChange, onRecordsChange]);
 
   const selectedStockProductRecord = stockRecords.find(
     (stock) => stock.product?.id === stockForm.productId

@@ -48,7 +48,7 @@ function formatDateTime(value) {
   })}`;
 }
 
-function TransactionsModule({ authToken, onMetricsChange }) {
+function TransactionsModule({ authToken, onMetricsChange, onRecordsChange }) {
   const [transactionRequestError, setTransactionRequestError] = useState("");
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
   const [transactionRecords, setTransactionRecords] = useState([]);
@@ -73,6 +73,7 @@ function TransactionsModule({ authToken, onMetricsChange }) {
         today.setHours(0, 0, 0, 0);
 
         setTransactionRecords(nextRecords);
+        onRecordsChange?.(nextRecords);
         onMetricsChange?.({
           today: nextRecords.filter((transaction) => {
             const createdAt = new Date(transaction.createdAt);
@@ -90,7 +91,7 @@ function TransactionsModule({ authToken, onMetricsChange }) {
     };
 
     loadTransactions();
-  }, [authToken, appliedTransactionFilters, transactionReloadToken, onMetricsChange]);
+  }, [authToken, appliedTransactionFilters, transactionReloadToken, onMetricsChange, onRecordsChange]);
 
   const handleTransactionFilterChange = (event) => {
     const { name, value } = event.target;

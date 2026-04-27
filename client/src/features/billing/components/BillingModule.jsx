@@ -96,7 +96,7 @@ function formatDateTime(value) {
   })}`;
 }
 
-function BillingModule({ authToken, onMetricsChange }) {
+function BillingModule({ authToken, onMetricsChange, onRecordsChange }) {
   const [billingForm, setBillingForm] = useState(billingInitialForm);
   const [billingItems, setBillingItems] = useState([]);
   const [billingFormErrors, setBillingFormErrors] = useState({});
@@ -153,6 +153,7 @@ function BillingModule({ authToken, onMetricsChange }) {
         today.setHours(0, 0, 0, 0);
 
         setBillRecords(nextRecords);
+        onRecordsChange?.(nextRecords);
         onMetricsChange?.({
           todayCount: nextRecords.filter((bill) => {
             const createdAt = new Date(bill.createdAt);
@@ -178,7 +179,7 @@ function BillingModule({ authToken, onMetricsChange }) {
     };
 
     loadBills();
-  }, [authToken, appliedBillFilters, billReloadToken, onMetricsChange]);
+  }, [authToken, appliedBillFilters, billReloadToken, onMetricsChange, onRecordsChange]);
 
   const pendingProduct = productOptions.find(
     (product) => product.id === billingForm.productId

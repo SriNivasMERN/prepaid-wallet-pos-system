@@ -75,7 +75,7 @@ function formatDate(value) {
   });
 }
 
-function WalletsModule({ authToken, onMetricsChange }) {
+function WalletsModule({ authToken, onMetricsChange, onRecordsChange }) {
   const [cardNumberByMemberId, setCardNumberByMemberId] = useState({});
   const [walletForm, setWalletForm] = useState(walletInitialForm);
   const [walletFormErrors, setWalletFormErrors] = useState({});
@@ -164,6 +164,7 @@ function WalletsModule({ authToken, onMetricsChange }) {
         const nextRecords = response.data || [];
 
         setWalletRecords(nextRecords);
+        onRecordsChange?.(nextRecords);
         onMetricsChange?.({
           active: nextRecords.filter((wallet) => wallet.status === "Active").length,
           lowBalance: nextRecords.filter(
@@ -179,7 +180,7 @@ function WalletsModule({ authToken, onMetricsChange }) {
     };
 
     loadWallets();
-  }, [authToken, appliedWalletFilters, walletReloadToken, onMetricsChange]);
+  }, [authToken, appliedWalletFilters, walletReloadToken, onMetricsChange, onRecordsChange]);
 
   const resetWalletForm = () => {
     setWalletForm(walletInitialForm);

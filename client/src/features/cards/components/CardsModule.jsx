@@ -99,7 +99,7 @@ function formatDate(value) {
   });
 }
 
-function CardsModule({ authToken, onMetricsChange }) {
+function CardsModule({ authToken, onMetricsChange, onRecordsChange }) {
   const [cardForm, setCardForm] = useState(cardInitialForm);
   const [cardFormErrors, setCardFormErrors] = useState({});
   const [cardRequestError, setCardRequestError] = useState("");
@@ -170,6 +170,7 @@ function CardsModule({ authToken, onMetricsChange }) {
         todayValue.setHours(0, 0, 0, 0);
 
         setCardRecords(nextRecords);
+        onRecordsChange?.(nextRecords);
         onMetricsChange?.({
           active: nextRecords.filter((card) => card.status === "Active").length,
           expired: nextRecords.filter((card) => {
@@ -191,7 +192,7 @@ function CardsModule({ authToken, onMetricsChange }) {
     };
 
     loadCards();
-  }, [authToken, appliedCardFilters, cardReloadToken, onMetricsChange]);
+  }, [authToken, appliedCardFilters, cardReloadToken, onMetricsChange, onRecordsChange]);
 
   const resetCardForm = () => {
     setCardForm(cardInitialForm);
