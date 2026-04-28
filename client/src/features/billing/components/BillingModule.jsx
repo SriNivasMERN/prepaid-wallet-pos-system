@@ -12,6 +12,7 @@ import SectionCard from "../../../components/common/SectionCard";
 import StatusChip from "../../../components/common/StatusChip";
 import { getTodayInputDateValue } from "../../../utils/dateFieldDefaults";
 import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
+import { revealFeedbackInContainer } from "../../../utils/revealFeedbackInContainer";
 import { scrollElementBelowHeader } from "../../../utils/scrollElementBelowHeader";
 import {
   createBillRecord,
@@ -237,6 +238,7 @@ function BillingModule({ authToken, onMetricsChange, onRecordsChange }) {
   };
 
   const handleAddBillItem = () => {
+    const formElement = document.querySelector('.section-card form');
     const itemErrors = validatePendingItem(billingForm);
 
     if (Object.keys(itemErrors).length > 0) {
@@ -244,6 +246,7 @@ function BillingModule({ authToken, onMetricsChange, onRecordsChange }) {
         ...currentErrors,
         ...itemErrors
       }));
+      window.setTimeout(() => revealFeedbackInContainer(formElement), 0);
       return;
     }
 
@@ -252,6 +255,7 @@ function BillingModule({ authToken, onMetricsChange, onRecordsChange }) {
         ...currentErrors,
         productId: "Selected product is not available."
       }));
+      window.setTimeout(() => revealFeedbackInContainer(formElement), 0);
       return;
     }
 
@@ -264,6 +268,7 @@ function BillingModule({ authToken, onMetricsChange, onRecordsChange }) {
         ...currentErrors,
         productId: "Product is already added to the bill."
       }));
+      window.setTimeout(() => revealFeedbackInContainer(formElement), 0);
       return;
     }
 
@@ -303,6 +308,7 @@ function BillingModule({ authToken, onMetricsChange, onRecordsChange }) {
 
   const handleBillingSubmit = async (event) => {
     event.preventDefault();
+    const formElement = event.currentTarget;
 
     const validationErrors = validateBillingForm({
       cardNumber: billingForm.cardNumber,
@@ -314,6 +320,7 @@ function BillingModule({ authToken, onMetricsChange, onRecordsChange }) {
         ...currentErrors,
         ...validationErrors
       }));
+      window.setTimeout(() => revealFeedbackInContainer(formElement), 0);
       return;
     }
 
@@ -321,6 +328,7 @@ function BillingModule({ authToken, onMetricsChange, onRecordsChange }) {
       setBillingRequestError(
         billingPrecheck.blockingReason || "Billing is not allowed for the supplied card."
       );
+      window.setTimeout(() => revealFeedbackInContainer(formElement), 0);
       return;
     }
 
@@ -347,6 +355,7 @@ function BillingModule({ authToken, onMetricsChange, onRecordsChange }) {
       window.setTimeout(() => scrollElementBelowHeader(billListSectionRef.current), 150);
     } catch (error) {
       setBillingRequestError(getApiErrorMessage(error));
+      window.setTimeout(() => revealFeedbackInContainer(formElement), 0);
     } finally {
       setIsCreatingBill(false);
     }
@@ -369,6 +378,7 @@ function BillingModule({ authToken, onMetricsChange, onRecordsChange }) {
   };
 
   const handleBillingPrecheck = async () => {
+    const formElement = document.querySelector('.section-card form');
     const trimmedCardNumber = billingForm.cardNumber.trim();
 
     if (!trimmedCardNumber) {
@@ -376,6 +386,7 @@ function BillingModule({ authToken, onMetricsChange, onRecordsChange }) {
         ...currentErrors,
         cardNumber: "Card number is required."
       }));
+      window.setTimeout(() => revealFeedbackInContainer(formElement), 0);
       return;
     }
 
@@ -389,6 +400,7 @@ function BillingModule({ authToken, onMetricsChange, onRecordsChange }) {
       setBillingPrecheck(response.data || null);
     } catch (error) {
       setBillingPrecheckError(getApiErrorMessage(error));
+      window.setTimeout(() => revealFeedbackInContainer(formElement), 0);
     } finally {
       setIsLoadingBillingPrecheck(false);
     }

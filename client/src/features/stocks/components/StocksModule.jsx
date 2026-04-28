@@ -11,6 +11,7 @@ import ModalDialog from "../../../components/common/ModalDialog";
 import SectionCard from "../../../components/common/SectionCard";
 import StatusChip from "../../../components/common/StatusChip";
 import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
+import { revealFeedbackInContainer } from "../../../utils/revealFeedbackInContainer";
 import { scrollElementBelowHeader } from "../../../utils/scrollElementBelowHeader";
 import {
   createStockMovementRecord,
@@ -210,10 +211,12 @@ function StocksModule({ authToken, onMetricsChange, onRecordsChange }) {
 
   const handleStockSubmit = async (event) => {
     event.preventDefault();
+    const formElement = event.currentTarget;
 
     const validationErrors = validateStockForm(stockForm);
     if (Object.keys(validationErrors).length > 0) {
       setStockFormErrors(validationErrors);
+      window.setTimeout(() => revealFeedbackInContainer(formElement), 0);
       return;
     }
 
@@ -238,6 +241,7 @@ function StocksModule({ authToken, onMetricsChange, onRecordsChange }) {
       window.setTimeout(() => scrollElementBelowHeader(stockListSectionRef.current), 150);
     } catch (error) {
       setStockRequestError(getApiErrorMessage(error));
+      window.setTimeout(() => revealFeedbackInContainer(formElement), 0);
     } finally {
       setIsSavingStockMovement(false);
     }

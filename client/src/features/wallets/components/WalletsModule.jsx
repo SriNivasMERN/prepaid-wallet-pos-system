@@ -11,6 +11,7 @@ import ModalDialog from "../../../components/common/ModalDialog";
 import SectionCard from "../../../components/common/SectionCard";
 import StatusChip from "../../../components/common/StatusChip";
 import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
+import { revealFeedbackInContainer } from "../../../utils/revealFeedbackInContainer";
 import { scrollElementBelowHeader } from "../../../utils/scrollElementBelowHeader";
 import { fetchCardList } from "../../cards/api/cardApi";
 import { fetchMemberList } from "../../members/api/memberApi";
@@ -247,10 +248,12 @@ function WalletsModule({ authToken, onMetricsChange, onRecordsChange }) {
 
   const handleWalletSubmit = async (event) => {
     event.preventDefault();
+    const formElement = event.currentTarget;
 
     const validationErrors = validateWalletForm(walletForm);
     if (Object.keys(validationErrors).length > 0) {
       setWalletFormErrors(validationErrors);
+      window.setTimeout(() => revealFeedbackInContainer(formElement), 0);
       return;
     }
 
@@ -273,6 +276,7 @@ function WalletsModule({ authToken, onMetricsChange, onRecordsChange }) {
       window.setTimeout(() => scrollElementBelowHeader(walletListSectionRef.current), 150);
     } catch (error) {
       setWalletRequestError(getApiErrorMessage(error));
+      window.setTimeout(() => revealFeedbackInContainer(formElement), 0);
     } finally {
       setIsCreatingWallet(false);
     }
@@ -293,6 +297,7 @@ function WalletsModule({ authToken, onMetricsChange, onRecordsChange }) {
 
   const handleEditWalletSubmit = async (event) => {
     event.preventDefault();
+    const formElement = event.currentTarget;
 
     const validationErrors = {};
 
@@ -302,6 +307,7 @@ function WalletsModule({ authToken, onMetricsChange, onRecordsChange }) {
 
     if (Object.keys(validationErrors).length > 0) {
       setEditWalletFormErrors(validationErrors);
+      window.setTimeout(() => revealFeedbackInContainer(formElement), 0);
       return;
     }
 
@@ -326,6 +332,7 @@ function WalletsModule({ authToken, onMetricsChange, onRecordsChange }) {
       setWalletReloadToken((currentValue) => currentValue + 1);
     } catch (error) {
       setEditWalletRequestError(getApiErrorMessage(error));
+      window.setTimeout(() => revealFeedbackInContainer(formElement), 0);
     } finally {
       setIsUpdatingWallet(false);
     }

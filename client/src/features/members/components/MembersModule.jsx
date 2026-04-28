@@ -17,6 +17,7 @@ import {
   updateMemberRecord
 } from "../api/memberApi";
 import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
+import { revealFeedbackInContainer } from "../../../utils/revealFeedbackInContainer";
 import { scrollElementBelowHeader } from "../../../utils/scrollElementBelowHeader";
 
 const memberInitialForm = {
@@ -154,10 +155,12 @@ function MembersModule({ authToken, onMetricsChange, onRecordsChange }) {
 
   const handleMemberSubmit = async (event) => {
     event.preventDefault();
+    const formElement = event.currentTarget;
 
     const validationErrors = validateMemberForm(memberForm);
     if (Object.keys(validationErrors).length > 0) {
       setMemberFormErrors(validationErrors);
+      window.setTimeout(() => revealFeedbackInContainer(formElement), 0);
       return;
     }
 
@@ -182,6 +185,7 @@ function MembersModule({ authToken, onMetricsChange, onRecordsChange }) {
       window.setTimeout(() => scrollElementBelowHeader(memberListSectionRef.current), 150);
     } catch (error) {
       setMemberRequestError(getApiErrorMessage(error));
+      window.setTimeout(() => revealFeedbackInContainer(formElement), 0);
     } finally {
       setIsCreatingMember(false);
     }
@@ -208,11 +212,13 @@ function MembersModule({ authToken, onMetricsChange, onRecordsChange }) {
 
   const handleEditMemberSubmit = async (event) => {
     event.preventDefault();
+    const formElement = event.currentTarget;
 
     const validationErrors = validateMemberForm(editMemberForm);
 
     if (Object.keys(validationErrors).length > 0) {
       setEditMemberFormErrors(validationErrors);
+      window.setTimeout(() => revealFeedbackInContainer(formElement), 0);
       return;
     }
 
@@ -240,6 +246,7 @@ function MembersModule({ authToken, onMetricsChange, onRecordsChange }) {
       setMemberReloadToken((currentValue) => currentValue + 1);
     } catch (error) {
       setEditMemberRequestError(getApiErrorMessage(error));
+      window.setTimeout(() => revealFeedbackInContainer(formElement), 0);
     } finally {
       setIsUpdatingMember(false);
     }

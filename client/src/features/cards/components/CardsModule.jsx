@@ -15,6 +15,7 @@ import {
   getTodayInputDateValue
 } from "../../../utils/dateFieldDefaults";
 import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
+import { revealFeedbackInContainer } from "../../../utils/revealFeedbackInContainer";
 import { scrollElementBelowHeader } from "../../../utils/scrollElementBelowHeader";
 import { fetchMemberList } from "../../members/api/memberApi";
 import {
@@ -262,10 +263,12 @@ function CardsModule({ authToken, onMetricsChange, onRecordsChange }) {
 
   const handleCardSubmit = async (event) => {
     event.preventDefault();
+    const formElement = event.currentTarget;
 
     const validationErrors = validateCardForm(cardForm);
     if (Object.keys(validationErrors).length > 0) {
       setCardFormErrors(validationErrors);
+      window.setTimeout(() => revealFeedbackInContainer(formElement), 0);
       return;
     }
 
@@ -290,6 +293,7 @@ function CardsModule({ authToken, onMetricsChange, onRecordsChange }) {
       window.setTimeout(() => scrollElementBelowHeader(cardListSectionRef.current), 150);
     } catch (error) {
       setCardRequestError(getApiErrorMessage(error));
+      window.setTimeout(() => revealFeedbackInContainer(formElement), 0);
     } finally {
       setIsCreatingCard(false);
     }
@@ -310,6 +314,7 @@ function CardsModule({ authToken, onMetricsChange, onRecordsChange }) {
 
   const handleReplaceCardSubmit = async (event) => {
     event.preventDefault();
+    const formElement = event.currentTarget;
 
     const validationErrors = validateCardForm({
       ...replaceCardForm,
@@ -320,6 +325,7 @@ function CardsModule({ authToken, onMetricsChange, onRecordsChange }) {
 
     if (Object.keys(validationErrors).length > 0) {
       setReplaceCardFormErrors(validationErrors);
+      window.setTimeout(() => revealFeedbackInContainer(formElement), 0);
       return;
     }
 
@@ -342,6 +348,7 @@ function CardsModule({ authToken, onMetricsChange, onRecordsChange }) {
       setCardReloadToken((currentValue) => currentValue + 1);
     } catch (error) {
       setReplaceCardRequestError(getApiErrorMessage(error));
+      window.setTimeout(() => revealFeedbackInContainer(formElement), 0);
     } finally {
       setIsReplacingCard(false);
     }

@@ -11,6 +11,7 @@ import ModalDialog from "../../../components/common/ModalDialog";
 import SectionCard from "../../../components/common/SectionCard";
 import { getTodayInputDateValue } from "../../../utils/dateFieldDefaults";
 import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
+import { revealFeedbackInContainer } from "../../../utils/revealFeedbackInContainer";
 import { scrollElementBelowHeader } from "../../../utils/scrollElementBelowHeader";
 import { fetchStaffList } from "../../staff/api/staffApi";
 import { fetchWalletList } from "../../wallets/api/walletApi";
@@ -238,10 +239,12 @@ function DebitsModule({ authToken, onMetricsChange, onRecordsChange }) {
 
   const handleDebitSubmit = async (event) => {
     event.preventDefault();
+    const formElement = event.currentTarget;
 
     const validationErrors = validateDebitForm(debitForm);
     if (Object.keys(validationErrors).length > 0) {
       setDebitFormErrors(validationErrors);
+      window.setTimeout(() => revealFeedbackInContainer(formElement), 0);
       return;
     }
 
@@ -266,6 +269,7 @@ function DebitsModule({ authToken, onMetricsChange, onRecordsChange }) {
       window.setTimeout(() => scrollElementBelowHeader(debitListSectionRef.current), 150);
     } catch (error) {
       setDebitRequestError(getApiErrorMessage(error));
+      window.setTimeout(() => revealFeedbackInContainer(formElement), 0);
     } finally {
       setIsCreatingDebit(false);
     }

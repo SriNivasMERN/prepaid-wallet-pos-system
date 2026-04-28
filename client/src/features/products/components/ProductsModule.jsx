@@ -11,6 +11,7 @@ import ModalDialog from "../../../components/common/ModalDialog";
 import SectionCard from "../../../components/common/SectionCard";
 import StatusChip from "../../../components/common/StatusChip";
 import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
+import { revealFeedbackInContainer } from "../../../utils/revealFeedbackInContainer";
 import { scrollElementBelowHeader } from "../../../utils/scrollElementBelowHeader";
 import {
   createProductRecord,
@@ -174,10 +175,12 @@ function ProductsModule({ authToken, onMetricsChange, onRecordsChange }) {
 
   const handleProductSubmit = async (event) => {
     event.preventDefault();
+    const formElement = event.currentTarget;
 
     const validationErrors = validateProductForm(productForm);
     if (Object.keys(validationErrors).length > 0) {
       setProductFormErrors(validationErrors);
+      window.setTimeout(() => revealFeedbackInContainer(formElement), 0);
       return;
     }
 
@@ -203,6 +206,7 @@ function ProductsModule({ authToken, onMetricsChange, onRecordsChange }) {
       window.setTimeout(() => scrollElementBelowHeader(productListSectionRef.current), 150);
     } catch (error) {
       setProductRequestError(getApiErrorMessage(error));
+      window.setTimeout(() => revealFeedbackInContainer(formElement), 0);
     } finally {
       setIsCreatingProduct(false);
     }
@@ -230,11 +234,13 @@ function ProductsModule({ authToken, onMetricsChange, onRecordsChange }) {
 
   const handleEditProductSubmit = async (event) => {
     event.preventDefault();
+    const formElement = event.currentTarget;
 
     const validationErrors = validateProductForm(editProductForm);
 
     if (Object.keys(validationErrors).length > 0) {
       setEditProductFormErrors(validationErrors);
+      window.setTimeout(() => revealFeedbackInContainer(formElement), 0);
       return;
     }
 
@@ -264,6 +270,7 @@ function ProductsModule({ authToken, onMetricsChange, onRecordsChange }) {
       setProductReloadToken((currentValue) => currentValue + 1);
     } catch (error) {
       setEditProductRequestError(getApiErrorMessage(error));
+      window.setTimeout(() => revealFeedbackInContainer(formElement), 0);
     } finally {
       setIsUpdatingProduct(false);
     }

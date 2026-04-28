@@ -38,6 +38,7 @@ import StocksModule from "../features/stocks/components/StocksModule";
 import TransactionsModule from "../features/transactions/components/TransactionsModule";
 import WalletsModule from "../features/wallets/components/WalletsModule";
 import { getApiErrorMessage } from "../utils/getApiErrorMessage";
+import { revealFeedbackInContainer } from "../utils/revealFeedbackInContainer";
 import { scrollElementBelowHeader } from "../utils/scrollElementBelowHeader";
 
 const staffInitialForm = {
@@ -1308,10 +1309,12 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
 
   const handleStaffSubmit = async (event) => {
     event.preventDefault();
+    const formElement = event.currentTarget;
 
     const validationErrors = validateStaffForm(staffForm);
     if (Object.keys(validationErrors).length > 0) {
       setStaffFormErrors(validationErrors);
+      window.setTimeout(() => revealFeedbackInContainer(formElement), 0);
       return;
     }
 
@@ -1337,6 +1340,7 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
       window.setTimeout(() => scrollElementBelowHeader(staffListSectionRef.current), 150);
     } catch (error) {
       setStaffRequestError(getApiErrorMessage(error));
+      window.setTimeout(() => revealFeedbackInContainer(formElement), 0);
     } finally {
       setIsCreatingStaff(false);
     }
@@ -1371,11 +1375,13 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
 
   const handleEditStaffSubmit = async (event) => {
     event.preventDefault();
+    const formElement = event.currentTarget;
 
     const validationErrors = validateStaffEditForm(editStaffForm);
 
     if (Object.keys(validationErrors).length > 0) {
       setEditStaffFormErrors(validationErrors);
+      window.setTimeout(() => revealFeedbackInContainer(formElement), 0);
       return;
     }
 
@@ -1402,6 +1408,7 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
       setStaffSuccessMessage("Staff account updated successfully.");
     } catch (error) {
       setEditStaffRequestError(getApiErrorMessage(error));
+      window.setTimeout(() => revealFeedbackInContainer(formElement), 0);
     } finally {
       setIsUpdatingStaff(false);
     }
@@ -1446,11 +1453,13 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
 
   const handleResetStaffPasswordSubmit = async (event) => {
     event.preventDefault();
+    const formElement = event.currentTarget;
 
     const validationErrors = validateResetStaffPasswordForm(resetStaffPasswordForm);
 
     if (Object.keys(validationErrors).length > 0) {
       setResetStaffPasswordErrors(validationErrors);
+      window.setTimeout(() => revealFeedbackInContainer(formElement), 0);
       return;
     }
 
@@ -1477,6 +1486,7 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
       setResetStaffPasswordRequestError("");
     } catch (error) {
       setResetStaffPasswordRequestError(getApiErrorMessage(error));
+      window.setTimeout(() => revealFeedbackInContainer(formElement), 0);
     } finally {
       setIsResettingStaffPassword(false);
     }
@@ -1484,11 +1494,13 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
 
   const handleAccountProfileSubmit = async (event) => {
     event.preventDefault();
+    const formElement = event.currentTarget;
 
     const validationErrors = validateAccountProfileForm(accountProfileForm);
 
     if (Object.keys(validationErrors).length > 0) {
       setAccountProfileErrors(validationErrors);
+      window.setTimeout(() => revealFeedbackInContainer(formElement), 0);
       return;
     }
 
@@ -1517,6 +1529,7 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
       setAccountProfileSuccessMessage("Account profile updated successfully.");
     } catch (error) {
       setAccountProfileRequestError(getApiErrorMessage(error));
+      window.setTimeout(() => revealFeedbackInContainer(formElement), 0);
     } finally {
       setIsUpdatingAccountProfile(false);
     }
@@ -1524,11 +1537,13 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
 
   const handleAccountPasswordSubmit = async (event) => {
     event.preventDefault();
+    const formElement = event.currentTarget;
 
     const validationErrors = validateAccountPasswordForm(accountPasswordForm);
 
     if (Object.keys(validationErrors).length > 0) {
       setAccountPasswordErrors(validationErrors);
+      window.setTimeout(() => revealFeedbackInContainer(formElement), 0);
       return;
     }
 
@@ -1543,6 +1558,7 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
       setAccountPasswordSuccessMessage("Password updated successfully.");
     } catch (error) {
       setAccountPasswordRequestError(getApiErrorMessage(error));
+      window.setTimeout(() => revealFeedbackInContainer(formElement), 0);
     } finally {
       setIsUpdatingAccountPassword(false);
     }
