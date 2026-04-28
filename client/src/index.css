@@ -286,6 +286,7 @@ small {
 
 .field-group--compact {
   max-width: 320px;
+  width: 100%;
 }
 
 .field-group span {
@@ -388,6 +389,7 @@ small {
   gap: 0.9rem;
   grid-column: span 2;
   padding-top: 0.15rem;
+  flex-wrap: wrap;
 }
 
 .form-actions--full {
@@ -460,6 +462,7 @@ small {
 }
 
 .icon-button {
+  min-width: 40px;
   width: 40px;
   height: 40px;
   display: inline-flex;
@@ -966,6 +969,7 @@ small {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .dialog-overlay {
@@ -1051,6 +1055,7 @@ small {
   justify-content: space-between;
   gap: 1rem;
   padding: 1.15rem 1.35rem;
+  flex-wrap: wrap;
 }
 
 .dialog-card__header {
@@ -1061,6 +1066,7 @@ small {
   margin: 0;
   font-size: 1.1rem;
   color: #17384f;
+  min-width: 0;
 }
 
 .dialog-card__body {
@@ -1254,6 +1260,39 @@ small {
   .details-grid {
     grid-template-columns: 1fr;
   }
+
+  .section-card__header,
+  .section-card__body {
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+  }
+
+  .dialog-overlay {
+    padding: 1rem;
+  }
+
+  .dialog-card {
+    max-height: calc(100vh - 2rem);
+  }
+
+  .dialog-card__header,
+  .dialog-card__footer,
+  .dialog-card__body {
+    padding-left: 1.1rem;
+    padding-right: 1.1rem;
+  }
+
+  .dialog-card__footer {
+    justify-content: stretch;
+  }
+
+  .dialog-card__footer > * {
+    flex: 1 1 220px;
+  }
+
+  .table-row-actions {
+    gap: 0.42rem;
+  }
 }
 
 @media (max-width: 640px) {
@@ -1299,6 +1338,10 @@ small {
     grid-column: span 1;
   }
 
+  .form-actions > * {
+    flex: 1 1 100%;
+  }
+
   .page-header,
   .header-actions {
     flex-direction: column;
@@ -1314,6 +1357,58 @@ small {
   .header-actions__utility .secondary-button {
     width: 100%;
     justify-content: center;
+  }
+
+  .section-card__actions,
+  .header-actions__utility,
+  .header-actions__module {
+    width: 100%;
+  }
+
+  .section-card__actions > *,
+  .header-actions__utility > * {
+    flex: 1 1 100%;
+  }
+
+  .dialog-overlay {
+    padding: 0.75rem;
+  }
+
+  .dialog-card {
+    width: 100%;
+    max-height: calc(100vh - 1.5rem);
+    border-radius: 20px;
+  }
+
+  .dialog-card__header,
+  .dialog-card__footer,
+  .dialog-card__body {
+    padding: 1rem;
+  }
+
+  .dialog-card__header {
+    align-items: flex-start;
+  }
+
+  .dialog-card__footer {
+    justify-content: stretch;
+  }
+
+  .dialog-card__footer > * {
+    flex: 1 1 100%;
+  }
+
+  .details-grid__item {
+    padding: 0.85rem 0.9rem;
+  }
+
+  .status-badge {
+    min-width: 72px;
+    padding: 0.32rem 0.6rem;
+  }
+
+  .table-row-actions > * {
+    flex: 0 0 auto;
   }
 }
 

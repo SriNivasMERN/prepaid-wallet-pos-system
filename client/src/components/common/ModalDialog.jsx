@@ -21,15 +21,18 @@ function ModalDialog({
   className = ""
 }) {
   const dialogRef = useRef(null);
+  const editableSelector =
+    'input:not([type="hidden"]):not([readonly]):not([disabled]), select:not([disabled]), textarea:not([readonly]):not([disabled])';
 
   useEffect(() => {
     if (!isOpen) {
       return;
     }
 
-    const focusTarget = dialogRef.current?.querySelector(
-      'input:not([type="hidden"]):not([readonly]):not([disabled]), select:not([disabled]), textarea:not([readonly]):not([disabled]), button:not([disabled])'
-    );
+    const bodyEditableTarget = dialogRef.current?.querySelector(`.dialog-card__body ${editableSelector}`);
+    const footerButtonTarget = dialogRef.current?.querySelector(".dialog-card__footer button:not([disabled])");
+    const fallbackButtonTarget = dialogRef.current?.querySelector(".dialog-card__header button:not([disabled])");
+    const focusTarget = bodyEditableTarget || footerButtonTarget || fallbackButtonTarget;
 
     if (focusTarget instanceof HTMLElement) {
       window.requestAnimationFrame(() => {
