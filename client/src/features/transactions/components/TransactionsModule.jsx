@@ -7,14 +7,19 @@
 import { useEffect, useState } from "react";
 
 import SectionCard from "../../../components/common/SectionCard";
+import { getTodayInputDateValue } from "../../../utils/dateFieldDefaults";
 import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
 import { fetchTransactionList } from "../api/transactionApi";
 
-const transactionInitialFilters = {
-  search: "",
-  type: "",
-  fromDate: "",
-  toDate: ""
+const createTransactionInitialFilters = () => {
+  const today = getTodayInputDateValue();
+
+  return {
+    search: "",
+    type: "",
+    fromDate: today,
+    toDate: today
+  };
 };
 
 function formatCurrency(value) {
@@ -52,8 +57,12 @@ function TransactionsModule({ authToken, onMetricsChange, onRecordsChange }) {
   const [transactionRequestError, setTransactionRequestError] = useState("");
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
   const [transactionRecords, setTransactionRecords] = useState([]);
-  const [transactionFilterForm, setTransactionFilterForm] = useState(transactionInitialFilters);
-  const [appliedTransactionFilters, setAppliedTransactionFilters] = useState(transactionInitialFilters);
+  const [transactionFilterForm, setTransactionFilterForm] = useState(
+    createTransactionInitialFilters
+  );
+  const [appliedTransactionFilters, setAppliedTransactionFilters] = useState(
+    createTransactionInitialFilters
+  );
   const [transactionReloadToken, setTransactionReloadToken] = useState(0);
 
   useEffect(() => {
@@ -113,8 +122,10 @@ function TransactionsModule({ authToken, onMetricsChange, onRecordsChange }) {
   };
 
   const resetTransactionFilters = () => {
-    setTransactionFilterForm(transactionInitialFilters);
-    setAppliedTransactionFilters(transactionInitialFilters);
+    const initialFilters = createTransactionInitialFilters();
+
+    setTransactionFilterForm(initialFilters);
+    setAppliedTransactionFilters(initialFilters);
   };
 
   return (

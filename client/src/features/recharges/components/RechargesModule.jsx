@@ -9,6 +9,7 @@ import { useEffect, useMemo, useState } from "react";
 import IconButton from "../../../components/common/IconButton";
 import ModalDialog from "../../../components/common/ModalDialog";
 import SectionCard from "../../../components/common/SectionCard";
+import { getTodayInputDateValue } from "../../../utils/dateFieldDefaults";
 import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
 import { fetchStaffList } from "../../staff/api/staffApi";
 import { fetchWalletList } from "../../wallets/api/walletApi";
@@ -21,12 +22,12 @@ const rechargeInitialForm = {
   notes: ""
 };
 
-const rechargeInitialFilters = {
+const createRechargeInitialFilters = () => ({
   search: "",
-  date: "",
+  date: getTodayInputDateValue(),
   paymentMode: "",
   cashierId: ""
-};
+});
 
 function validateRechargeForm(formData) {
   const nextErrors = {};
@@ -94,8 +95,8 @@ function RechargesModule({ authToken, onMetricsChange, onRecordsChange }) {
   const [walletOptions, setWalletOptions] = useState([]);
   const [isLoadingWallets, setIsLoadingWallets] = useState(false);
   const [cashierOptions, setCashierOptions] = useState([]);
-  const [rechargeFilterForm, setRechargeFilterForm] = useState(rechargeInitialFilters);
-  const [appliedRechargeFilters, setAppliedRechargeFilters] = useState(rechargeInitialFilters);
+  const [rechargeFilterForm, setRechargeFilterForm] = useState(createRechargeInitialFilters);
+  const [appliedRechargeFilters, setAppliedRechargeFilters] = useState(createRechargeInitialFilters);
   const [rechargeReloadToken, setRechargeReloadToken] = useState(0);
   const [selectedRechargeRecord, setSelectedRechargeRecord] = useState(null);
 
@@ -259,8 +260,10 @@ function RechargesModule({ authToken, onMetricsChange, onRecordsChange }) {
   };
 
   const resetRechargeFilters = () => {
-    setRechargeFilterForm(rechargeInitialFilters);
-    setAppliedRechargeFilters(rechargeInitialFilters);
+    const initialFilters = createRechargeInitialFilters();
+
+    setRechargeFilterForm(initialFilters);
+    setAppliedRechargeFilters(initialFilters);
   };
 
   return (

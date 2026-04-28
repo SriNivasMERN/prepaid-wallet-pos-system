@@ -308,8 +308,8 @@ function MembersModule({ authToken, onMetricsChange, onRecordsChange }) {
 
   return (
     <>
-      <SectionCard title="Create Member">
-        <form className="form-grid" onSubmit={handleMemberSubmit} autoComplete="off">
+      <SectionCard title="Create Member" className="section-card--form-compact">
+        <form className="form-grid form-grid--member-create" onSubmit={handleMemberSubmit} autoComplete="off">
           <label className="field-group">
             <span>Full Name</span>
             <input
@@ -352,7 +352,7 @@ function MembersModule({ authToken, onMetricsChange, onRecordsChange }) {
             />
           </label>
 
-          <label className="field-group">
+          <label className="field-group field-group--compact">
             <span>Status</span>
             <select name="status" value={memberForm.status} onChange={handleMemberInputChange} autoComplete="off">
               <option value="Active">Active</option>
@@ -366,7 +366,7 @@ function MembersModule({ authToken, onMetricsChange, onRecordsChange }) {
           {memberRequestError ? <div className="form-message form-message--error">{memberRequestError}</div> : null}
           {memberSuccessMessage ? <div className="form-message">{memberSuccessMessage}</div> : null}
 
-          <div className="form-actions form-actions--full">
+          <div className="form-actions form-actions--full form-actions--compact">
             <button type="submit" className="primary-button" disabled={isCreatingMember}>
               {isCreatingMember ? "Creating..." : "Create Member"}
             </button>

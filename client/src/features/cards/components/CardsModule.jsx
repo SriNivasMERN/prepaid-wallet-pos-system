@@ -10,6 +10,10 @@ import IconButton from "../../../components/common/IconButton";
 import ModalDialog from "../../../components/common/ModalDialog";
 import SectionCard from "../../../components/common/SectionCard";
 import StatusChip from "../../../components/common/StatusChip";
+import {
+  getOneYearLaterInputDateValue,
+  getTodayInputDateValue
+} from "../../../utils/dateFieldDefaults";
 import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
 import { fetchMemberList } from "../../members/api/memberApi";
 import {
@@ -19,11 +23,15 @@ import {
   replaceCardRecord
 } from "../api/cardApi";
 
-const cardInitialForm = {
-  cardNumber: "",
-  memberId: "",
-  activatedAt: "",
-  expiresAt: ""
+const createCardInitialForm = () => {
+  const today = getTodayInputDateValue();
+
+  return {
+    cardNumber: "",
+    memberId: "",
+    activatedAt: today,
+    expiresAt: getOneYearLaterInputDateValue(today)
+  };
 };
 
 const cardInitialFilters = {
@@ -32,10 +40,14 @@ const cardInitialFilters = {
   memberId: ""
 };
 
-const cardReplaceInitialForm = {
-  cardNumber: "",
-  activatedAt: "",
-  expiresAt: ""
+const createReplaceCardInitialForm = () => {
+  const today = getTodayInputDateValue();
+
+  return {
+    cardNumber: "",
+    activatedAt: today,
+    expiresAt: getOneYearLaterInputDateValue(today)
+  };
 };
 
 function validateCardForm(formData) {
@@ -100,7 +112,7 @@ function formatDate(value) {
 }
 
 function CardsModule({ authToken, onMetricsChange, onRecordsChange }) {
-  const [cardForm, setCardForm] = useState(cardInitialForm);
+  const [cardForm, setCardForm] = useState(createCardInitialForm);
   const [cardFormErrors, setCardFormErrors] = useState({});
   const [cardRequestError, setCardRequestError] = useState("");
   const [cardSuccessMessage, setCardSuccessMessage] = useState("");
@@ -114,7 +126,7 @@ function CardsModule({ authToken, onMetricsChange, onRecordsChange }) {
   const [cardReloadToken, setCardReloadToken] = useState(0);
   const [selectedCardRecord, setSelectedCardRecord] = useState(null);
   const [replacingCard, setReplacingCard] = useState(null);
-  const [replaceCardForm, setReplaceCardForm] = useState(cardReplaceInitialForm);
+  const [replaceCardForm, setReplaceCardForm] = useState(createReplaceCardInitialForm);
   const [replaceCardFormErrors, setReplaceCardFormErrors] = useState({});
   const [replaceCardRequestError, setReplaceCardRequestError] = useState("");
   const [isReplacingCard, setIsReplacingCard] = useState(false);
@@ -195,7 +207,7 @@ function CardsModule({ authToken, onMetricsChange, onRecordsChange }) {
   }, [authToken, appliedCardFilters, cardReloadToken, onMetricsChange, onRecordsChange]);
 
   const resetCardForm = () => {
-    setCardForm(cardInitialForm);
+    setCardForm(createCardInitialForm());
     setCardFormErrors({});
     setCardRequestError("");
     setCardSuccessMessage("");
@@ -203,7 +215,7 @@ function CardsModule({ authToken, onMetricsChange, onRecordsChange }) {
 
   const closeReplaceCardModal = () => {
     setReplacingCard(null);
-    setReplaceCardForm(cardReplaceInitialForm);
+    setReplaceCardForm(createReplaceCardInitialForm());
     setReplaceCardFormErrors({});
     setReplaceCardRequestError("");
   };
@@ -281,11 +293,13 @@ function CardsModule({ authToken, onMetricsChange, onRecordsChange }) {
   };
 
   const openReplaceCardModal = (card) => {
+    const today = getTodayInputDateValue();
+
     setReplacingCard(card);
     setReplaceCardForm({
       cardNumber: "",
-      activatedAt: card.activatedAt ? new Date(card.activatedAt).toISOString().slice(0, 10) : "",
-      expiresAt: card.expiresAt ? new Date(card.expiresAt).toISOString().slice(0, 10) : ""
+      activatedAt: today,
+      expiresAt: getOneYearLaterInputDateValue(today)
     });
     setReplaceCardFormErrors({});
     setReplaceCardRequestError("");

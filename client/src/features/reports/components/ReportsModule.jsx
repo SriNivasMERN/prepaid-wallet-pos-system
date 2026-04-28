@@ -7,13 +7,18 @@
 import { useEffect, useState } from "react";
 
 import SectionCard from "../../../components/common/SectionCard";
+import { getTodayInputDateValue } from "../../../utils/dateFieldDefaults";
 import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
 import { fetchReport } from "../api/reportApi";
 
-const reportInitialFilters = {
-  type: "Sales",
-  fromDate: "",
-  toDate: ""
+const createReportInitialFilters = () => {
+  const today = getTodayInputDateValue();
+
+  return {
+    type: "Sales",
+    fromDate: today,
+    toDate: today
+  };
 };
 
 function formatCurrency(value) {
@@ -64,7 +69,7 @@ function formatSummaryValue(key, value) {
 
     return entries
       .map(([paymentMode, amount]) => `${paymentMode}: ${formatCurrency(amount)}`)
-      .join(" | ");
+      .join(", ");
   }
 
   if (key.toLowerCase().includes("amount")) {
@@ -137,8 +142,8 @@ function getReportColumns(reportType) {
 function ReportsModule({ authToken, onMetricsChange, onRecordsChange }) {
   const [reportRequestError, setReportRequestError] = useState("");
   const [isLoadingReport, setIsLoadingReport] = useState(false);
-  const [reportFilterForm, setReportFilterForm] = useState(reportInitialFilters);
-  const [appliedReportFilters, setAppliedReportFilters] = useState(reportInitialFilters);
+  const [reportFilterForm, setReportFilterForm] = useState(createReportInitialFilters);
+  const [appliedReportFilters, setAppliedReportFilters] = useState(createReportInitialFilters);
   const [reportReloadToken, setReportReloadToken] = useState(0);
   const [reportData, setReportData] = useState({
     reportType: "Sales",
@@ -206,8 +211,10 @@ function ReportsModule({ authToken, onMetricsChange, onRecordsChange }) {
   };
 
   const resetReportFilters = () => {
-    setReportFilterForm(reportInitialFilters);
-    setAppliedReportFilters(reportInitialFilters);
+    const initialFilters = createReportInitialFilters();
+
+    setReportFilterForm(initialFilters);
+    setAppliedReportFilters(initialFilters);
   };
 
   const summaryEntries = Object.entries(reportData.summary || {});

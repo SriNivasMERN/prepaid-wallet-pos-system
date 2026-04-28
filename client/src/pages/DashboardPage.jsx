@@ -266,6 +266,56 @@ function formatMetricValue(value) {
   return String(value ?? "0");
 }
 
+function inferMetricColumns(metric, firstRecord) {
+  if (Array.isArray(metric?.columns) && metric.columns.length > 0) {
+    return metric.columns;
+  }
+
+  if (!firstRecord || typeof firstRecord !== "object") {
+    return ["Details"];
+  }
+
+  if ("username" in firstRecord && "role" in firstRecord) {
+    return ["Full Name", "Username", "Role"];
+  }
+
+  if ("mobileNumber" in firstRecord && "status" in firstRecord) {
+    return ["Full Name", "Mobile Number", "Status"];
+  }
+
+  if ("reference" in firstRecord) {
+    return ["Reference"];
+  }
+
+  return ["Details"];
+}
+
+function inferMetricRow(metric, record) {
+  if (typeof metric?.getRow === "function") {
+    return metric.getRow(record);
+  }
+
+  if (record && typeof record === "object") {
+    if ("username" in record && "role" in record) {
+      return [record.fullName || "-", record.username || "-", record.role || "-"];
+    }
+
+    if ("mobileNumber" in record && "status" in record) {
+      return [record.fullName || "-", record.mobileNumber || "-", record.status || "-"];
+    }
+
+    if ("reference" in record) {
+      return [record.reference || "-"];
+    }
+  }
+
+  if (typeof metric?.render === "function") {
+    return [metric.render(record)];
+  }
+
+  return [String(record ?? "-")];
+}
+
 function buildMetricDetails(activeModule, data) {
   if (activeModule === "Dashboard") {
     return [
@@ -1549,9 +1599,30 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
           ))}
           {activeModule === "Staff"
             ? [
-                { label: "Active Staff", value: String(staffMetrics.active), records: staffRecords.filter((staff) => staff.status === "Active"), title: "Active Staff", render: (staff) => `${staff.fullName} | ${staff.role}` },
-                { label: "Admins", value: String(staffMetrics.admins), records: staffRecords.filter((staff) => staff.role === "Admin"), title: "Admins", render: (staff) => `${staff.fullName} | ${staff.username}` },
-                { label: "Cashiers", value: String(staffMetrics.cashiers), records: staffRecords.filter((staff) => staff.role === "Cashier"), title: "Cashiers", render: (staff) => `${staff.fullName} | ${staff.username}` }
+                {
+                  label: "Active Staff",
+                  value: String(staffMetrics.active),
+                  records: staffRecords.filter((staff) => staff.status === "Active"),
+                  title: "Active Staff",
+                  columns: ["Full Name", "Username", "Role"],
+                  getRow: (staff) => [staff.fullName, staff.username, staff.role]
+                },
+                {
+                  label: "Admins",
+                  value: String(staffMetrics.admins),
+                  records: staffRecords.filter((staff) => staff.role === "Admin"),
+                  title: "Admins",
+                  columns: ["Full Name", "Username", "Role"],
+                  getRow: (staff) => [staff.fullName, staff.username, staff.role]
+                },
+                {
+                  label: "Cashiers",
+                  value: String(staffMetrics.cashiers),
+                  records: staffRecords.filter((staff) => staff.role === "Cashier"),
+                  title: "Cashiers",
+                  columns: ["Full Name", "Username", "Role"],
+                  getRow: (staff) => [staff.fullName, staff.username, staff.role]
+                }
               ].map((metric) => (
                 <button
                   key={metric.label}
@@ -1984,6 +2055,7 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
       <ModalDialog
         isOpen={Boolean(selectedMetricCard)}
         title={selectedMetricCard?.title || "Metric Details"}
+        className="dialog-card--metric"
         onClose={() => setSelectedMetricCard(null)}
         footer={(
           <button type="button" className="secondary-button" onClick={() => setSelectedMetricCard(null)}>
@@ -2000,7 +2072,7 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
               <table className="data-table data-table--dense">
                 <thead>
                   <tr>
-                    {(selectedMetricCard.columns || ["Details"]).map((column) => (
+                    {inferMetricColumns(selectedMetricCard, selectedMetricCard.records[0]).map((column) => (
                       <th key={column}>{column}</th>
                     ))}
                   </tr>
@@ -2008,11 +2080,9 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
                 <tbody>
                   {selectedMetricCard.records.map((record, index) => (
                     <tr key={record.id || record.reference || index}>
-                      {(selectedMetricCard.getRow ? selectedMetricCard.getRow(record) : [selectedMetricCard.render(record)]).map(
-                        (value, cellIndex) => (
-                          <td key={`${record.id || record.reference || index}-${cellIndex}`}>{value}</td>
-                        )
-                      )}
+                      {inferMetricRow(selectedMetricCard, record).map((value, cellIndex) => (
+                        <td key={`${record.id || record.reference || index}-${cellIndex}`}>{value}</td>
+                      ))}
                     </tr>
                   ))}
                 </tbody>

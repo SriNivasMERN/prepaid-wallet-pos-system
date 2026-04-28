@@ -4,11 +4,12 @@
  * Purpose: Provides the Debits module create form, filters, and list connected to backend APIs.
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import IconButton from "../../../components/common/IconButton";
 import ModalDialog from "../../../components/common/ModalDialog";
 import SectionCard from "../../../components/common/SectionCard";
+import { getTodayInputDateValue } from "../../../utils/dateFieldDefaults";
 import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
 import { fetchStaffList } from "../../staff/api/staffApi";
 import { fetchWalletList } from "../../wallets/api/walletApi";
@@ -21,12 +22,12 @@ const debitInitialForm = {
   notes: ""
 };
 
-const debitInitialFilters = {
+const createDebitInitialFilters = () => ({
   search: "",
   reason: "",
-  date: "",
+  date: getTodayInputDateValue(),
   cashierId: ""
-};
+});
 
 function validateDebitForm(formData) {
   const nextErrors = {};
@@ -86,6 +87,7 @@ function formatDateTime(value) {
 }
 
 function DebitsModule({ authToken, onMetricsChange, onRecordsChange }) {
+  const walletSelectRef = useRef(null);
   const [debitForm, setDebitForm] = useState(debitInitialForm);
   const [debitFormErrors, setDebitFormErrors] = useState({});
   const [debitRequestError, setDebitRequestError] = useState("");
@@ -96,8 +98,8 @@ function DebitsModule({ authToken, onMetricsChange, onRecordsChange }) {
   const [walletOptions, setWalletOptions] = useState([]);
   const [isLoadingWallets, setIsLoadingWallets] = useState(false);
   const [cashierOptions, setCashierOptions] = useState([]);
-  const [debitFilterForm, setDebitFilterForm] = useState(debitInitialFilters);
-  const [appliedDebitFilters, setAppliedDebitFilters] = useState(debitInitialFilters);
+  const [debitFilterForm, setDebitFilterForm] = useState(createDebitInitialFilters);
+  const [appliedDebitFilters, setAppliedDebitFilters] = useState(createDebitInitialFilters);
   const [debitReloadToken, setDebitReloadToken] = useState(0);
   const [selectedDebitRecord, setSelectedDebitRecord] = useState(null);
 
@@ -185,6 +187,22 @@ function DebitsModule({ authToken, onMetricsChange, onRecordsChange }) {
     [walletOptions, debitForm.walletId]
   );
 
+  useEffect(() => {
+    if (isLoadingWallets || debitForm.walletId) {
+      return;
+    }
+
+    const walletSelect = walletSelectRef.current;
+
+    if (!(walletSelect instanceof HTMLSelectElement) || walletSelect.disabled) {
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      walletSelect.focus();
+    });
+  }, [isLoadingWallets, debitForm.walletId, walletOptions.length]);
+
   const resetDebitForm = () => {
     setDebitForm(debitInitialForm);
     setDebitFormErrors({});
@@ -261,8 +279,10 @@ function DebitsModule({ authToken, onMetricsChange, onRecordsChange }) {
   };
 
   const resetDebitFilters = () => {
-    setDebitFilterForm(debitInitialFilters);
-    setAppliedDebitFilters(debitInitialFilters);
+    const initialFilters = createDebitInitialFilters();
+
+    setDebitFilterForm(initialFilters);
+    setAppliedDebitFilters(initialFilters);
   };
 
   return (
@@ -272,6 +292,7 @@ function DebitsModule({ authToken, onMetricsChange, onRecordsChange }) {
           <label className="field-group field-group--wide">
             <span>Wallet</span>
             <select
+              ref={walletSelectRef}
               name="walletId"
               value={debitForm.walletId}
               onChange={handleDebitInputChange}

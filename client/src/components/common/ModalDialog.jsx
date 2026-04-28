@@ -11,7 +11,15 @@ import IconButton from "./IconButton";
 /**
  * Displays a reusable modal dialog when open.
  */
-function ModalDialog({ isOpen, title, onClose, children, footer = null, width = "720px" }) {
+function ModalDialog({
+  isOpen,
+  title,
+  onClose,
+  children,
+  footer = null,
+  width = "720px",
+  className = ""
+}) {
   const dialogRef = useRef(null);
 
   useEffect(() => {
@@ -38,7 +46,7 @@ function ModalDialog({ isOpen, title, onClose, children, footer = null, width = 
     <div className="dialog-overlay" role="presentation" onClick={onClose}>
       <section
         ref={dialogRef}
-        className="dialog-card"
+        className={`dialog-card ${className}`.trim()}
         role="dialog"
         aria-modal="true"
         aria-label={title}

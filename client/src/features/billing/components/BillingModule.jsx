@@ -10,6 +10,7 @@ import IconButton from "../../../components/common/IconButton";
 import ModalDialog from "../../../components/common/ModalDialog";
 import SectionCard from "../../../components/common/SectionCard";
 import StatusChip from "../../../components/common/StatusChip";
+import { getTodayInputDateValue } from "../../../utils/dateFieldDefaults";
 import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
 import {
   createBillRecord,
@@ -25,11 +26,11 @@ const billingInitialForm = {
   notes: ""
 };
 
-const billingInitialFilters = {
+const createBillingInitialFilters = () => ({
   search: "",
   status: "",
-  date: ""
-};
+  date: getTodayInputDateValue()
+});
 
 function validateBillingForm({ cardNumber, items }) {
   const nextErrors = {};
@@ -106,8 +107,8 @@ function BillingModule({ authToken, onMetricsChange, onRecordsChange }) {
   const [isLoadingBills, setIsLoadingBills] = useState(false);
   const [billRecords, setBillRecords] = useState([]);
   const [productOptions, setProductOptions] = useState([]);
-  const [billFilterForm, setBillFilterForm] = useState(billingInitialFilters);
-  const [appliedBillFilters, setAppliedBillFilters] = useState(billingInitialFilters);
+  const [billFilterForm, setBillFilterForm] = useState(createBillingInitialFilters);
+  const [appliedBillFilters, setAppliedBillFilters] = useState(createBillingInitialFilters);
   const [billReloadToken, setBillReloadToken] = useState(0);
   const [selectedBillRecord, setSelectedBillRecord] = useState(null);
   const [billingPrecheck, setBillingPrecheck] = useState(null);
@@ -358,8 +359,10 @@ function BillingModule({ authToken, onMetricsChange, onRecordsChange }) {
   };
 
   const resetBillFilters = () => {
-    setBillFilterForm(billingInitialFilters);
-    setAppliedBillFilters(billingInitialFilters);
+    const initialFilters = createBillingInitialFilters();
+
+    setBillFilterForm(initialFilters);
+    setAppliedBillFilters(initialFilters);
   };
 
   const handleBillingPrecheck = async () => {
