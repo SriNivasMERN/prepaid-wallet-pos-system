@@ -4,13 +4,14 @@
  * Purpose: Provides the Wallets module create form, filters, and list connected to backend APIs.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import IconButton from "../../../components/common/IconButton";
 import ModalDialog from "../../../components/common/ModalDialog";
 import SectionCard from "../../../components/common/SectionCard";
 import StatusChip from "../../../components/common/StatusChip";
 import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
+import { scrollElementBelowHeader } from "../../../utils/scrollElementBelowHeader";
 import { fetchCardList } from "../../cards/api/cardApi";
 import { fetchMemberList } from "../../members/api/memberApi";
 import {
@@ -76,6 +77,7 @@ function formatDate(value) {
 }
 
 function WalletsModule({ authToken, onMetricsChange, onRecordsChange }) {
+  const walletListSectionRef = useRef(null);
   const [cardNumberByMemberId, setCardNumberByMemberId] = useState({});
   const [walletForm, setWalletForm] = useState(walletInitialForm);
   const [walletFormErrors, setWalletFormErrors] = useState({});
@@ -268,6 +270,7 @@ function WalletsModule({ authToken, onMetricsChange, onRecordsChange }) {
       resetWalletForm();
       setWalletSuccessMessage("Wallet created successfully.");
       setWalletReloadToken((currentValue) => currentValue + 1);
+      window.setTimeout(() => scrollElementBelowHeader(walletListSectionRef.current), 150);
     } catch (error) {
       setWalletRequestError(getApiErrorMessage(error));
     } finally {
@@ -459,19 +462,21 @@ function WalletsModule({ authToken, onMetricsChange, onRecordsChange }) {
         </form>
       </SectionCard>
 
-      <SectionCard
-        title="Wallets List"
-        actions={
+      <div ref={walletListSectionRef}>
+        <SectionCard
+          title="Wallets List"
+          actions={
           <IconButton
             icon="refresh"
             label="Refresh wallets"
             text="Refresh"
             onClick={() => setWalletReloadToken((currentValue) => currentValue + 1)}
           />
-        }
-      >
-        {isLoadingWallets ? <div className="feedback-actions">Loading wallets...</div> : null}
-        <div className="table-wrapper">
+          }
+        >
+          {walletSuccessMessage ? <div className="form-message">{walletSuccessMessage}</div> : null}
+          {isLoadingWallets ? <div className="feedback-actions">Loading wallets...</div> : null}
+          <div className="table-wrapper">
           <table className="data-table data-table--dense">
             <thead>
               <tr>
@@ -535,8 +540,9 @@ function WalletsModule({ authToken, onMetricsChange, onRecordsChange }) {
               )}
             </tbody>
           </table>
-        </div>
-      </SectionCard>
+          </div>
+        </SectionCard>
+      </div>
 
       <ModalDialog
         isOpen={Boolean(selectedWalletRecord)}

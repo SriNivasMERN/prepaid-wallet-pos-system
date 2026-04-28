@@ -4,7 +4,7 @@
  * Purpose: Provides the Cards module assignment form, filters, and list connected to backend APIs.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import IconButton from "../../../components/common/IconButton";
 import ModalDialog from "../../../components/common/ModalDialog";
@@ -15,6 +15,7 @@ import {
   getTodayInputDateValue
 } from "../../../utils/dateFieldDefaults";
 import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
+import { scrollElementBelowHeader } from "../../../utils/scrollElementBelowHeader";
 import { fetchMemberList } from "../../members/api/memberApi";
 import {
   assignCardToMember,
@@ -112,6 +113,7 @@ function formatDate(value) {
 }
 
 function CardsModule({ authToken, onMetricsChange, onRecordsChange }) {
+  const cardListSectionRef = useRef(null);
   const [cardForm, setCardForm] = useState(createCardInitialForm);
   const [cardFormErrors, setCardFormErrors] = useState({});
   const [cardRequestError, setCardRequestError] = useState("");
@@ -285,6 +287,7 @@ function CardsModule({ authToken, onMetricsChange, onRecordsChange }) {
       resetCardForm();
       setCardSuccessMessage("Card assigned successfully.");
       setCardReloadToken((currentValue) => currentValue + 1);
+      window.setTimeout(() => scrollElementBelowHeader(cardListSectionRef.current), 150);
     } catch (error) {
       setCardRequestError(getApiErrorMessage(error));
     } finally {
@@ -515,19 +518,21 @@ function CardsModule({ authToken, onMetricsChange, onRecordsChange }) {
         </form>
       </SectionCard>
 
-      <SectionCard
-        title="Cards List"
-        actions={
+      <div ref={cardListSectionRef}>
+        <SectionCard
+          title="Cards List"
+          actions={
           <IconButton
             icon="refresh"
             label="Refresh cards"
             text="Refresh"
             onClick={() => setCardReloadToken((currentValue) => currentValue + 1)}
           />
-        }
-      >
-        {isLoadingCards ? <div className="feedback-actions">Loading cards...</div> : null}
-        <div className="table-wrapper">
+          }
+        >
+          {cardSuccessMessage ? <div className="form-message">{cardSuccessMessage}</div> : null}
+          {isLoadingCards ? <div className="feedback-actions">Loading cards...</div> : null}
+          <div className="table-wrapper">
           <table className="data-table data-table--dense">
             <thead>
               <tr>
@@ -578,8 +583,9 @@ function CardsModule({ authToken, onMetricsChange, onRecordsChange }) {
               )}
             </tbody>
           </table>
-        </div>
-      </SectionCard>
+          </div>
+        </SectionCard>
+      </div>
 
       <ModalDialog
         isOpen={Boolean(selectedCardRecord)}

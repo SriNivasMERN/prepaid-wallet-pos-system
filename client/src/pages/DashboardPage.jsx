@@ -4,7 +4,7 @@
  * Purpose: Provides the authenticated operational layout with module navigation, staff management, member management, card management, and logout control.
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import AdminIcon from "../components/common/AdminIcon";
@@ -38,6 +38,7 @@ import StocksModule from "../features/stocks/components/StocksModule";
 import TransactionsModule from "../features/transactions/components/TransactionsModule";
 import WalletsModule from "../features/wallets/components/WalletsModule";
 import { getApiErrorMessage } from "../utils/getApiErrorMessage";
+import { scrollElementBelowHeader } from "../utils/scrollElementBelowHeader";
 
 const staffInitialForm = {
   fullName: "",
@@ -875,6 +876,7 @@ const modulePrimaryActions = {
 };
 
 function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
+  const staffListSectionRef = useRef(null);
   const navigate = useNavigate();
   const allowedModules = currentStaff?.allowedModules?.length
     ? currentStaff.allowedModules
@@ -1332,6 +1334,7 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
       setStaffRecords((currentList) => [response.data, ...currentList]);
       resetStaffForm();
       setStaffSuccessMessage("Staff account created successfully.");
+      window.setTimeout(() => scrollElementBelowHeader(staffListSectionRef.current), 150);
     } catch (error) {
       setStaffRequestError(getApiErrorMessage(error));
     } finally {
@@ -1862,9 +1865,10 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
               </form>
             </SectionCard>
 
-            <SectionCard
-              title="Staff List"
-              actions={(
+            <div ref={staffListSectionRef}>
+              <SectionCard
+                title="Staff List"
+                actions={( 
                 <IconButton
                   icon="refresh"
                   label="Refresh staff"
@@ -1887,12 +1891,12 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
                     }
                   }}
                 />
-              )}
-            >
-              {staffRequestError ? <div className="form-message form-message--error">{staffRequestError}</div> : null}
-              {staffSuccessMessage ? <div className="form-message">{staffSuccessMessage}</div> : null}
-              {isLoadingStaff ? <div className="feedback-actions">Loading staff...</div> : null}
-              <div className="table-wrapper">
+                )}
+              >
+                {staffRequestError ? <div className="form-message form-message--error">{staffRequestError}</div> : null}
+                {staffSuccessMessage ? <div className="form-message">{staffSuccessMessage}</div> : null}
+                {isLoadingStaff ? <div className="feedback-actions">Loading staff...</div> : null}
+                <div className="table-wrapper">
                 <table className="data-table data-table--dense">
                   <thead>
                     <tr>
@@ -1964,8 +1968,9 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
                     )}
                   </tbody>
                 </table>
-              </div>
-            </SectionCard>
+                </div>
+              </SectionCard>
+            </div>
           </>
         ) : activeModule === "Members" ? (
           <MembersModule authToken={authToken} onMetricsChange={setMemberMetrics} onRecordsChange={setMemberRecordsSnapshot} />
@@ -2074,7 +2079,7 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
                   </tbody>
                 </table>
               </div>
-            </SectionCard>
+              </SectionCard>
           </>
         )}
       </main>

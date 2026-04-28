@@ -4,13 +4,14 @@
  * Purpose: Provides the Recharges module create form, filters, and list connected to backend APIs.
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import IconButton from "../../../components/common/IconButton";
 import ModalDialog from "../../../components/common/ModalDialog";
 import SectionCard from "../../../components/common/SectionCard";
 import { getTodayInputDateValue } from "../../../utils/dateFieldDefaults";
 import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
+import { scrollElementBelowHeader } from "../../../utils/scrollElementBelowHeader";
 import { fetchStaffList } from "../../staff/api/staffApi";
 import { fetchWalletList } from "../../wallets/api/walletApi";
 import { createRechargeRecord, fetchRechargeList } from "../api/rechargeApi";
@@ -85,6 +86,7 @@ function formatDateTime(value) {
 }
 
 function RechargesModule({ authToken, onMetricsChange, onRecordsChange }) {
+  const rechargeListSectionRef = useRef(null);
   const [rechargeForm, setRechargeForm] = useState(rechargeInitialForm);
   const [rechargeFormErrors, setRechargeFormErrors] = useState({});
   const [rechargeRequestError, setRechargeRequestError] = useState("");
@@ -242,6 +244,7 @@ function RechargesModule({ authToken, onMetricsChange, onRecordsChange }) {
       resetRechargeForm();
       setRechargeSuccessMessage("Recharge created successfully.");
       setRechargeReloadToken((currentValue) => currentValue + 1);
+      window.setTimeout(() => scrollElementBelowHeader(rechargeListSectionRef.current), 150);
     } catch (error) {
       setRechargeRequestError(getApiErrorMessage(error));
     } finally {
@@ -446,19 +449,21 @@ function RechargesModule({ authToken, onMetricsChange, onRecordsChange }) {
         </form>
       </SectionCard>
 
-      <SectionCard
-        title="Recharges List"
-        actions={
+      <div ref={rechargeListSectionRef}>
+        <SectionCard
+          title="Recharges List"
+          actions={
           <IconButton
             icon="refresh"
             label="Refresh recharges"
             text="Refresh"
             onClick={() => setRechargeReloadToken((currentValue) => currentValue + 1)}
           />
-        }
-      >
-        {isLoadingRecharges ? <div className="feedback-actions">Loading recharges...</div> : null}
-        <div className="table-wrapper">
+          }
+        >
+          {rechargeSuccessMessage ? <div className="form-message">{rechargeSuccessMessage}</div> : null}
+          {isLoadingRecharges ? <div className="feedback-actions">Loading recharges...</div> : null}
+          <div className="table-wrapper">
           <table className="data-table data-table--dense">
             <thead>
               <tr>
@@ -502,8 +507,9 @@ function RechargesModule({ authToken, onMetricsChange, onRecordsChange }) {
               )}
             </tbody>
           </table>
-        </div>
-      </SectionCard>
+          </div>
+        </SectionCard>
+      </div>
 
       <ModalDialog
         isOpen={Boolean(selectedRechargeRecord)}

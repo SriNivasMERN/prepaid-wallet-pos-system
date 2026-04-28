@@ -4,7 +4,7 @@
  * Purpose: Provides the Billing module bill form, filters, and recent bill list connected to backend APIs.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import IconButton from "../../../components/common/IconButton";
 import ModalDialog from "../../../components/common/ModalDialog";
@@ -12,6 +12,7 @@ import SectionCard from "../../../components/common/SectionCard";
 import StatusChip from "../../../components/common/StatusChip";
 import { getTodayInputDateValue } from "../../../utils/dateFieldDefaults";
 import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
+import { scrollElementBelowHeader } from "../../../utils/scrollElementBelowHeader";
 import {
   createBillRecord,
   fetchBillingPrecheck,
@@ -98,6 +99,7 @@ function formatDateTime(value) {
 }
 
 function BillingModule({ authToken, onMetricsChange, onRecordsChange }) {
+  const billListSectionRef = useRef(null);
   const [billingForm, setBillingForm] = useState(billingInitialForm);
   const [billingItems, setBillingItems] = useState([]);
   const [billingFormErrors, setBillingFormErrors] = useState({});
@@ -342,6 +344,7 @@ function BillingModule({ authToken, onMetricsChange, onRecordsChange }) {
       resetBillingForm();
       setBillingSuccessMessage("Bill created successfully.");
       setBillReloadToken((currentValue) => currentValue + 1);
+      window.setTimeout(() => scrollElementBelowHeader(billListSectionRef.current), 150);
     } catch (error) {
       setBillingRequestError(getApiErrorMessage(error));
     } finally {
@@ -634,19 +637,21 @@ function BillingModule({ authToken, onMetricsChange, onRecordsChange }) {
         </form>
       </SectionCard>
 
-      <SectionCard
-        title="Bills List"
-        actions={
+      <div ref={billListSectionRef}>
+        <SectionCard
+          title="Bills List"
+          actions={
           <IconButton
             icon="refresh"
             label="Refresh bills"
             text="Refresh"
             onClick={() => setBillReloadToken((currentValue) => currentValue + 1)}
           />
-        }
-      >
-        {isLoadingBills ? <div className="feedback-actions">Loading bills...</div> : null}
-        <div className="table-wrapper">
+          }
+        >
+          {billingSuccessMessage ? <div className="form-message">{billingSuccessMessage}</div> : null}
+          {isLoadingBills ? <div className="feedback-actions">Loading bills...</div> : null}
+          <div className="table-wrapper">
           <table className="data-table data-table--dense">
             <thead>
               <tr>
@@ -692,8 +697,9 @@ function BillingModule({ authToken, onMetricsChange, onRecordsChange }) {
               )}
             </tbody>
           </table>
-        </div>
-      </SectionCard>
+          </div>
+        </SectionCard>
+      </div>
 
       <ModalDialog
         isOpen={Boolean(selectedBillRecord)}

@@ -11,6 +11,7 @@ import ModalDialog from "../../../components/common/ModalDialog";
 import SectionCard from "../../../components/common/SectionCard";
 import { getTodayInputDateValue } from "../../../utils/dateFieldDefaults";
 import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
+import { scrollElementBelowHeader } from "../../../utils/scrollElementBelowHeader";
 import { fetchStaffList } from "../../staff/api/staffApi";
 import { fetchWalletList } from "../../wallets/api/walletApi";
 import { createDebitRecord, fetchDebitList } from "../api/debitApi";
@@ -88,6 +89,7 @@ function formatDateTime(value) {
 
 function DebitsModule({ authToken, onMetricsChange, onRecordsChange }) {
   const walletSelectRef = useRef(null);
+  const debitListSectionRef = useRef(null);
   const [debitForm, setDebitForm] = useState(debitInitialForm);
   const [debitFormErrors, setDebitFormErrors] = useState({});
   const [debitRequestError, setDebitRequestError] = useState("");
@@ -261,6 +263,7 @@ function DebitsModule({ authToken, onMetricsChange, onRecordsChange }) {
       resetDebitForm();
       setDebitSuccessMessage("Debit created successfully.");
       setDebitReloadToken((currentValue) => currentValue + 1);
+      window.setTimeout(() => scrollElementBelowHeader(debitListSectionRef.current), 150);
     } catch (error) {
       setDebitRequestError(getApiErrorMessage(error));
     } finally {
@@ -462,19 +465,21 @@ function DebitsModule({ authToken, onMetricsChange, onRecordsChange }) {
         </form>
       </SectionCard>
 
-      <SectionCard
-        title="Debits List"
-        actions={
+      <div ref={debitListSectionRef}>
+        <SectionCard
+          title="Debits List"
+          actions={
           <IconButton
             icon="refresh"
             label="Refresh debits"
             text="Refresh"
             onClick={() => setDebitReloadToken((currentValue) => currentValue + 1)}
           />
-        }
-      >
-        {isLoadingDebits ? <div className="feedback-actions">Loading debits...</div> : null}
-        <div className="table-wrapper">
+          }
+        >
+          {debitSuccessMessage ? <div className="form-message">{debitSuccessMessage}</div> : null}
+          {isLoadingDebits ? <div className="feedback-actions">Loading debits...</div> : null}
+          <div className="table-wrapper">
           <table className="data-table data-table--dense">
             <thead>
               <tr>
@@ -518,8 +523,9 @@ function DebitsModule({ authToken, onMetricsChange, onRecordsChange }) {
               )}
             </tbody>
           </table>
-        </div>
-      </SectionCard>
+          </div>
+        </SectionCard>
+      </div>
 
       <ModalDialog
         isOpen={Boolean(selectedDebitRecord)}

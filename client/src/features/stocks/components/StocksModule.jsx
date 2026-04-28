@@ -4,13 +4,14 @@
  * Purpose: Provides the Stocks module movement form, filters, and stock list connected to backend APIs.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import IconButton from "../../../components/common/IconButton";
 import ModalDialog from "../../../components/common/ModalDialog";
 import SectionCard from "../../../components/common/SectionCard";
 import StatusChip from "../../../components/common/StatusChip";
 import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
+import { scrollElementBelowHeader } from "../../../utils/scrollElementBelowHeader";
 import {
   createStockMovementRecord,
   fetchActiveProductOptions,
@@ -99,6 +100,7 @@ function formatQuantityChange(value) {
 }
 
 function StocksModule({ authToken, onMetricsChange, onRecordsChange }) {
+  const stockListSectionRef = useRef(null);
   const [stockForm, setStockForm] = useState(stockInitialForm);
   const [stockFormErrors, setStockFormErrors] = useState({});
   const [stockRequestError, setStockRequestError] = useState("");
@@ -233,6 +235,7 @@ function StocksModule({ authToken, onMetricsChange, onRecordsChange }) {
       resetStockForm();
       setStockSuccessMessage("Stock movement saved successfully.");
       setStockReloadToken((currentValue) => currentValue + 1);
+      window.setTimeout(() => scrollElementBelowHeader(stockListSectionRef.current), 150);
     } catch (error) {
       setStockRequestError(getApiErrorMessage(error));
     } finally {
@@ -399,19 +402,21 @@ function StocksModule({ authToken, onMetricsChange, onRecordsChange }) {
         </form>
       </SectionCard>
 
-      <SectionCard
-        title="Stock List"
-        actions={
+      <div ref={stockListSectionRef}>
+        <SectionCard
+          title="Stock List"
+          actions={
           <IconButton
             icon="refresh"
             label="Refresh stock"
             text="Refresh"
             onClick={() => setStockReloadToken((currentValue) => currentValue + 1)}
           />
-        }
-      >
-        {isLoadingStocks ? <div className="feedback-actions">Loading stock...</div> : null}
-        <div className="table-wrapper">
+          }
+        >
+          {stockSuccessMessage ? <div className="form-message">{stockSuccessMessage}</div> : null}
+          {isLoadingStocks ? <div className="feedback-actions">Loading stock...</div> : null}
+          <div className="table-wrapper">
           <table className="data-table data-table--dense">
             <thead>
               <tr>
@@ -457,8 +462,9 @@ function StocksModule({ authToken, onMetricsChange, onRecordsChange }) {
               )}
             </tbody>
           </table>
-        </div>
-      </SectionCard>
+          </div>
+        </SectionCard>
+      </div>
 
       <ModalDialog
         isOpen={Boolean(selectedStockRecord)}

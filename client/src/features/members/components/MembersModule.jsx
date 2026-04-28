@@ -4,7 +4,7 @@
  * Purpose: Provides the Members module create form, filters, and list connected to backend APIs.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import IconButton from "../../../components/common/IconButton";
 import ModalDialog from "../../../components/common/ModalDialog";
@@ -17,6 +17,7 @@ import {
   updateMemberRecord
 } from "../api/memberApi";
 import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
+import { scrollElementBelowHeader } from "../../../utils/scrollElementBelowHeader";
 
 const memberInitialForm = {
   fullName: "",
@@ -53,6 +54,7 @@ function validateMemberForm(formData) {
 }
 
 function MembersModule({ authToken, onMetricsChange, onRecordsChange }) {
+  const memberListSectionRef = useRef(null);
   const [memberForm, setMemberForm] = useState(memberInitialForm);
   const [memberFormErrors, setMemberFormErrors] = useState({});
   const [memberRequestError, setMemberRequestError] = useState("");
@@ -177,6 +179,7 @@ function MembersModule({ authToken, onMetricsChange, onRecordsChange }) {
       resetMemberForm();
       setMemberSuccessMessage("Member created successfully.");
       setMemberReloadToken((currentValue) => currentValue + 1);
+      window.setTimeout(() => scrollElementBelowHeader(memberListSectionRef.current), 150);
     } catch (error) {
       setMemberRequestError(getApiErrorMessage(error));
     } finally {
@@ -411,19 +414,21 @@ function MembersModule({ authToken, onMetricsChange, onRecordsChange }) {
         </form>
       </SectionCard>
 
-      <SectionCard
-        title="Members List"
-        actions={(
+      <div ref={memberListSectionRef}>
+        <SectionCard
+          title="Members List"
+          actions={( 
           <IconButton
             icon="refresh"
             label="Refresh members"
             text="Refresh"
             onClick={() => setMemberReloadToken((currentValue) => currentValue + 1)}
           />
-        )}
-      >
-        {isLoadingMembers ? <div className="feedback-actions">Loading members...</div> : null}
-        <div className="table-wrapper">
+          )}
+        >
+          {memberSuccessMessage ? <div className="form-message">{memberSuccessMessage}</div> : null}
+          {isLoadingMembers ? <div className="feedback-actions">Loading members...</div> : null}
+          <div className="table-wrapper">
           <table className="data-table data-table--dense">
             <thead>
               <tr>
@@ -484,8 +489,9 @@ function MembersModule({ authToken, onMetricsChange, onRecordsChange }) {
               )}
             </tbody>
           </table>
-        </div>
-      </SectionCard>
+          </div>
+        </SectionCard>
+      </div>
 
       <ModalDialog
         isOpen={Boolean(selectedMemberRecord)}

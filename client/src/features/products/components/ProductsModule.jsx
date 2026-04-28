@@ -4,13 +4,14 @@
  * Purpose: Provides the Products module create form, filters, and list connected to backend APIs.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import IconButton from "../../../components/common/IconButton";
 import ModalDialog from "../../../components/common/ModalDialog";
 import SectionCard from "../../../components/common/SectionCard";
 import StatusChip from "../../../components/common/StatusChip";
 import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
+import { scrollElementBelowHeader } from "../../../utils/scrollElementBelowHeader";
 import {
   createProductRecord,
   fetchProductList,
@@ -76,6 +77,7 @@ function formatCurrency(value) {
 }
 
 function ProductsModule({ authToken, onMetricsChange, onRecordsChange }) {
+  const productListSectionRef = useRef(null);
   const [productForm, setProductForm] = useState(productInitialForm);
   const [productFormErrors, setProductFormErrors] = useState({});
   const [productRequestError, setProductRequestError] = useState("");
@@ -198,6 +200,7 @@ function ProductsModule({ authToken, onMetricsChange, onRecordsChange }) {
       resetProductForm();
       setProductSuccessMessage("Product created successfully.");
       setProductReloadToken((currentValue) => currentValue + 1);
+      window.setTimeout(() => scrollElementBelowHeader(productListSectionRef.current), 150);
     } catch (error) {
       setProductRequestError(getApiErrorMessage(error));
     } finally {
@@ -467,19 +470,21 @@ function ProductsModule({ authToken, onMetricsChange, onRecordsChange }) {
         </form>
       </SectionCard>
 
-      <SectionCard
-        title="Products List"
-        actions={
+      <div ref={productListSectionRef}>
+        <SectionCard
+          title="Products List"
+          actions={
           <IconButton
             icon="refresh"
             label="Refresh products"
             text="Refresh"
             onClick={() => setProductReloadToken((currentValue) => currentValue + 1)}
           />
-        }
-      >
-        {isLoadingProducts ? <div className="feedback-actions">Loading products...</div> : null}
-        <div className="table-wrapper">
+          }
+        >
+          {productSuccessMessage ? <div className="form-message">{productSuccessMessage}</div> : null}
+          {isLoadingProducts ? <div className="feedback-actions">Loading products...</div> : null}
+          <div className="table-wrapper">
           <table className="data-table data-table--dense">
             <thead>
               <tr>
@@ -542,8 +547,9 @@ function ProductsModule({ authToken, onMetricsChange, onRecordsChange }) {
               )}
             </tbody>
           </table>
-        </div>
-      </SectionCard>
+          </div>
+        </SectionCard>
+      </div>
 
       <ModalDialog
         isOpen={Boolean(selectedProductRecord)}
