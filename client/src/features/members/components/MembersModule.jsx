@@ -680,7 +680,7 @@ function MembersModule({ authToken, onMetricsChange, onRecordsChange }) {
             </button>
           </>
         )}
-        width="620px"
+        width="520px"
       >
         {memberPendingStatusChange ? (
           <div className="dialog-note">

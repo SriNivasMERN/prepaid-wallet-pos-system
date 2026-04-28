@@ -1008,58 +1008,6 @@ small {
   overflow: hidden;
 }
 
-.dialog-card--metric {
-  border: var(--premium-card-border);
-  background:
-    linear-gradient(
-      135deg,
-      rgba(220, 244, 239, 0.52),
-      rgba(255, 241, 232, 0.4) 58%,
-      rgba(241, 236, 255, 0.5) 100%
-    ),
-    linear-gradient(
-      160deg,
-      rgba(255, 255, 255, 0.992),
-      rgba(247, 251, 249, 0.982) 48%,
-      rgba(248, 245, 255, 0.982) 100%
-    ),
-    #ffffff;
-  box-shadow:
-    0 22px 54px rgba(18, 40, 58, 0.18),
-    0 1px 0 rgba(255, 255, 255, 0.9) inset;
-}
-
-.dialog-card--metric .dialog-card__header,
-.dialog-card--metric .dialog-card__footer {
-  background: rgba(255, 255, 255, 0.28);
-}
-
-.dialog-card--metric .dialog-card__header h3 {
-  color: #17384f;
-}
-
-.dialog-card--metric .data-table {
-  border-radius: 18px;
-  overflow: hidden;
-  background: rgba(255, 255, 255, 0.52);
-}
-
-.dialog-card--metric .data-table th {
-  background: rgba(224, 236, 246, 0.9);
-}
-
-.dialog-card--metric .data-table tbody tr:hover {
-  background: linear-gradient(90deg, rgba(233, 243, 249, 0.88), rgba(245, 238, 251, 0.84));
-  box-shadow: inset 0 0 0 1px rgba(173, 194, 212, 0.52);
-}
-
-.dialog-card--metric .feedback-actions {
-  min-height: 160px;
-  align-items: center;
-  color: #2d516a;
-  font-weight: 700;
-}
-
 .dialog-card__header,
 .dialog-card__footer {
   display: flex;

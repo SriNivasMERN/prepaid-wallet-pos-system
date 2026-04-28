@@ -707,7 +707,7 @@ function ProductsModule({ authToken, onMetricsChange, onRecordsChange }) {
             </button>
           </>
         )}
-        width="620px"
+        width="520px"
       >
         {productPendingStatusChange ? (
           <div className="dialog-note">

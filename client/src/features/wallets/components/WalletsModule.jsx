@@ -668,17 +668,12 @@ function WalletsModule({ authToken, onMetricsChange, onRecordsChange }) {
         width="520px"
       >
         {walletPendingStatusChange ? (
-          <div className="details-grid">
-            <div className="details-grid__item details-grid__item--wide">
-              <span>Wallet Owner</span>
-              <strong>{walletPendingStatusChange.memberName}</strong>
-            </div>
-            <div className="details-grid__item details-grid__item--wide">
-              <span>Lifecycle Note</span>
-              <strong>
-                Wallet status updates are administrative only. Balance history remains unchanged.
-              </strong>
-            </div>
+          <div className="dialog-note">
+            <span>
+              This action will change <strong>{walletPendingStatusChange.memberName}</strong>&apos;s wallet to{" "}
+              <strong>{walletPendingStatusChange.nextStatus}</strong>. Wallet status updates are administrative only,
+              and balance history remains unchanged.
+            </span>
           </div>
         ) : null}
       </ModalDialog>

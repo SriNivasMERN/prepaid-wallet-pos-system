@@ -2067,7 +2067,6 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
       <ModalDialog
         isOpen={Boolean(selectedMetricCard)}
         title={selectedMetricCard?.title || "Metric Details"}
-        className="dialog-card--metric"
         onClose={() => setSelectedMetricCard(null)}
         footer={(
           <button type="button" className="secondary-button" onClick={() => setSelectedMetricCard(null)}>
@@ -2464,17 +2463,12 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
         width="520px"
       >
         {staffPendingStatusChange ? (
-          <div className="details-grid">
-            <div className="details-grid__item details-grid__item--wide">
-              <span>Staff Account</span>
-              <strong>{staffPendingStatusChange.fullName}</strong>
-            </div>
-            <div className="details-grid__item details-grid__item--wide">
-              <span>Lifecycle Note</span>
-              <strong>
-                Staff accounts stay in the system for audit visibility. This action changes only status.
-              </strong>
-            </div>
+          <div className="dialog-note">
+            <span>
+              This action will change <strong>{staffPendingStatusChange.fullName}</strong> to{" "}
+              <strong>{staffPendingStatusChange.nextStatus}</strong>. Staff accounts stay in the system for audit
+              visibility, and this action changes only status.
+            </span>
           </div>
         ) : null}
       </ModalDialog>

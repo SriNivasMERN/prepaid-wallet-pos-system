@@ -514,7 +514,7 @@ function RechargesModule({ authToken, onMetricsChange, onRecordsChange }) {
             Close
           </button>
         )}
-        width="680px"
+        width="620px"
       >
         {selectedRechargeRecord ? (
           <div className="details-grid">

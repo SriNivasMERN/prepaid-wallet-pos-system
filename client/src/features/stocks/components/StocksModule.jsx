@@ -469,7 +469,7 @@ function StocksModule({ authToken, onMetricsChange, onRecordsChange }) {
             Close
           </button>
         )}
-        width="700px"
+        width="620px"
       >
         {selectedStockRecord ? (
           <div className="details-grid">

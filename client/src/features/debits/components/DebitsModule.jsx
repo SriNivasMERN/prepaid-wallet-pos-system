@@ -530,7 +530,7 @@ function DebitsModule({ authToken, onMetricsChange, onRecordsChange }) {
             Close
           </button>
         )}
-        width="680px"
+        width="620px"
       >
         {selectedDebitRecord ? (
           <div className="details-grid">
