@@ -1088,13 +1088,18 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
   );
 
   useEffect(() => {
+    window.scrollTo({
+      top: 0,
+      behavior: "auto"
+    });
+
     const focusTimer = window.setTimeout(() => {
       const firstEditableField = document.querySelector(
         '.app-shell__content input:not([type="hidden"]):not([readonly]):not([disabled]), .app-shell__content select:not([disabled]), .app-shell__content textarea:not([readonly]):not([disabled])'
       );
 
       if (firstEditableField instanceof HTMLElement) {
-        firstEditableField.focus();
+        firstEditableField.focus({ preventScroll: true });
       }
     }, 50);
 
@@ -1105,9 +1110,16 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
     const firstSectionCard = document.querySelector(".app-shell__content .section-card");
 
     if (firstSectionCard instanceof HTMLElement) {
-      firstSectionCard.scrollIntoView({
-        behavior: "smooth",
-        block: "start"
+      const stickyHeader = document.querySelector(".page-header");
+      const headerHeight =
+        stickyHeader instanceof HTMLElement ? stickyHeader.getBoundingClientRect().height : 0;
+      const topOffset = 16;
+      const targetTop =
+        window.scrollY + firstSectionCard.getBoundingClientRect().top - headerHeight - topOffset;
+
+      window.scrollTo({
+        top: Math.max(0, targetTop),
+        behavior: "smooth"
       });
 
       window.setTimeout(() => {
