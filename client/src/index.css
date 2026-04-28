@@ -1079,16 +1079,22 @@ small {
   font-size: 1.1rem;
   color: #17384f;
   min-width: 0;
+  flex: 1 1 auto;
 }
 
 .dialog-card__body {
   padding: 1.35rem;
   overflow-y: auto;
+  min-width: 0;
 }
 
 .dialog-card__footer {
   border-top: 1px solid #d4e0ea;
   justify-content: flex-end;
+}
+
+.dialog-card__footer > * {
+  min-width: 120px;
 }
 
 .admin-guide {
@@ -1135,6 +1141,7 @@ small {
   padding: 0.9rem 1rem;
   background: rgba(237, 243, 249, 0.9);
   color: #274a63;
+  flex-wrap: wrap;
 }
 
 .details-grid {
@@ -1177,6 +1184,8 @@ small {
 .details-grid__item strong {
   font-size: 0.98rem;
   color: #17384d;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .account-dialog {
@@ -1304,6 +1313,18 @@ small {
 
   .dialog-card__footer > * {
     flex: 1 1 220px;
+  }
+
+  .dialog-card__header {
+    align-items: flex-start;
+  }
+
+  .account-dialog {
+    gap: 1rem;
+  }
+
+  .details-grid__item {
+    padding: 0.9rem 0.95rem;
   }
 
   .table-row-actions {
@@ -1436,6 +1457,10 @@ small {
 
   .dialog-card__footer > * {
     flex: 1 1 100%;
+  }
+
+  .dialog-card__header h3 {
+    font-size: 1rem;
   }
 
   .details-grid__item {
