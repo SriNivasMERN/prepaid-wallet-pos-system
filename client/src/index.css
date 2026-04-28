@@ -7,6 +7,8 @@
 :root {
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   color: #14344b;
+  --app-shell-sidebar-width: 272px;
+  --page-gutter: 1.6rem;
   --premium-card-border: 2px solid #bfd0db;
   --premium-card-radius: 26px;
   --premium-card-shadow: 0 8px 20px rgba(22, 38, 54, 0.05);
@@ -90,7 +92,7 @@ small {
 
 .public-shell {
   display: grid;
-  grid-template-columns: minmax(280px, 420px) 1fr;
+  grid-template-columns: minmax(300px, 420px) minmax(0, 1fr);
   min-height: 100vh;
 }
 
@@ -220,6 +222,7 @@ small {
   justify-content: space-between;
   gap: 1rem;
   padding: 1.5rem 1.75rem 0;
+  flex-wrap: wrap;
 }
 
 .section-card__header h2 {
@@ -232,6 +235,7 @@ small {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
 .section-card__body {
@@ -507,7 +511,7 @@ small {
 .app-shell {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 272px 1fr;
+  grid-template-columns: var(--app-shell-sidebar-width) minmax(0, 1fr);
   background: transparent;
 }
 
@@ -597,7 +601,8 @@ small {
 }
 
 .app-shell__content {
-  padding: 1.6rem;
+  min-width: 0;
+  padding: var(--page-gutter);
   display: grid;
   gap: 1.25rem;
 }
@@ -625,6 +630,10 @@ small {
   backdrop-filter: blur(16px);
 }
 
+.page-header > div:first-child {
+  min-width: 0;
+}
+
 .page-header h2 {
   margin: 0;
   font-size: 1.6rem;
@@ -641,6 +650,8 @@ small {
   justify-content: space-between;
   gap: 0.85rem;
   flex-wrap: wrap;
+  flex: 1 1 auto;
+  min-width: min(100%, 520px);
 }
 
 .header-actions__module,
@@ -1174,6 +1185,11 @@ small {
 }
 
 @media (max-width: 1200px) {
+  :root {
+    --app-shell-sidebar-width: 248px;
+    --page-gutter: 1.25rem;
+  }
+
   .metric-card {
     flex-basis: calc((100% - 2rem) / 3);
   }
@@ -1184,6 +1200,10 @@ small {
 }
 
 @media (max-width: 960px) {
+  :root {
+    --page-gutter: 1rem;
+  }
+
   .public-shell,
   .app-shell {
     grid-template-columns: 1fr;
@@ -1199,13 +1219,32 @@ small {
   }
 
   .sidebar-nav {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    justify-content: stretch;
+    gap: 0.55rem;
   }
 
   .module-form-grid,
   .filter-grid,
   .form-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .page-header {
+    top: 0.45rem;
+    padding: 0.75rem 0.85rem;
+  }
+
+  .header-actions {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .header-actions__module,
+  .header-actions__utility {
+    width: 100%;
+    justify-content: flex-start;
   }
 
   .metric-card {
@@ -1220,7 +1259,7 @@ small {
 @media (max-width: 640px) {
   .public-shell__content,
   .app-shell__content {
-    padding: 1rem;
+    padding: 0.9rem;
   }
 
   .section-card__header,
@@ -1236,8 +1275,23 @@ small {
     grid-template-columns: 1fr;
   }
 
+  .sidebar-brand {
+    align-items: flex-start;
+  }
+
+  .sidebar-brand__text {
+    width: 100%;
+  }
+
+  .sidebar-brand h1 {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+  }
+
   .metric-card {
     flex-basis: min(100%, 420px);
+    min-width: 0;
   }
 
   .field-group--wide,
@@ -1254,5 +1308,31 @@ small {
   .page-header {
     top: 0.35rem;
     padding: 0.75rem;
+  }
+
+  .header-actions__primary-action,
+  .header-actions__utility .secondary-button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .brand-badge {
+    min-width: 42px;
+    height: 38px;
+    font-size: 0.64rem;
+  }
+
+  .page-header h2 {
+    font-size: 1.35rem;
+  }
+
+  .metric-card strong {
+    font-size: 1.12rem;
+  }
+
+  .data-table {
+    min-width: 640px;
   }
 }
