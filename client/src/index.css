@@ -1188,6 +1188,27 @@ small {
   overflow-wrap: anywhere;
 }
 
+.details-grid--compact {
+  gap: 0.82rem;
+}
+
+.inline-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+  padding: 0.9rem 1rem;
+  border-radius: 16px;
+  border: 2px solid rgba(196, 210, 222, 0.94);
+  background: rgba(248, 251, 254, 0.94);
+}
+
+.inline-summary strong {
+  font-size: 1rem;
+  color: #17384d;
+}
+
 .account-dialog {
   display: grid;
   gap: 1.25rem;
@@ -1325,6 +1346,10 @@ small {
 
   .details-grid__item {
     padding: 0.9rem 0.95rem;
+  }
+
+  .inline-summary {
+    padding: 0.85rem 0.9rem;
   }
 
   .table-row-actions {
@@ -1465,6 +1490,15 @@ small {
 
   .details-grid__item {
     padding: 0.85rem 0.9rem;
+  }
+
+  .details-grid--compact {
+    gap: 0.7rem;
+  }
+
+  .inline-summary {
+    align-items: flex-start;
+    padding: 0.8rem 0.88rem;
   }
 
   .status-badge {

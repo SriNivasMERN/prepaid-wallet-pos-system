@@ -486,7 +486,7 @@ function BillingModule({ authToken, onMetricsChange, onRecordsChange }) {
           ) : null}
 
           {billingPrecheck ? (
-            <div className="details-grid">
+            <div className="details-grid details-grid--compact">
               <div className="details-grid__item">
                 <span>Member</span>
                 <strong>{billingPrecheck.member?.fullName || "-"}</strong>
@@ -565,8 +565,9 @@ function BillingModule({ authToken, onMetricsChange, onRecordsChange }) {
             </table>
           </div>
 
-          <div className="form-actions form-actions--full">
-            <strong>Total: {formatCurrency(computedTotal)}</strong>
+          <div className="inline-summary form-actions--full">
+            <span>Total Amount</span>
+            <strong>{formatCurrency(computedTotal)}</strong>
           </div>
 
           <div className="form-actions form-actions--full">
