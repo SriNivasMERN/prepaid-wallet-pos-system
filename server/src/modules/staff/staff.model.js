@@ -77,6 +77,8 @@ staffSchema.index(
     }
   }
 );
+staffSchema.index({ isDeleted: 1, status: 1, createdAt: -1 });
+staffSchema.index({ isDeleted: 1, role: 1, createdAt: -1 });
 
 const Staff = mongoose.model("Staff", staffSchema);
 

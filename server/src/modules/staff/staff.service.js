@@ -9,6 +9,8 @@ const mongoose = require("mongoose");
 
 const { RECORD_STATUS, STAFF_ROLES } = require("../../constants/appConstants");
 const { buildAccessProfile } = require("../../constants/accessControl");
+const { parsePaginationWindow } = require("../../utils/pagination");
+const { createSearchPattern } = require("../../utils/search");
 const { Staff } = require("./staff.model");
 const {
   validateCreateStaffPayload,
@@ -330,16 +332,23 @@ const getStaffList = async (filters = {}, currentAuth) => {
   }
 
   if (searchValue) {
-    const searchPattern = new RegExp(searchValue, "i");
+    const searchPattern = createSearchPattern(searchValue);
     databaseQuery.$or = [
       { fullName: searchPattern },
       { username: searchPattern }
     ];
   }
 
-  const staffList = await Staff.find(databaseQuery)
+  const paginationWindow = parsePaginationWindow(filters);
+  let staffQuery = Staff.find(databaseQuery)
     .populate("createdBy", "fullName username role")
     .sort({ createdAt: -1 });
+
+  if (paginationWindow) {
+    staffQuery = staffQuery.skip(paginationWindow.skip).limit(paginationWindow.limit);
+  }
+
+  const staffList = await staffQuery.lean();
 
   return staffList.map(toStaffResponse);
 };

@@ -1045,17 +1045,33 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
   const activeScreen = moduleScreens[activeModule];
   const activePrimaryAction = modulePrimaryActions[activeModule] || "Open Module";
   const canCreateEntries = allowedPermissions.length > 0;
-  const staffMetrics = {
-    active: staffRecords.filter((staff) => staff.status === "Active").length,
-    admins: staffRecords.filter((staff) => staff.role === "Admin").length,
-    cashiers: staffRecords.filter((staff) => staff.role === "Cashier").length
-  };
-  const dashboardMetrics = [
-    { label: "Total Members", value: String(memberMetrics.total) },
-    { label: "Active Cards", value: String(cardMetrics.active) },
-    { label: "Today Recharges", value: String(rechargeMetrics.todayCount) },
-    { label: "Stock Alerts", value: String(productMetrics.stockAlerts || stockMetrics.lowStock) }
-  ];
+  const staffMetrics = useMemo(
+    () => ({
+      active: staffRecords.filter((staff) => staff.status === "Active").length,
+      admins: staffRecords.filter((staff) => staff.role === "Admin").length,
+      cashiers: staffRecords.filter((staff) => staff.role === "Cashier").length
+    }),
+    [staffRecords]
+  );
+  const dashboardMetrics = useMemo(
+    () => [
+      { label: "Total Members", value: String(memberMetrics.total) },
+      { label: "Active Cards", value: String(cardMetrics.active) },
+      { label: "Today Recharges", value: String(rechargeMetrics.todayCount) },
+      { label: "Stock Alerts", value: String(productMetrics.stockAlerts || stockMetrics.lowStock) }
+    ],
+    [memberMetrics.total, cardMetrics.active, rechargeMetrics.todayCount, productMetrics.stockAlerts, stockMetrics.lowStock]
+  );
+  const dashboardMetricDetails = useMemo(
+    () =>
+      buildMetricDetails("Dashboard", {
+        members: memberRecordsSnapshot,
+        cards: cardRecordsSnapshot,
+        recharges: rechargeRecordsSnapshot,
+        stock: stockRecordsSnapshot
+      }),
+    [memberRecordsSnapshot, cardRecordsSnapshot, rechargeRecordsSnapshot, stockRecordsSnapshot]
+  );
   const metricDetailGroups = useMemo(
     () =>
       buildMetricDetails(activeModule, {
@@ -1593,12 +1609,7 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
               type="button"
               className="metric-card"
               onClick={() => {
-                const matchedMetric = buildMetricDetails("Dashboard", {
-                  members: memberRecordsSnapshot,
-                  cards: cardRecordsSnapshot,
-                  recharges: rechargeRecordsSnapshot,
-                  stock: stockRecordsSnapshot
-                }).find((item) => item.label === metric.label);
+                const matchedMetric = dashboardMetricDetails.find((item) => item.label === metric.label);
 
                 if (matchedMetric) {
                   setSelectedMetricCard(matchedMetric);

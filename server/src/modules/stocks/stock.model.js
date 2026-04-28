@@ -71,6 +71,7 @@ stockSchema.index(
 );
 
 stockSchema.index({ lastMovementAt: -1 });
+stockSchema.index({ isDeleted: 1, updatedAt: -1 });
 
 const Stock = mongoose.model("Stock", stockSchema);
 

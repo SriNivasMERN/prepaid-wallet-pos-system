@@ -8,6 +8,7 @@ const { Bill } = require("../billing/billing.model");
 const { Debit } = require("../debits/debit.model");
 const { Recharge } = require("../recharges/recharge.model");
 const { StockMovement } = require("../stocks/stockMovement.model");
+const { parsePaginationWindow } = require("../../utils/pagination");
 const { validateReportQuery } = require("./report.validation");
 
 /**
@@ -312,12 +313,17 @@ const getReport = async (query = {}) => {
     report = await buildStockReport(values.fromDate, values.toDate);
   }
 
+  const paginationWindow = parsePaginationWindow(query);
+  const records = paginationWindow
+    ? report.records.slice(paginationWindow.skip, paginationWindow.skip + paginationWindow.limit)
+    : report.records;
+
   return {
     reportType: report.reportType,
     fromDate: toDateLabel(values.fromDate),
     toDate: toDateLabel(values.toDate),
     summary: report.summary,
-    records: report.records
+    records
   };
 };
 

@@ -8,6 +8,8 @@ const { Recharge } = require("../recharges/recharge.model");
 const { Debit } = require("../debits/debit.model");
 const { Card } = require("../cards/card.model");
 const { Member } = require("../members/member.model");
+const { parsePaginationWindow } = require("../../utils/pagination");
+const { createSearchPattern } = require("../../utils/search");
 
 /**
  * Shapes a recharge-backed credit entry as a transaction response.
@@ -124,17 +126,18 @@ const buildTransactionQuery = async (query = {}) => {
   }
 
   if (searchValue) {
+    const searchPattern = createSearchPattern(searchValue);
     const memberMatches = await Member.find({
       isDeleted: false,
       $or: [
-        { fullName: new RegExp(searchValue, "i") },
-        { mobileNumber: new RegExp(searchValue, "i") }
+        { fullName: searchPattern },
+        { mobileNumber: searchPattern }
       ]
-    }).select("_id");
+    }).select("_id").lean();
     const cardMatches = await Card.find({
       isDeleted: false,
-      cardNumber: new RegExp(searchValue, "i")
-    }).select("_id");
+      cardNumber: searchPattern
+    }).select("_id").lean();
 
     databaseQuery.$or = [
       { memberId: { $in: memberMatches.map((member) => member._id) } },
@@ -151,6 +154,7 @@ const buildTransactionQuery = async (query = {}) => {
 const getTransactionList = async (query = {}) => {
   const typeValue = typeof query.type === "string" ? query.type.trim() : "";
   const databaseQuery = await buildTransactionQuery(query);
+  const paginationWindow = parsePaginationWindow(query);
 
   const shouldLoadCredits = !typeValue || typeValue === "Credit";
   const shouldLoadDebits = !typeValue || typeValue === "Debit";
@@ -162,6 +166,7 @@ const getTransactionList = async (query = {}) => {
           .populate("cardId", "cardNumber status")
           .populate("createdBy", "fullName username role")
           .sort({ createdAt: -1 })
+          .lean()
       : Promise.resolve([]),
     shouldLoadDebits
       ? Debit.find(databaseQuery)
@@ -169,13 +174,19 @@ const getTransactionList = async (query = {}) => {
           .populate("cardId", "cardNumber status")
           .populate("createdBy", "fullName username role")
           .sort({ createdAt: -1 })
+          .lean()
       : Promise.resolve([])
   ]);
 
   return [
     ...rechargeTransactions.map(toTransactionResponse),
     ...debitTransactions.map(toDebitTransactionResponse)
-  ].sort((left, right) => new Date(right.createdAt) - new Date(left.createdAt));
+  ]
+    .sort((left, right) => new Date(right.createdAt) - new Date(left.createdAt))
+    .slice(
+      paginationWindow ? paginationWindow.skip : 0,
+      paginationWindow ? paginationWindow.skip + paginationWindow.limit : undefined
+    );
 };
 
 module.exports = {

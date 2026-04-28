@@ -7,6 +7,8 @@
 const mongoose = require("mongoose");
 
 const { RECORD_STATUS } = require("../../constants/appConstants");
+const { parsePaginationWindow } = require("../../utils/pagination");
+const { createSearchPattern } = require("../../utils/search");
 const { Product } = require("../products/product.model");
 const {
   Stock,
@@ -250,22 +252,34 @@ const getStockList = async (query = {}) => {
   };
 
   if (searchValue) {
-    const searchPattern = new RegExp(searchValue, "i");
+    const searchPattern = createSearchPattern(searchValue);
     productQuery.$or = [
       { productName: searchPattern },
       { productCode: searchPattern }
     ];
   }
 
-  const products = await Product.find(productQuery).sort({ productName: 1 });
+  const paginationWindow = parsePaginationWindow(query);
+  let productQueryBuilder = Product.find(productQuery).sort({ productName: 1 });
+
+  if (paginationWindow) {
+    productQueryBuilder = productQueryBuilder.skip(paginationWindow.skip).limit(paginationWindow.limit);
+  }
+
+  const products = await productQueryBuilder.lean();
 
   const productIds = products.map((product) => product._id);
+  if (productIds.length === 0) {
+    return [];
+  }
+
   const stocks = await Stock.find({
     productId: { $in: productIds },
     isDeleted: false
   })
     .populate("updatedBy", "fullName username role")
-    .populate("createdBy", "fullName username role");
+    .populate("createdBy", "fullName username role")
+    .lean();
 
   const stockMap = new Map(
     stocks.map((stock) => [String(stock.productId), stock])

@@ -78,6 +78,8 @@ const debitSchema = new mongoose.Schema(
 debitSchema.index({ walletId: 1, createdAt: -1 });
 debitSchema.index({ memberId: 1, createdAt: -1 });
 debitSchema.index({ cardId: 1, createdAt: -1 });
+debitSchema.index({ isDeleted: 1, createdBy: 1, createdAt: -1 });
+debitSchema.index({ isDeleted: 1, reason: 1, createdAt: -1 });
 
 const Debit = mongoose.model("Debit", debitSchema);
 

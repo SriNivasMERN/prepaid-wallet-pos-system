@@ -7,6 +7,8 @@
 const mongoose = require("mongoose");
 
 const { RECORD_STATUS } = require("../../constants/appConstants");
+const { parsePaginationWindow } = require("../../utils/pagination");
+const { createSearchPattern } = require("../../utils/search");
 const { Card } = require("../cards/card.model");
 const { Member } = require("../members/member.model");
 const { Wallet } = require("../wallets/wallet.model");
@@ -248,27 +250,51 @@ const createDebit = async (payload, currentAuth) => {
   }
 
   const balanceAfter = balanceBefore - values.amount;
+  let balanceUpdated = false;
+  let createdDebitId = null;
 
-  wallet.balance = balanceAfter;
-  wallet.updatedBy = currentAuth.staffId;
-  await wallet.save();
+  try {
+    wallet.balance = balanceAfter;
+    wallet.updatedBy = currentAuth.staffId;
+    await wallet.save();
+    balanceUpdated = true;
 
-  const debit = await Debit.create({
-    walletId: wallet._id,
-    memberId: member._id,
-    cardId: card._id,
-    amount: values.amount,
-    reason: values.reason,
-    notes: values.notes,
-    balanceBefore,
-    balanceAfter,
-    createdBy: currentAuth.staffId,
-    updatedBy: currentAuth.staffId
-  });
+    const debit = await Debit.create({
+      walletId: wallet._id,
+      memberId: member._id,
+      cardId: card._id,
+      amount: values.amount,
+      reason: values.reason,
+      notes: values.notes,
+      balanceBefore,
+      balanceAfter,
+      createdBy: currentAuth.staffId,
+      updatedBy: currentAuth.staffId
+    });
+    createdDebitId = debit._id;
 
-  const hydratedDebit = await getDebitDocumentById(debit._id);
+    const hydratedDebit = await getDebitDocumentById(debit._id);
 
-  return toDebitResponse(hydratedDebit);
+    return toDebitResponse(hydratedDebit);
+  } catch (error) {
+    if (createdDebitId) {
+      await Debit.deleteOne({ _id: createdDebitId }).catch(() => null);
+    }
+
+    if (balanceUpdated) {
+      await Wallet.updateOne(
+        { _id: wallet._id, isDeleted: false },
+        {
+          $set: {
+            balance: balanceBefore,
+            updatedBy: currentAuth.staffId
+          }
+        }
+      ).catch(() => null);
+    }
+
+    throw error;
+  }
 };
 
 /**
@@ -310,32 +336,40 @@ const getDebitList = async (query = {}) => {
   }
 
   if (searchValue) {
+    const searchPattern = createSearchPattern(searchValue);
     const memberMatches = await Member.find({
       isDeleted: false,
       $or: [
-        { fullName: new RegExp(searchValue, "i") },
-        { mobileNumber: new RegExp(searchValue, "i") }
+        { fullName: searchPattern },
+        { mobileNumber: searchPattern }
       ]
-    }).select("_id");
+    }).select("_id").lean();
     const cardMatches = await Card.find({
       isDeleted: false,
-      cardNumber: new RegExp(searchValue, "i")
-    }).select("_id");
+      cardNumber: searchPattern
+    }).select("_id").lean();
 
     databaseQuery.$or = [
       { memberId: { $in: memberMatches.map((member) => member._id) } },
       { cardId: { $in: cardMatches.map((card) => card._id) } },
-      { reason: new RegExp(searchValue, "i") }
+      { reason: searchPattern }
     ];
   }
 
-  const debits = await Debit.find(databaseQuery)
+  const paginationWindow = parsePaginationWindow(query);
+  let debitQuery = Debit.find(databaseQuery)
     .populate("walletId", "balance status")
     .populate("memberId", "fullName mobileNumber status")
     .populate("cardId", "cardNumber status expiresAt")
     .populate("createdBy", "fullName username role")
     .populate("updatedBy", "fullName username role")
     .sort({ createdAt: -1 });
+
+  if (paginationWindow) {
+    debitQuery = debitQuery.skip(paginationWindow.skip).limit(paginationWindow.limit);
+  }
+
+  const debits = await debitQuery.lean();
 
   return debits.map(toDebitResponse);
 };

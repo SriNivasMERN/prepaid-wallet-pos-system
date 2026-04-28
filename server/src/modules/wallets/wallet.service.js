@@ -7,6 +7,8 @@
 const mongoose = require("mongoose");
 
 const { RECORD_STATUS } = require("../../constants/appConstants");
+const { parsePaginationWindow } = require("../../utils/pagination");
+const { createSearchPattern } = require("../../utils/search");
 const { Card } = require("../cards/card.model");
 const { Member } = require("../members/member.model");
 const { Wallet } = require("./wallet.model");
@@ -270,22 +272,30 @@ const getWalletList = async (query = {}) => {
   }
 
   if (searchValue) {
+    const searchPattern = createSearchPattern(searchValue);
     const memberMatches = await Member.find({
       isDeleted: false,
       $or: [
-        { fullName: new RegExp(searchValue, "i") },
-        { mobileNumber: new RegExp(searchValue, "i") }
+        { fullName: searchPattern },
+        { mobileNumber: searchPattern }
       ]
-    }).select("_id");
+    }).select("_id").lean();
 
     databaseQuery.memberId = { $in: memberMatches.map((member) => member._id) };
   }
 
-  const wallets = await Wallet.find(databaseQuery)
+  const paginationWindow = parsePaginationWindow(query);
+  let walletQuery = Wallet.find(databaseQuery)
     .populate("memberId", "fullName mobileNumber status linkedCardId linkedWalletId")
     .populate("createdBy", "fullName username role")
     .populate("updatedBy", "fullName username role")
     .sort({ createdAt: -1 });
+
+  if (paginationWindow) {
+    walletQuery = walletQuery.skip(paginationWindow.skip).limit(paginationWindow.limit);
+  }
+
+  const wallets = await walletQuery.lean();
 
   return wallets.map(toWalletResponse);
 };

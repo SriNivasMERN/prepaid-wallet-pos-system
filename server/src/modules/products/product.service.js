@@ -7,6 +7,8 @@
 const mongoose = require("mongoose");
 
 const { RECORD_STATUS } = require("../../constants/appConstants");
+const { parsePaginationWindow } = require("../../utils/pagination");
+const { createSearchPattern } = require("../../utils/search");
 const { Product } = require("./product.model");
 const {
   validateCreateProductPayload,
@@ -121,7 +123,8 @@ const hydrateProductById = async (productId) => {
     isDeleted: false
   })
     .populate("createdBy", "fullName username role")
-    .populate("updatedBy", "fullName username role");
+    .populate("updatedBy", "fullName username role")
+    .lean();
 };
 
 /**
@@ -273,17 +276,24 @@ const getProductList = async (query = {}) => {
   }
 
   if (searchValue) {
-    const searchPattern = new RegExp(searchValue, "i");
+    const searchPattern = createSearchPattern(searchValue);
     databaseQuery.$or = [
       { productName: searchPattern },
       { productCode: searchPattern }
     ];
   }
 
-  const products = await Product.find(databaseQuery)
+  const paginationWindow = parsePaginationWindow(query);
+  let productQuery = Product.find(databaseQuery)
     .populate("createdBy", "fullName username role")
     .populate("updatedBy", "fullName username role")
     .sort({ createdAt: -1 });
+
+  if (paginationWindow) {
+    productQuery = productQuery.skip(paginationWindow.skip).limit(paginationWindow.limit);
+  }
+
+  const products = await productQuery.lean();
 
   return products.map(toProductResponse);
 };

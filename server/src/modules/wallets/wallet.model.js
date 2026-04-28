@@ -61,6 +61,8 @@ walletSchema.index(
     }
   }
 );
+walletSchema.index({ isDeleted: 1, status: 1, createdAt: -1 });
+walletSchema.index({ balance: 1, isDeleted: 1 });
 
 const Wallet = mongoose.model("Wallet", walletSchema);
 

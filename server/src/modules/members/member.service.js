@@ -7,7 +7,9 @@
 const mongoose = require("mongoose");
 
 const { RECORD_STATUS } = require("../../constants/appConstants");
+const { parsePaginationWindow } = require("../../utils/pagination");
 const { Card } = require("../cards/card.model");
+const { createSearchPattern } = require("../../utils/search");
 const { Member } = require("./member.model");
 const {
   validateCreateMemberPayload,
@@ -253,17 +255,24 @@ const getMemberList = async (query = {}) => {
   }
 
   if (searchValue) {
-    const searchPattern = new RegExp(searchValue, "i");
+    const searchPattern = createSearchPattern(searchValue);
     databaseQuery.$or = [
       { fullName: searchPattern },
       { mobileNumber: searchPattern }
     ];
   }
 
-  const members = await Member.find(databaseQuery)
+  const paginationWindow = parsePaginationWindow(query);
+  let memberQuery = Member.find(databaseQuery)
     .populate("createdBy", "fullName username role")
     .populate("updatedBy", "fullName username role")
     .sort({ createdAt: -1 });
+
+  if (paginationWindow) {
+    memberQuery = memberQuery.skip(paginationWindow.skip).limit(paginationWindow.limit);
+  }
+
+  const members = await memberQuery.lean();
 
   return members.map((member) => toMemberResponse(member));
 };

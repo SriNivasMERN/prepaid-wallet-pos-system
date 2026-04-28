@@ -7,6 +7,8 @@
 const mongoose = require("mongoose");
 
 const { RECORD_STATUS } = require("../../constants/appConstants");
+const { parsePaginationWindow } = require("../../utils/pagination");
+const { createSearchPattern } = require("../../utils/search");
 const { Card } = require("../cards/card.model");
 const { Member } = require("../members/member.model");
 const { Wallet } = require("../wallets/wallet.model");
@@ -243,27 +245,51 @@ const createRecharge = async (payload, currentAuth) => {
 
   const balanceBefore = Number(wallet.balance || 0);
   const balanceAfter = balanceBefore + values.amount;
+  let balanceUpdated = false;
+  let createdRechargeId = null;
 
-  wallet.balance = balanceAfter;
-  wallet.updatedBy = currentAuth.staffId;
-  await wallet.save();
+  try {
+    wallet.balance = balanceAfter;
+    wallet.updatedBy = currentAuth.staffId;
+    await wallet.save();
+    balanceUpdated = true;
 
-  const recharge = await Recharge.create({
-    walletId: wallet._id,
-    memberId: member._id,
-    cardId: card._id,
-    amount: values.amount,
-    paymentMode: values.paymentMode,
-    notes: values.notes,
-    balanceBefore,
-    balanceAfter,
-    createdBy: currentAuth.staffId,
-    updatedBy: currentAuth.staffId
-  });
+    const recharge = await Recharge.create({
+      walletId: wallet._id,
+      memberId: member._id,
+      cardId: card._id,
+      amount: values.amount,
+      paymentMode: values.paymentMode,
+      notes: values.notes,
+      balanceBefore,
+      balanceAfter,
+      createdBy: currentAuth.staffId,
+      updatedBy: currentAuth.staffId
+    });
+    createdRechargeId = recharge._id;
 
-  const hydratedRecharge = await getRechargeDocumentById(recharge._id);
+    const hydratedRecharge = await getRechargeDocumentById(recharge._id);
 
-  return toRechargeResponse(hydratedRecharge);
+    return toRechargeResponse(hydratedRecharge);
+  } catch (error) {
+    if (createdRechargeId) {
+      await Recharge.deleteOne({ _id: createdRechargeId }).catch(() => null);
+    }
+
+    if (balanceUpdated) {
+      await Wallet.updateOne(
+        { _id: wallet._id, isDeleted: false },
+        {
+          $set: {
+            balance: balanceBefore,
+            updatedBy: currentAuth.staffId
+          }
+        }
+      ).catch(() => null);
+    }
+
+    throw error;
+  }
 };
 
 /**
@@ -306,17 +332,18 @@ const getRechargeList = async (query = {}) => {
   }
 
   if (searchValue) {
+    const searchPattern = createSearchPattern(searchValue);
     const memberMatches = await Member.find({
       isDeleted: false,
       $or: [
-        { fullName: new RegExp(searchValue, "i") },
-        { mobileNumber: new RegExp(searchValue, "i") }
+        { fullName: searchPattern },
+        { mobileNumber: searchPattern }
       ]
-    }).select("_id");
+    }).select("_id").lean();
     const cardMatches = await Card.find({
       isDeleted: false,
-      cardNumber: new RegExp(searchValue, "i")
-    }).select("_id");
+      cardNumber: searchPattern
+    }).select("_id").lean();
 
     databaseQuery.$or = [
       { memberId: { $in: memberMatches.map((member) => member._id) } },
@@ -324,13 +351,20 @@ const getRechargeList = async (query = {}) => {
     ];
   }
 
-  const recharges = await Recharge.find(databaseQuery)
+  const paginationWindow = parsePaginationWindow(query);
+  let rechargeQuery = Recharge.find(databaseQuery)
     .populate("walletId", "balance status")
     .populate("memberId", "fullName mobileNumber status")
     .populate("cardId", "cardNumber status expiresAt")
     .populate("createdBy", "fullName username role")
     .populate("updatedBy", "fullName username role")
     .sort({ createdAt: -1 });
+
+  if (paginationWindow) {
+    rechargeQuery = rechargeQuery.skip(paginationWindow.skip).limit(paginationWindow.limit);
+  }
+
+  const recharges = await rechargeQuery.lean();
 
   return recharges.map(toRechargeResponse);
 };

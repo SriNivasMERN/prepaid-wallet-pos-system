@@ -77,6 +77,9 @@ memberSchema.index(
     }
   }
 );
+memberSchema.index({ isDeleted: 1, status: 1, createdAt: -1 });
+memberSchema.index({ linkedCardId: 1 }, { sparse: true });
+memberSchema.index({ linkedWalletId: 1 }, { sparse: true });
 
 const Member = mongoose.model("Member", memberSchema);
 

@@ -77,6 +77,8 @@ const rechargeSchema = new mongoose.Schema(
 rechargeSchema.index({ walletId: 1, createdAt: -1 });
 rechargeSchema.index({ memberId: 1, createdAt: -1 });
 rechargeSchema.index({ cardId: 1, createdAt: -1 });
+rechargeSchema.index({ isDeleted: 1, createdBy: 1, createdAt: -1 });
+rechargeSchema.index({ isDeleted: 1, paymentMode: 1, createdAt: -1 });
 
 const Recharge = mongoose.model("Recharge", rechargeSchema);
 

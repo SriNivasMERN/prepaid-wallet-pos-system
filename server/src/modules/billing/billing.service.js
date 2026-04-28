@@ -7,6 +7,8 @@
 const mongoose = require("mongoose");
 
 const { RECORD_STATUS } = require("../../constants/appConstants");
+const { parsePaginationWindow } = require("../../utils/pagination");
+const { createSearchPattern } = require("../../utils/search");
 const { Card } = require("../cards/card.model");
 const { Debit } = require("../debits/debit.model");
 const { Member } = require("../members/member.model");
@@ -404,82 +406,140 @@ const createBill = async (payload, currentAuth) => {
 
   const balanceAfter = balanceBefore - totalAmount;
   const billNumber = generateBillNumber();
+  const stockSnapshots = [];
+  const createdMovementIds = [];
+  let createdDebitId = null;
+  let createdBillId = null;
+  let balanceUpdated = false;
 
-  wallet.balance = balanceAfter;
-  wallet.updatedBy = currentAuth.staffId;
-  await wallet.save();
+  try {
+    wallet.balance = balanceAfter;
+    wallet.updatedBy = currentAuth.staffId;
+    await wallet.save();
+    balanceUpdated = true;
 
-  for (const billItem of billItems) {
-    const currentStock = billItem.stock || await Stock.create({
-      productId: billItem.product._id,
-      currentQuantity: 0,
+    for (const billItem of billItems) {
+      const currentStock = billItem.stock;
+      const quantityBefore = Number(currentStock.currentQuantity || 0);
+      const quantityAfter = quantityBefore - billItem.quantity;
+
+      stockSnapshots.push({
+        stockId: currentStock._id,
+        currentQuantity: currentStock.currentQuantity,
+        lastQuantityChange: currentStock.lastQuantityChange,
+        lastMovementType: currentStock.lastMovementType,
+        lastMovementAt: currentStock.lastMovementAt
+      });
+
+      const movement = await StockMovement.create({
+        stockId: currentStock._id,
+        productId: billItem.product._id,
+        quantityBefore,
+        quantityChange: billItem.quantity * -1,
+        quantityAfter,
+        movementType: "Manual Update",
+        notes: `Billing deduction for ${billNumber}`,
+        createdBy: currentAuth.staffId,
+        updatedBy: currentAuth.staffId
+      });
+      createdMovementIds.push(movement._id);
+
+      currentStock.currentQuantity = quantityAfter;
+      currentStock.lastQuantityChange = billItem.quantity * -1;
+      currentStock.lastMovementType = "Manual Update";
+      currentStock.lastMovementAt = movement.createdAt;
+      currentStock.updatedBy = currentAuth.staffId;
+      await currentStock.save();
+    }
+
+    const billingDebit = await Debit.create({
+      walletId: wallet._id,
+      memberId: member._id,
+      cardId: card._id,
+      amount: totalAmount,
+      reason: "Billing",
+      notes: billNumber,
+      balanceBefore,
+      balanceAfter,
       createdBy: currentAuth.staffId,
       updatedBy: currentAuth.staffId
     });
+    createdDebitId = billingDebit._id;
 
-    const quantityBefore = Number(currentStock.currentQuantity || 0);
-    const quantityAfter = quantityBefore - billItem.quantity;
-
-    const movement = await StockMovement.create({
-      stockId: currentStock._id,
-      productId: billItem.product._id,
-      quantityBefore,
-      quantityChange: billItem.quantity * -1,
-      quantityAfter,
-      movementType: "Manual Update",
-      notes: `Billing deduction for ${billNumber}`,
+    const bill = await Bill.create({
+      billNumber,
+      walletId: wallet._id,
+      memberId: member._id,
+      cardId: card._id,
+      items: billItems.map((item) => ({
+        productId: item.product._id,
+        productName: item.product.productName,
+        productCode: item.product.productCode,
+        unit: item.product.unit,
+        unitPrice: item.unitPrice,
+        quantity: item.quantity,
+        lineTotal: item.lineTotal
+      })),
+      totalAmount,
+      itemCount: billItems.reduce((sum, item) => sum + item.quantity, 0),
+      status: BILL_STATUS.COMPLETED,
+      notes: values.notes,
+      balanceBefore,
+      balanceAfter,
       createdBy: currentAuth.staffId,
       updatedBy: currentAuth.staffId
     });
+    createdBillId = bill._id;
 
-    currentStock.currentQuantity = quantityAfter;
-    currentStock.lastQuantityChange = billItem.quantity * -1;
-    currentStock.lastMovementType = "Manual Update";
-    currentStock.lastMovementAt = movement.createdAt;
-    currentStock.updatedBy = currentAuth.staffId;
-    await currentStock.save();
+    const hydratedBill = await getBillDocumentById(bill._id);
+
+    return toBillResponse(hydratedBill);
+  } catch (error) {
+    if (createdBillId) {
+      await Bill.deleteOne({ _id: createdBillId }).catch(() => null);
+    }
+
+    if (createdDebitId) {
+      await Debit.deleteOne({ _id: createdDebitId }).catch(() => null);
+    }
+
+    if (createdMovementIds.length > 0) {
+      await StockMovement.deleteMany({ _id: { $in: createdMovementIds } }).catch(() => null);
+    }
+
+    if (stockSnapshots.length > 0) {
+      await Promise.all(
+        stockSnapshots.map((snapshot) =>
+          Stock.updateOne(
+            { _id: snapshot.stockId, isDeleted: false },
+            {
+              $set: {
+                currentQuantity: snapshot.currentQuantity,
+                lastQuantityChange: snapshot.lastQuantityChange,
+                lastMovementType: snapshot.lastMovementType,
+                lastMovementAt: snapshot.lastMovementAt,
+                updatedBy: currentAuth.staffId
+              }
+            }
+          ).catch(() => null)
+        )
+      );
+    }
+
+    if (balanceUpdated) {
+      await Wallet.updateOne(
+        { _id: wallet._id, isDeleted: false },
+        {
+          $set: {
+            balance: balanceBefore,
+            updatedBy: currentAuth.staffId
+          }
+        }
+      ).catch(() => null);
+    }
+
+    throw error;
   }
-
-  await Debit.create({
-    walletId: wallet._id,
-    memberId: member._id,
-    cardId: card._id,
-    amount: totalAmount,
-    reason: "Billing",
-    notes: billNumber,
-    balanceBefore,
-    balanceAfter,
-    createdBy: currentAuth.staffId,
-    updatedBy: currentAuth.staffId
-  });
-
-  const bill = await Bill.create({
-    billNumber,
-    walletId: wallet._id,
-    memberId: member._id,
-    cardId: card._id,
-    items: billItems.map((item) => ({
-      productId: item.product._id,
-      productName: item.product.productName,
-      productCode: item.product.productCode,
-      unit: item.product.unit,
-      unitPrice: item.unitPrice,
-      quantity: item.quantity,
-      lineTotal: item.lineTotal
-    })),
-    totalAmount,
-    itemCount: billItems.reduce((sum, item) => sum + item.quantity, 0),
-    status: BILL_STATUS.COMPLETED,
-    notes: values.notes,
-    balanceBefore,
-    balanceAfter,
-    createdBy: currentAuth.staffId,
-    updatedBy: currentAuth.staffId
-  });
-
-  const hydratedBill = await getBillDocumentById(bill._id);
-
-  return toBillResponse(hydratedBill);
 };
 
 /**
@@ -544,32 +604,40 @@ const getBillList = async (query = {}) => {
   }
 
   if (searchValue) {
+    const searchPattern = createSearchPattern(searchValue);
     const memberMatches = await Member.find({
       isDeleted: false,
       $or: [
-        { fullName: new RegExp(searchValue, "i") },
-        { mobileNumber: new RegExp(searchValue, "i") }
+        { fullName: searchPattern },
+        { mobileNumber: searchPattern }
       ]
-    }).select("_id");
+    }).select("_id").lean();
     const cardMatches = await Card.find({
       isDeleted: false,
-      cardNumber: new RegExp(searchValue, "i")
-    }).select("_id");
+      cardNumber: searchPattern
+    }).select("_id").lean();
 
     databaseQuery.$or = [
-      { billNumber: new RegExp(searchValue, "i") },
+      { billNumber: searchPattern },
       { memberId: { $in: memberMatches.map((member) => member._id) } },
       { cardId: { $in: cardMatches.map((card) => card._id) } }
     ];
   }
 
-  const bills = await Bill.find(databaseQuery)
+  const paginationWindow = parsePaginationWindow(query);
+  let billQuery = Bill.find(databaseQuery)
     .populate("walletId", "balance status")
     .populate("memberId", "fullName mobileNumber status")
     .populate("cardId", "cardNumber status expiresAt")
     .populate("createdBy", "fullName username role")
     .populate("updatedBy", "fullName username role")
     .sort({ createdAt: -1 });
+
+  if (paginationWindow) {
+    billQuery = billQuery.skip(paginationWindow.skip).limit(paginationWindow.limit);
+  }
+
+  const bills = await billQuery.lean();
 
   return bills.map(toBillResponse);
 };

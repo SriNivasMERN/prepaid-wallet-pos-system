@@ -80,6 +80,9 @@ cardSchema.index(
     }
   }
 );
+cardSchema.index({ isDeleted: 1, status: 1, createdAt: -1 });
+cardSchema.index({ memberId: 1, isDeleted: 1, createdAt: -1 });
+cardSchema.index({ expiresAt: 1, isDeleted: 1 });
 
 const Card = mongoose.model("Card", cardSchema);
 

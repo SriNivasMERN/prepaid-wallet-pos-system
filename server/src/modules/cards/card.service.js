@@ -7,6 +7,8 @@
 const mongoose = require("mongoose");
 
 const { RECORD_STATUS } = require("../../constants/appConstants");
+const { parsePaginationWindow } = require("../../utils/pagination");
+const { createSearchPattern } = require("../../utils/search");
 const { Member } = require("../members/member.model");
 const { Card } = require("./card.model");
 const {
@@ -298,25 +300,33 @@ const getCardList = async (query = {}) => {
   }
 
   if (searchValue) {
+    const searchPattern = createSearchPattern(searchValue);
     const memberMatches = await Member.find({
       isDeleted: false,
       $or: [
-        { fullName: new RegExp(searchValue, "i") },
-        { mobileNumber: new RegExp(searchValue, "i") }
+        { fullName: searchPattern },
+        { mobileNumber: searchPattern }
       ]
-    }).select("_id");
+    }).select("_id").lean();
 
     databaseQuery.$or = [
-      { cardNumber: new RegExp(searchValue.toUpperCase(), "i") },
+      { cardNumber: searchPattern },
       { memberId: { $in: memberMatches.map((member) => member._id) } }
     ];
   }
 
-  const cards = await Card.find(databaseQuery)
+  const paginationWindow = parsePaginationWindow(query);
+  let cardQuery = Card.find(databaseQuery)
     .populate("memberId", "fullName mobileNumber status linkedCardId linkedWalletId")
     .populate("createdBy", "fullName username role")
     .populate("updatedBy", "fullName username role")
     .sort({ createdAt: -1 });
+
+  if (paginationWindow) {
+    cardQuery = cardQuery.skip(paginationWindow.skip).limit(paginationWindow.limit);
+  }
+
+  const cards = await cardQuery.lean();
 
   return cards.map((card) =>
     toCardResponse(card, {

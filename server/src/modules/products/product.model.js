@@ -76,6 +76,8 @@ productSchema.index(
     }
   }
 );
+productSchema.index({ isDeleted: 1, status: 1, createdAt: -1 });
+productSchema.index({ isDeleted: 1, unit: 1, createdAt: -1 });
 
 const Product = mongoose.model("Product", productSchema);
 
