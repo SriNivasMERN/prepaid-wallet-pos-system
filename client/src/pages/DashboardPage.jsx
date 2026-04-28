@@ -69,6 +69,8 @@ const resetStaffPasswordInitialForm = {
   confirmPassword: ""
 };
 
+// These fallback screen configs only drive the lighter modules that still use the shared
+// dashboard scaffolding instead of a dedicated feature component.
 const moduleScreens = {
   Staff: {
     title: "Staff",
@@ -1110,6 +1112,7 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
     });
 
     const focusTimer = window.setTimeout(() => {
+      // Keep keyboard flow predictable when modules switch, but avoid the follow-up scroll jump.
       const firstEditableField = document.querySelector(
         '.app-shell__content input:not([type="hidden"]):not([readonly]):not([disabled]), .app-shell__content select:not([disabled]), .app-shell__content textarea:not([readonly]):not([disabled])'
       );
@@ -1139,6 +1142,7 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
       });
 
       window.setTimeout(() => {
+        // Focus is delayed until the smooth scroll settles so the section lands fully in view.
         const firstEditableField = firstSectionCard.querySelector(
           'input:not([type="hidden"]):not([readonly]):not([disabled]), select:not([disabled]), textarea:not([readonly]):not([disabled])'
         );

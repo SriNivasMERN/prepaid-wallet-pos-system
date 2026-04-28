@@ -272,6 +272,8 @@ const createRecharge = async (payload, currentAuth) => {
 
     return toRechargeResponse(hydratedRecharge);
   } catch (error) {
+    // Recharge updates wallet balance before the history row exists, so roll the balance
+    // back if the entry write fails and keep the ledger consistent.
     if (createdRechargeId) {
       await Recharge.deleteOne({ _id: createdRechargeId }).catch(() => null);
     }

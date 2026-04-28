@@ -277,6 +277,8 @@ const createDebit = async (payload, currentAuth) => {
 
     return toDebitResponse(hydratedDebit);
   } catch (error) {
+    // Debit mirrors the recharge safety net: if the history entry fails, put the wallet
+    // back where it started so balance-only updates do not leak through.
     if (createdDebitId) {
       await Debit.deleteOne({ _id: createdDebitId }).catch(() => null);
     }
@@ -312,7 +314,7 @@ const getDebitList = async (query = {}) => {
   const dateValue = typeof query.date === "string" ? query.date.trim() : "";
 
   if (reasonValue) {
-    databaseQuery.reason = new RegExp(reasonValue, "i");
+    databaseQuery.reason = createSearchPattern(reasonValue);
   }
 
   if (cashierIdValue) {

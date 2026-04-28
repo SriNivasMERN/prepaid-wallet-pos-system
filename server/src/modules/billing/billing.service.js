@@ -495,6 +495,8 @@ const createBill = async (payload, currentAuth) => {
 
     return toBillResponse(hydratedBill);
   } catch (error) {
+    // Billing touches wallet balance, stock, movements, and debit history in sequence,
+    // so we manually unwind any completed steps if a later write fails.
     if (createdBillId) {
       await Bill.deleteOne({ _id: createdBillId }).catch(() => null);
     }
