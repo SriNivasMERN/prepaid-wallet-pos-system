@@ -4,7 +4,7 @@
  * Purpose: Displays the staff login form and authenticates the session.
  */
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import SectionCard from "../components/common/SectionCard";
@@ -38,10 +38,15 @@ function validateLoginForm(formData) {
  */
 function LoginPage({ onLogin }) {
   const navigate = useNavigate();
+  const usernameInputRef = useRef(null);
   const [formData, setFormData] = useState(initialFormState);
   const [formErrors, setFormErrors] = useState({});
   const [requestError, setRequestError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    usernameInputRef.current?.focus({ preventScroll: true });
+  }, []);
 
   /**
    * Updates login form values and clears old messages.
@@ -92,11 +97,17 @@ function LoginPage({ onLogin }) {
 
   return (
     <div className="auth-page">
-      <SectionCard title="Login">
-        <form className="form-grid" onSubmit={handleSubmit}>
+      <SectionCard className="login-card login-card--auth">
+        <form className="form-grid login-form" onSubmit={handleSubmit}>
+          <div className="login-form__branding">
+            <span className="brand-badge login-form__badge">PWP</span>
+            <h1>Prepaid Wallet POS System</h1>
+          </div>
+
           <label className="field-group">
             <span>Username</span>
             <input
+              ref={usernameInputRef}
               type="text"
               name="username"
               value={formData.username}
@@ -120,7 +131,7 @@ function LoginPage({ onLogin }) {
 
           {requestError ? <div className="form-message form-message--error">{requestError}</div> : null}
 
-          <div className="form-actions">
+          <div className="form-actions login-form__actions">
             <button type="submit" className="primary-button" disabled={isSubmitting}>
               {isSubmitting ? "Signing In..." : "Sign In"}
             </button>

@@ -96,6 +96,10 @@ small {
   min-height: 100vh;
 }
 
+.public-shell--login {
+  grid-template-columns: 1fr;
+}
+
 .public-shell__aside {
   padding: 3rem;
   background:
@@ -104,13 +108,22 @@ small {
   color: #f6fbff;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
+  gap: 2rem;
+}
+
+.public-brand {
+  display: grid;
+  justify-items: start;
+  align-content: start;
+  gap: 1rem;
 }
 
 .public-shell__aside h1 {
-  margin: 1rem 0 0;
+  margin: 0;
   font-size: 2rem;
   line-height: 1.2;
+  max-width: 10ch;
 }
 
 .brand-badge {
@@ -140,6 +153,7 @@ small {
   display: grid;
   gap: 0.75rem;
   max-width: 220px;
+  margin-top: auto;
 }
 
 .switcher-link {
@@ -216,6 +230,21 @@ small {
   width: min(100%, 640px);
 }
 
+.auth-page .login-card {
+  width: min(100%, 440px);
+}
+
+.auth-page .login-card {
+  border: 1.5px solid rgba(143, 172, 196, 0.92);
+  box-shadow:
+    0 22px 48px rgba(29, 58, 86, 0.12),
+    0 1px 0 rgba(255, 255, 255, 0.9) inset;
+}
+
+.login-card--auth .section-card__body {
+  padding: 1.7rem 1.6rem 1.6rem;
+}
+
 .section-card__header {
   display: flex;
   align-items: center;
@@ -261,6 +290,40 @@ small {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.login-form {
+  grid-template-columns: 1fr;
+  gap: 0.95rem;
+}
+
+.login-form__branding {
+  display: grid;
+  justify-items: center;
+  gap: 0.9rem;
+  text-align: center;
+  margin-bottom: 0.15rem;
+}
+
+.login-form__branding h1 {
+  margin: 0;
+  font-size: 1.42rem;
+  line-height: 1.15;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  background: linear-gradient(135deg, #14344b, #275f81 58%, #2f7d85);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  white-space: nowrap;
+}
+
+.login-form__badge {
+  min-width: 64px;
+  height: 48px;
+  font-size: 0.72rem;
+  border-radius: 15px;
+  letter-spacing: 0.06em;
+}
+
 .form-grid--member-create {
   gap: 1rem 1.15rem;
   align-items: start;
@@ -298,6 +361,13 @@ small {
   color: #234760;
 }
 
+.login-form .field-group span {
+  font-size: 0.94rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  color: #17384f;
+}
+
 .field-group input,
 .field-group select,
 .field-group textarea {
@@ -326,6 +396,18 @@ small {
 .field-group textarea::placeholder {
   color: #6a869b;
   opacity: 1;
+}
+
+.login-form input {
+  min-height: 3.45rem;
+  padding: 0.85rem 0.95rem;
+  font-size: 0.98rem;
+  font-weight: 500;
+}
+
+.login-form input::placeholder {
+  font-size: 0.95rem;
+  font-weight: 500;
 }
 
 .field-group input:focus,
@@ -397,6 +479,21 @@ small {
 .form-actions > .primary-button,
 .form-actions > .secondary-button {
   min-width: 136px;
+}
+
+.login-form__actions {
+  justify-content: stretch;
+  grid-column: 1 / -1;
+  padding-top: 0.25rem;
+}
+
+.login-form__actions .primary-button {
+  width: 100%;
+  min-width: 0;
+  padding: 0.95rem 1.2rem;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0;
 }
 
 .form-actions--full {
@@ -1214,6 +1311,10 @@ small {
     overflow: visible;
   }
 
+  .public-brand {
+    gap: 0.8rem;
+  }
+
   .sidebar-nav {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1320,6 +1421,11 @@ small {
   .filter-grid,
   .form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .login-form__row {
+    grid-template-columns: 1fr;
+    gap: 1rem;
   }
 
   .field-group--wide,
