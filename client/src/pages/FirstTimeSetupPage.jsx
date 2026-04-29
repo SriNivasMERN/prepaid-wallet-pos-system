@@ -4,7 +4,7 @@
  * Purpose: Displays the initial Super Admin creation form structure.
  */
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import SectionCard from "../components/common/SectionCard";
@@ -54,10 +54,15 @@ function validateSetupForm(formData) {
  */
 function FirstTimeSetupPage({ onSetupComplete }) {
   const navigate = useNavigate();
+  const fullNameInputRef = useRef(null);
   const [formData, setFormData] = useState(initialFormState);
   const [formErrors, setFormErrors] = useState({});
   const [requestError, setRequestError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    fullNameInputRef.current?.focus({ preventScroll: true });
+  }, []);
 
   /**
    * Updates local form state as fields change.
@@ -110,11 +115,19 @@ function FirstTimeSetupPage({ onSetupComplete }) {
 
   return (
     <div className="auth-page">
-      <SectionCard title="First-Time Setup">
-        <form className="form-grid" onSubmit={handleSubmit}>
+      <SectionCard className="login-card login-card--auth">
+        <form className="form-grid login-form" onSubmit={handleSubmit}>
+          <div className="login-form__branding">
+            <span className="brand-badge login-form__badge">PWP</span>
+            <h1>Prepaid Wallet POS System</h1>
+          </div>
+
+          <div className="auth-form__title">First-Time Setup</div>
+
           <label className="field-group">
             <span>Full Name</span>
             <input
+              ref={fullNameInputRef}
               type="text"
               name="fullName"
               value={formData.fullName}
@@ -164,7 +177,7 @@ function FirstTimeSetupPage({ onSetupComplete }) {
 
           {requestError ? <div className="form-message form-message--error">{requestError}</div> : null}
 
-          <div className="form-actions">
+          <div className="form-actions login-form__actions">
             <button type="submit" className="primary-button" disabled={isSubmitting}>
               {isSubmitting ? "Creating..." : "Create Account"}
             </button>

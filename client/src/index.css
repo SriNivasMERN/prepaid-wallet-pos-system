@@ -324,6 +324,14 @@ small {
   letter-spacing: 0.06em;
 }
 
+.auth-form__title {
+  margin-top: 0.15rem;
+  text-align: center;
+  color: #244a66;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
 .form-grid--member-create {
   gap: 1rem 1.15rem;
   align-items: start;
@@ -1421,11 +1429,6 @@ small {
   .filter-grid,
   .form-grid {
     grid-template-columns: 1fr;
-  }
-
-  .login-form__row {
-    grid-template-columns: 1fr;
-    gap: 1rem;
   }
 
   .field-group--wide,
