@@ -5,6 +5,7 @@
 - Verify module dependencies are respected before downstream actions are attempted.
 - Verify Week 6 safe CRUD behavior works correctly across admin and operational modules.
 - Verify latest reliability behavior for session invalidation, stock filtering, and wallet/stock updates.
+- Verify latest product/card entry flow for generated editable codes, default dates, and clearer product fields.
 
 ## Assumptions
 - Database is empty before testing begins.
@@ -30,7 +31,7 @@
 - 1 first-time `Super Admin`
 - 1 additional `Admin`
 - 1 `Cashier`
-- 2 active `Products`
+- 2 active `Products` with generated or edited product codes, MRP, units, and optional descriptions
 - 2 active `Members`
 - 1 active `Card` linked to Member A
 - 1 active `Wallet` linked to Member A
@@ -136,10 +137,12 @@
 11. Super Admin creates products needed for downstream operations
    - Steps:
      1. Open `Products`.
-     2. Create at least two active products with valid code, unit, and selling price.
+     2. Confirm generated editable product code is shown.
+     3. Create at least two active products with valid name, code, `MRP`, unit, optional description, and status.
    - Expected Result:
      - Products are created successfully.
      - Product rows appear in the list.
+     - Product code, `MRP`, description, and unit values are displayed clearly.
 
 12. Products search, filter, view, edit, and status change all work
    - Steps:
@@ -151,6 +154,7 @@
    - Expected Result:
      - Filters work correctly.
      - Product details modal opens correctly.
+     - Product create/edit layout shows two fields per row with readable field values.
      - Edit saves successfully.
      - Product lifecycle remains visible through `Active` and `Inactive`.
 
@@ -179,10 +183,13 @@
 15. Card is assigned to an eligible active member
    - Steps:
      1. Open `Cards`.
-     2. Assign a new valid card to Member A.
+     2. Confirm generated editable card number is shown.
+     3. Confirm activation date defaults to current date and expiry defaults to one year later.
+     4. Assign a new valid card to Member A.
    - Expected Result:
      - Card assignment succeeds.
      - Card row appears in the list as `Active`.
+     - Generated or edited card number is saved correctly.
 
 16. Cards search, filter, and details flow work correctly
    - Steps:

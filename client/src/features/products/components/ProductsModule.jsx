@@ -443,7 +443,8 @@ function ProductsModule({ authToken, onMetricsChange, onRecordsChange }) {
           <label className="field-group">
             <span>Description</span>
             <textarea
-              rows="3"
+              className="product-description-field"
+              rows="1"
               name="description"
               value={productForm.description}
               onChange={handleProductInputChange}
@@ -754,7 +755,8 @@ function ProductsModule({ authToken, onMetricsChange, onRecordsChange }) {
           <label className="field-group">
             <span>Description</span>
             <textarea
-              rows="3"
+              className="product-description-field"
+              rows="1"
               name="description"
               value={editProductForm.description}
               onChange={handleEditProductInputChange}

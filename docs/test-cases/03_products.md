@@ -5,6 +5,7 @@
 - Verify product list, search, status, and unit filters work correctly.
 - Verify product `View`, `Edit`, and `Activate` / `Mark Inactive` flows behave correctly.
 - Verify duplicate product code protection, frontend validation, and backend validation behavior.
+- Verify generated editable product code, `MRP`, description, and supported unit behavior.
 
 ## Preconditions
 - Approved QA environment and approved QA test data are available for execution.
@@ -26,16 +27,19 @@
 2. Create product with valid data
    - Steps:
      1. Open `Products`.
-     2. Enter a valid product name.
-     3. Enter a unique product code.
-     4. Enter a selling price greater than zero.
-     5. Select a valid unit.
-     6. Select a valid status.
-     7. Click `Create Product`.
+     2. Confirm `Product Code` is auto-filled.
+     3. Enter a valid product name.
+     4. Keep the generated code or edit it to another unique product code.
+     5. Enter `MRP` greater than zero.
+     6. Select a valid unit.
+     7. Enter an optional description.
+     8. Select a valid status.
+     9. Click `Create Product`.
    - Expected Result:
      - Product creation succeeds.
      - Success message is shown.
      - The new product appears in the list after reload.
+     - Product code, description, `MRP`, unit, and status are shown correctly.
 
 3. Search products by product name or product code
    - Steps:
@@ -83,7 +87,7 @@
      2. Click `View` on a product row.
    - Expected Result:
      - Product details modal opens.
-     - Product name, code, price, unit, and status are shown.
+     - Product name, code, description, `MRP`, unit, and status are shown.
 
 9. Edit action updates product successfully
    - Steps:
@@ -134,15 +138,15 @@
      - Product is not created.
      - Product name validation error is shown.
 
-3. Product form rejects zero or negative selling price
+3. Product form rejects zero or negative MRP
    - Steps:
      1. Open `Products`.
      2. Enter valid name and code.
-     3. Enter `0` or a negative number for selling price.
+     3. Enter `0` or a negative number for `MRP`.
      4. Submit the form.
    - Expected Result:
      - Product is not created.
-     - Selling price validation error is shown.
+     - `MRP` validation error is shown.
 
 4. Duplicate product code is rejected on create or edit
    - Steps:
@@ -159,14 +163,23 @@
      - The request is rejected.
      - Unit validation error is returned.
 
-6. Unsupported status is rejected through direct API test
+6. Description longer than allowed length is rejected
+   - Steps:
+     1. Open `Products`.
+     2. Enter a description longer than 300 characters.
+     3. Submit the form.
+   - Expected Result:
+     - Product is not created or updated.
+     - Description validation error is shown.
+
+7. Unsupported status is rejected through direct API test
    - Steps:
      1. Send a product create or update request with an unsupported status value.
    - Expected Result:
      - The request is rejected.
      - Status validation error is returned.
 
-7. Cashier cannot access Products module
+8. Cashier cannot access Products module
    - Steps:
      1. Log in as `Cashier`.
      2. Try to open `Products` or call the products API.
@@ -181,7 +194,24 @@
    - Expected Result:
      - The saved product code appears in uppercase form.
 
-2. Search remains case-insensitive for product name and code
+2. Product code remains editable after auto-generation
+   - Steps:
+     1. Open `Products`.
+     2. Confirm the generated product code is visible.
+     3. Edit the generated code before saving.
+   - Expected Result:
+     - Edited unique product code is saved successfully.
+
+3. Unit list includes common units in expected order
+   - Steps:
+     1. Open `Products`.
+     2. Open the `Unit` dropdown.
+   - Expected Result:
+     - Unit list starts with common units such as `kg`, `Litre`, `Piece`, `Bottle`, and `Pack`.
+     - `kg` is shown fully lowercase.
+     - `Dozen`, `Box`, and `Case` are also available.
+
+4. Search remains case-insensitive for product name and code
    - Steps:
      1. Open `Products`.
      2. Search using different uppercase and lowercase versions of a product name or product code.
@@ -189,7 +219,7 @@
    - Expected Result:
      - Matching product records are still returned.
 
-3. Inactive product remains visible and manageable
+5. Inactive product remains visible and manageable
    - Steps:
      1. Mark a product inactive.
      2. Filter by `Inactive`.
@@ -204,18 +234,27 @@
   1. Send a `GET` request to `/api/v1/products`.
   2. Include header `Authorization: Bearer <valid token>`.
   3. Optionally add `search`, `status`, and `unit` query parameters.
-- Expected Response:
+  - Expected Response:
   - `200 OK` for allowed roles.
   - Product list is returned.
   - Filtering works with provided query parameters.
+
+- Endpoint: `GET /api/v1/products/next-code`
+- Payload:
+  1. Send a `GET` request to `/api/v1/products/next-code`.
+  2. Include header `Authorization: Bearer <valid token>`.
+- Expected Response:
+  - `200 OK` for allowed roles.
+  - Next generated product code is returned.
 
 - Endpoint: `POST /api/v1/products`
 - Payload:
   1. Send a `POST` request to `/api/v1/products`.
   2. Include header `Authorization: Bearer <valid token>`.
-  3. Use approved valid QA values for `productName`, `productCode`, `sellingPrice`, `unit`, and `status`.
+  3. Use approved valid QA values for `productName`, optional/editable `productCode`, `description`, `sellingPrice` as `MRP`, `unit`, and `status`.
 - Expected Response:
   - `201 Created` for valid product.
+  - Product code is generated if not supplied.
   - `400 Bad Request` for invalid payload.
   - `409 Conflict` for duplicate product code.
 
@@ -245,11 +284,13 @@
 - Steps:
   1. Open `Products` from the sidebar.
   2. Verify the create form, filters, and product list are visible.
-  3. Submit invalid values.
-  4. Submit valid approved QA values.
-  5. Use search, status, and unit filters.
-  6. Use `View`, `Edit`, `Activate` / `Mark Inactive`.
-  7. Use `Reset` and `Refresh`.
+  3. Confirm the form is arranged as `Product Name / Product Code`, `MRP / Unit`, and `Description / Status`.
+  4. Confirm field values are clearly readable and do not look disabled.
+  5. Submit invalid values.
+  6. Submit valid approved QA values.
+  7. Use search, status, and unit filters.
+  8. Use `View`, `Edit`, `Activate` / `Mark Inactive`.
+  9. Use `Reset` and `Refresh`.
 - Expected Result:
   - Products module opens for allowed roles.
   - Invalid submissions are blocked with clear validation.

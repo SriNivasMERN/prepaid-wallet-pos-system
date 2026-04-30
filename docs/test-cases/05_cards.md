@@ -5,6 +5,7 @@
 - Verify card `View` and `Replace` flows behave correctly.
 - Verify duplicate card number, invalid dates, and ineligible-member assignment are blocked.
 - Verify card detail, operational profile, and replacement flows behave correctly.
+- Verify generated editable card numbers and default one-year expiry behavior.
 
 ## Preconditions
 - Approved QA environment and approved QA test data are available for execution.
@@ -24,15 +25,17 @@
 2. Assign card with valid data
    - Steps:
      1. Open `Cards`.
-     2. Enter an approved valid QA card number.
-     3. Select an eligible active member.
-     4. Enter a valid `Activated At` date.
-     5. Enter an `Expires At` date later than `Activated At`.
-     6. Click `Assign Card`.
+     2. Confirm `Card Number` is auto-filled.
+     3. Keep the generated card number or edit it to another unique card number.
+     4. Select an eligible active member.
+     5. Confirm `Activated At` defaults to the current date.
+     6. Confirm `Expires At` defaults to one year after activation.
+     7. Click `Assign Card`.
    - Expected Result:
      - Card assignment succeeds.
      - Success message is shown.
      - The new card appears in the cards list after reload.
+     - Generated or edited card number is saved correctly.
 
 3. Search cards by card number, member name, or mobile number
    - Steps:
@@ -171,14 +174,30 @@
    - Expected Result:
      - Returned/stored card number remains normalized consistently.
 
-2. Replace button is disabled for inactive rows in UI
+2. Card number remains editable after auto-generation
+   - Steps:
+     1. Open `Cards`.
+     2. Confirm generated card number is visible.
+     3. Edit the generated card number before saving.
+   - Expected Result:
+     - Edited unique card number is saved successfully.
+
+3. Default card dates reduce manual entry
+   - Steps:
+     1. Open `Cards`.
+     2. Review `Activated At` and `Expires At`.
+   - Expected Result:
+     - `Activated At` defaults to current date.
+     - `Expires At` defaults to one year after the activation date.
+
+4. Replace button is disabled for inactive rows in UI
    - Steps:
      1. Open `Cards`.
      2. Locate an inactive card row.
    - Expected Result:
      - `Replace` action is visibly unavailable or disabled for inactive card rows.
 
-3. Operational profile blocks use for inactive linked member or expired card
+5. Operational profile blocks use for inactive linked member or expired card
    - Steps:
      1. Use an ineligible card.
      2. Request the operational profile.
@@ -197,13 +216,22 @@
   - Card list is returned.
   - Filtering works with provided query parameters.
 
+- Endpoint: `GET /api/v1/cards/next-number`
+- Payload:
+  1. Send a `GET` request to `/api/v1/cards/next-number`.
+  2. Include header `Authorization: Bearer <valid token>`.
+- Expected Response:
+  - `200 OK` for allowed roles.
+  - Next generated card number is returned.
+
 - Endpoint: `POST /api/v1/cards`
 - Payload:
   1. Send a `POST` request to `/api/v1/cards`.
   2. Include header `Authorization: Bearer <valid token>`.
-  3. Use approved valid QA values for `cardNumber`, `memberId`, `activatedAt`, and `expiresAt`.
+  3. Use approved valid QA values for optional/editable `cardNumber`, `memberId`, `activatedAt`, and `expiresAt`.
 - Expected Response:
   - `201 Created` for valid assignment.
+  - Card number is generated if not supplied.
   - `400 Bad Request` for invalid payload.
   - `409 Conflict` for duplicate card number, ineligible member, or existing active card.
 
@@ -222,11 +250,12 @@
 - Steps:
   1. Open `Cards` from the sidebar.
   2. Verify the assign form, filters, and cards list are visible.
-  3. Submit invalid values.
-  4. Submit valid approved QA values.
-  5. Use search, status, and member filters.
-  6. Use `View` and `Replace`.
-  7. Use `Reset` and `Refresh`.
+  3. Confirm generated card number and default dates are visible.
+  4. Submit invalid values.
+  5. Submit valid approved QA values.
+  6. Use search, status, and member filters.
+  7. Use `View` and `Replace`.
+  8. Use `Reset` and `Refresh`.
 - Expected Result:
   - Cards module opens for allowed roles.
   - Invalid submissions are blocked with clear validation.

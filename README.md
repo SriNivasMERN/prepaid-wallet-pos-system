@@ -10,7 +10,7 @@ The application is designed for small business counter operations where staff ne
 - Role-based dashboard for `Super Admin`, `Admin`, and `Cashier`.
 - Controlled recharge, manual debit, and billing workflows.
 - Billing precheck for member, card, and wallet readiness.
-- Product and stock movement tracking.
+- Product setup with generated editable codes, MRP, descriptions, units, and stock movement tracking.
 - Transaction ledger derived from recharge and debit activity.
 - Reports for sales, recharges, debits, and stock movements.
 - Responsive dashboard UI for desktop, tablet, and mobile screens.
@@ -59,10 +59,12 @@ The application is designed for small business counter operations where staff ne
 - My Account profile and password management.
 - Staff create/update/status control/password reset within role hierarchy.
 - Member create/update/details with readiness visibility.
-- Card assignment, replacement, expiry handling, and readiness profile.
+- Card assignment with generated editable card numbers, replacement, expiry handling, and readiness profile.
 - Wallet creation/status control with balance protected through operational records.
 - Recharge and debit records with before/after balance snapshots.
 - Billing precheck, duplicate product protection, bill creation, and bill details.
+- Product create/edit supports generated editable product codes, `MRP`, optional description, and common units such as `kg`, litre, piece, bottle, pack, dozen, box, and case.
+- Card assignment supports generated editable card numbers and default one-year expiry to reduce manual entry.
 - Atomic wallet and stock updates for billing, recharge, debit, and stock movement flows.
 - Stock opening guard, stock status visibility, and movement history.
 - Unified transaction ledger for credit/debit activity.
