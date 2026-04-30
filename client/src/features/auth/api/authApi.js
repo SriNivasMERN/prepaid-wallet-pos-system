@@ -34,6 +34,18 @@ export function loginStaff(payload) {
 }
 
 /**
+ * Invalidates the current staff login token on the server.
+ */
+export function logoutStaff(token) {
+  return httpRequest("/auth/logout", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+}
+
+/**
  * Fetches the current staff profile using the login token.
  */
 export function fetchCurrentStaff(token) {

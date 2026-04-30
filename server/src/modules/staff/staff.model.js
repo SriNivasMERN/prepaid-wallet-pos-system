@@ -42,6 +42,13 @@ const staffSchema = new mongoose.Schema(
       enum: Object.values(RECORD_STATUS),
       default: RECORD_STATUS.ACTIVE
     },
+    tokenVersion: {
+      type: Number,
+      required: true,
+      min: 0,
+      default: 0,
+      select: false
+    },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Staff",

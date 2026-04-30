@@ -239,9 +239,27 @@ const createDebit = async (payload, currentAuth) => {
     );
   }
 
-  const balanceBefore = Number(wallet.balance || 0);
+  const walletBeforeDebit = await Wallet.findOneAndUpdate(
+    {
+      _id: wallet._id,
+      isDeleted: false,
+      status: RECORD_STATUS.ACTIVE,
+      balance: { $gte: values.amount }
+    },
+    {
+      $inc: {
+        balance: values.amount * -1
+      },
+      $set: {
+        updatedBy: currentAuth.staffId
+      }
+    },
+    {
+      new: false
+    }
+  );
 
-  if (values.amount > balanceBefore) {
+  if (!walletBeforeDebit) {
     throw createConflictError(
       "amount",
       "Insufficient wallet balance for this debit.",
@@ -249,16 +267,11 @@ const createDebit = async (payload, currentAuth) => {
     );
   }
 
+  const balanceBefore = Number(walletBeforeDebit.balance || 0);
   const balanceAfter = balanceBefore - values.amount;
-  let balanceUpdated = false;
   let createdDebitId = null;
 
   try {
-    wallet.balance = balanceAfter;
-    wallet.updatedBy = currentAuth.staffId;
-    await wallet.save();
-    balanceUpdated = true;
-
     const debit = await Debit.create({
       walletId: wallet._id,
       memberId: member._id,
@@ -283,17 +296,17 @@ const createDebit = async (payload, currentAuth) => {
       await Debit.deleteOne({ _id: createdDebitId }).catch(() => null);
     }
 
-    if (balanceUpdated) {
-      await Wallet.updateOne(
-        { _id: wallet._id, isDeleted: false },
-        {
-          $set: {
-            balance: balanceBefore,
-            updatedBy: currentAuth.staffId
-          }
+    await Wallet.updateOne(
+      { _id: wallet._id, isDeleted: false },
+      {
+        $inc: {
+          balance: values.amount
+        },
+        $set: {
+          updatedBy: currentAuth.staffId
         }
-      ).catch(() => null);
-    }
+      }
+    ).catch(() => null);
 
     throw error;
   }

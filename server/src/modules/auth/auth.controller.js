@@ -11,6 +11,7 @@ const {
   getCurrentStaff,
   getSetupStatus,
   loginStaff,
+  logoutStaff,
   updateCurrentStaffProfile
 } = require("./auth.service");
 
@@ -87,6 +88,24 @@ const getCurrentStaffHandler = async (request, response, next) => {
 };
 
 /**
+ * Invalidates the current staff session token.
+ */
+const logoutHandler = async (request, response, next) => {
+  try {
+    const data = await logoutStaff(request.auth.staffId);
+
+    response.status(200).json(
+      buildApiResponse({
+        message: "Logout completed successfully.",
+        data
+      })
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Updates the authenticated staff member's own profile.
  */
 const updateCurrentStaffProfileHandler = async (request, response, next) => {
@@ -126,6 +145,7 @@ module.exports = {
   getSetupStatusHandler,
   setupSuperAdminHandler,
   loginHandler,
+  logoutHandler,
   getCurrentStaffHandler,
   updateCurrentStaffProfileHandler,
   changeCurrentStaffPasswordHandler

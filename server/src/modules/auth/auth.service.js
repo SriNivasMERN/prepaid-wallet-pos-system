@@ -84,7 +84,8 @@ const buildSessionPayload = (staff) => {
     {
       staffId: staff._id,
       role: staff.role,
-      username: staff.username
+      username: staff.username,
+      tokenVersion: Number(staff.tokenVersion || 0)
     },
     JWT_SECRET,
     {
@@ -198,7 +199,7 @@ const loginStaff = async (payload) => {
   const staff = await Staff.findOne({
     username: values.username,
     isDeleted: false
-  }).select("+passwordHash");
+  }).select("+passwordHash +tokenVersion");
 
   if (!staff) {
     throw createAuthError("username", "Username or password is incorrect.");
@@ -241,6 +242,27 @@ const getCurrentStaff = async (staffId) => {
 };
 
 /**
+ * Invalidates existing bearer tokens for the current staff account.
+ */
+const logoutStaff = async (staffId) => {
+  await Staff.updateOne(
+    {
+      _id: staffId,
+      isDeleted: false
+    },
+    {
+      $inc: {
+        tokenVersion: 1
+      }
+    }
+  );
+
+  return {
+    loggedOut: true
+  };
+};
+
+/**
  * Updates the authenticated staff member's own profile fields.
  */
 const updateCurrentStaffProfile = async (staffId, payload) => {
@@ -253,7 +275,7 @@ const updateCurrentStaffProfile = async (staffId, payload) => {
   const staff = await Staff.findOne({
     _id: staffId,
     isDeleted: false
-  });
+  }).select("+tokenVersion");
 
   if (!staff || staff.status !== RECORD_STATUS.ACTIVE) {
     throw createAuthError("authorization", "Login again to continue.", "Session is not valid.");
@@ -309,7 +331,7 @@ const changeCurrentStaffPassword = async (staffId, payload) => {
   const staff = await Staff.findOne({
     _id: staffId,
     isDeleted: false
-  }).select("+passwordHash");
+  }).select("+passwordHash +tokenVersion");
 
   if (!staff || staff.status !== RECORD_STATUS.ACTIVE) {
     throw createAuthError("authorization", "Login again to continue.", "Session is not valid.");
@@ -326,22 +348,18 @@ const changeCurrentStaffPassword = async (staffId, payload) => {
   }
 
   staff.passwordHash = await bcrypt.hash(values.newPassword, 10);
+  staff.tokenVersion = Number(staff.tokenVersion || 0) + 1;
   staff.updatedBy = staff._id;
   await staff.save();
 
-  return {
-    id: staff._id,
-    fullName: staff.fullName,
-    username: staff.username,
-    role: staff.role,
-    status: staff.status
-  };
+  return buildSessionPayload(staff);
 };
 
 module.exports = {
   getSetupStatus,
   createInitialSuperAdmin,
   loginStaff,
+  logoutStaff,
   getCurrentStaff,
   updateCurrentStaffProfile,
   changeCurrentStaffPassword

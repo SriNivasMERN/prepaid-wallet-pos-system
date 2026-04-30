@@ -243,17 +243,38 @@ const createRecharge = async (payload, currentAuth) => {
     );
   }
 
-  const balanceBefore = Number(wallet.balance || 0);
+  const walletBeforeRecharge = await Wallet.findOneAndUpdate(
+    {
+      _id: wallet._id,
+      isDeleted: false,
+      status: RECORD_STATUS.ACTIVE
+    },
+    {
+      $inc: {
+        balance: values.amount
+      },
+      $set: {
+        updatedBy: currentAuth.staffId
+      }
+    },
+    {
+      new: false
+    }
+  );
+
+  if (!walletBeforeRecharge) {
+    throw createConflictError(
+      "walletId",
+      "Only an active wallet can be recharged.",
+      "Recharge is not allowed."
+    );
+  }
+
+  const balanceBefore = Number(walletBeforeRecharge.balance || 0);
   const balanceAfter = balanceBefore + values.amount;
-  let balanceUpdated = false;
   let createdRechargeId = null;
 
   try {
-    wallet.balance = balanceAfter;
-    wallet.updatedBy = currentAuth.staffId;
-    await wallet.save();
-    balanceUpdated = true;
-
     const recharge = await Recharge.create({
       walletId: wallet._id,
       memberId: member._id,
@@ -278,17 +299,17 @@ const createRecharge = async (payload, currentAuth) => {
       await Recharge.deleteOne({ _id: createdRechargeId }).catch(() => null);
     }
 
-    if (balanceUpdated) {
-      await Wallet.updateOne(
-        { _id: wallet._id, isDeleted: false },
-        {
-          $set: {
-            balance: balanceBefore,
-            updatedBy: currentAuth.staffId
-          }
+    await Wallet.updateOne(
+      { _id: wallet._id, isDeleted: false },
+      {
+        $inc: {
+          balance: values.amount * -1
+        },
+        $set: {
+          updatedBy: currentAuth.staffId
         }
-      ).catch(() => null);
-    }
+      }
+    ).catch(() => null);
 
     throw error;
   }

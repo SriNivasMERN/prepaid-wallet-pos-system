@@ -210,9 +210,6 @@ const createStockMovement = async (payload, currentAuth) => {
     createdStockId = stock._id;
   }
 
-  const quantityBefore = Number(stock.currentQuantity || 0);
-  const quantityAfter = quantityBefore + values.quantityChange;
-
   try {
     stockSnapshot = {
       currentQuantity: stock.currentQuantity,
@@ -221,6 +218,32 @@ const createStockMovement = async (payload, currentAuth) => {
       lastMovementAt: stock.lastMovementAt
     };
 
+    const stockBeforeMovement = await Stock.findOneAndUpdate(
+      {
+        _id: stock._id,
+        isDeleted: false
+      },
+      {
+        $inc: {
+          currentQuantity: values.quantityChange
+        },
+        $set: {
+          lastQuantityChange: values.quantityChange,
+          lastMovementType: values.movementType,
+          updatedBy: currentAuth.staffId
+        }
+      },
+      {
+        new: false
+      }
+    );
+
+    if (!stockBeforeMovement) {
+      throw createNotFoundError("stockId", "Stock record was not found.", "Stock was not found.");
+    }
+
+    const quantityBefore = Number(stockBeforeMovement.currentQuantity || 0);
+    const quantityAfter = quantityBefore + values.quantityChange;
     const movement = await StockMovement.create({
       stockId: stock._id,
       productId: product._id,
@@ -234,12 +257,15 @@ const createStockMovement = async (payload, currentAuth) => {
     });
     createdMovementId = movement._id;
 
-    stock.currentQuantity = quantityAfter;
-    stock.lastQuantityChange = values.quantityChange;
-    stock.lastMovementType = values.movementType;
-    stock.lastMovementAt = movement.createdAt;
-    stock.updatedBy = currentAuth.staffId;
-    await stock.save();
+    await Stock.updateOne(
+      { _id: stock._id, isDeleted: false },
+      {
+        $set: {
+          lastMovementAt: movement.createdAt,
+          updatedBy: currentAuth.staffId
+        }
+      }
+    );
   } catch (error) {
     if (createdMovementId) {
       await StockMovement.deleteOne({ _id: createdMovementId }).catch(() => null);
@@ -251,8 +277,24 @@ const createStockMovement = async (payload, currentAuth) => {
       await Stock.updateOne(
         { _id: stock._id, isDeleted: false },
         {
+          $inc: {
+            currentQuantity: values.quantityChange * -1
+          },
           $set: {
-            currentQuantity: stockSnapshot.currentQuantity,
+            updatedBy: currentAuth.staffId
+          }
+        }
+      ).catch(() => null);
+
+      await Stock.updateOne(
+        {
+          _id: stock._id,
+          isDeleted: false,
+          lastQuantityChange: values.quantityChange,
+          lastMovementType: values.movementType
+        },
+        {
+          $set: {
             lastQuantityChange: stockSnapshot.lastQuantityChange,
             lastMovementType: stockSnapshot.lastMovementType,
             lastMovementAt: stockSnapshot.lastMovementAt,
@@ -298,9 +340,10 @@ const getStockList = async (query = {}) => {
   }
 
   const paginationWindow = parsePaginationWindow(query);
+  const shouldFilterComputedRows = Boolean(stockStatusValue || movementTypeValue);
   let productQueryBuilder = Product.find(productQuery).sort({ productName: 1 });
 
-  if (paginationWindow) {
+  if (paginationWindow && !shouldFilterComputedRows) {
     productQueryBuilder = productQueryBuilder.skip(paginationWindow.skip).limit(paginationWindow.limit);
   }
 
@@ -358,7 +401,7 @@ const getStockList = async (query = {}) => {
     })
   );
 
-  return rows.filter((row) => {
+  const filteredRows = rows.filter((row) => {
     if (stockStatusValue && row.stockStatus !== stockStatusValue) {
       return false;
     }
@@ -369,6 +412,15 @@ const getStockList = async (query = {}) => {
 
     return true;
   });
+
+  if (paginationWindow && shouldFilterComputedRows) {
+    return filteredRows.slice(
+      paginationWindow.skip,
+      paginationWindow.skip + paginationWindow.limit
+    );
+  }
+
+  return filteredRows;
 };
 
 module.exports = {

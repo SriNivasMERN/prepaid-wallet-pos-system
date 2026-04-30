@@ -12,6 +12,7 @@ const {
   getCurrentStaffHandler,
   getSetupStatusHandler,
   loginHandler,
+  logoutHandler,
   setupSuperAdminHandler,
   updateCurrentStaffProfileHandler
 } = require("./auth.controller");
@@ -32,6 +33,7 @@ authRouter.post("/setup", setupSuperAdminHandler);
  * Verifies staff login credentials.
  */
 authRouter.post("/login", loginHandler);
+authRouter.post("/logout", requireAuth, logoutHandler);
 
 /**
  * Returns the current authenticated staff profile.

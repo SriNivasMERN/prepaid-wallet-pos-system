@@ -394,41 +394,88 @@ const createBill = async (payload, currentAuth) => {
 
   const billItems = await buildBillItems(values.items);
   const totalAmount = billItems.reduce((sum, item) => sum + item.lineTotal, 0);
-  const balanceBefore = Number(wallet.balance || 0);
-
-  if (totalAmount > balanceBefore) {
-    throw createConflictError(
-      "items",
-      "Insufficient wallet balance for this bill.",
-      "Billing is not allowed."
-    );
-  }
-
-  const balanceAfter = balanceBefore - totalAmount;
   const billNumber = generateBillNumber();
   const stockSnapshots = [];
   const createdMovementIds = [];
   let createdDebitId = null;
   let createdBillId = null;
   let balanceUpdated = false;
+  let balanceBefore = 0;
+  let balanceAfter = 0;
 
   try {
-    wallet.balance = balanceAfter;
-    wallet.updatedBy = currentAuth.staffId;
-    await wallet.save();
+    const walletBeforeBill = await Wallet.findOneAndUpdate(
+      {
+        _id: wallet._id,
+        isDeleted: false,
+        status: RECORD_STATUS.ACTIVE,
+        balance: { $gte: totalAmount }
+      },
+      {
+        $inc: {
+          balance: totalAmount * -1
+        },
+        $set: {
+          updatedBy: currentAuth.staffId
+        }
+      },
+      {
+        new: false
+      }
+    );
+
+    if (!walletBeforeBill) {
+      throw createConflictError(
+        "items",
+        "Insufficient wallet balance for this bill.",
+        "Billing is not allowed."
+      );
+    }
+
+    balanceBefore = Number(walletBeforeBill.balance || 0);
+    balanceAfter = balanceBefore - totalAmount;
     balanceUpdated = true;
 
     for (const billItem of billItems) {
       const currentStock = billItem.stock;
-      const quantityBefore = Number(currentStock.currentQuantity || 0);
-      const quantityAfter = quantityBefore - billItem.quantity;
 
+      const stockBeforeBilling = await Stock.findOneAndUpdate(
+        {
+          _id: currentStock._id,
+          isDeleted: false,
+          currentQuantity: { $gte: billItem.quantity }
+        },
+        {
+          $inc: {
+            currentQuantity: billItem.quantity * -1
+          },
+          $set: {
+            lastQuantityChange: billItem.quantity * -1,
+            lastMovementType: "Manual Update",
+            updatedBy: currentAuth.staffId
+          }
+        },
+        {
+          new: false
+        }
+      );
+
+      if (!stockBeforeBilling) {
+        throw createConflictError(
+          "items",
+          `Insufficient stock for ${billItem.product.productName}.`,
+          "Billing is not allowed."
+        );
+      }
+
+      const quantityBefore = Number(stockBeforeBilling.currentQuantity || 0);
+      const quantityAfter = quantityBefore - billItem.quantity;
       stockSnapshots.push({
         stockId: currentStock._id,
-        currentQuantity: currentStock.currentQuantity,
-        lastQuantityChange: currentStock.lastQuantityChange,
-        lastMovementType: currentStock.lastMovementType,
-        lastMovementAt: currentStock.lastMovementAt
+        quantityDeducted: billItem.quantity,
+        lastQuantityChange: stockBeforeBilling.lastQuantityChange,
+        lastMovementType: stockBeforeBilling.lastMovementType,
+        lastMovementAt: stockBeforeBilling.lastMovementAt
       });
 
       const movement = await StockMovement.create({
@@ -444,12 +491,15 @@ const createBill = async (payload, currentAuth) => {
       });
       createdMovementIds.push(movement._id);
 
-      currentStock.currentQuantity = quantityAfter;
-      currentStock.lastQuantityChange = billItem.quantity * -1;
-      currentStock.lastMovementType = "Manual Update";
-      currentStock.lastMovementAt = movement.createdAt;
-      currentStock.updatedBy = currentAuth.staffId;
-      await currentStock.save();
+      await Stock.updateOne(
+        { _id: currentStock._id, isDeleted: false },
+        {
+          $set: {
+            lastMovementAt: movement.createdAt,
+            updatedBy: currentAuth.staffId
+          }
+        }
+      );
     }
 
     const billingDebit = await Debit.create({
@@ -515,8 +565,28 @@ const createBill = async (payload, currentAuth) => {
           Stock.updateOne(
             { _id: snapshot.stockId, isDeleted: false },
             {
+              $inc: {
+                currentQuantity: snapshot.quantityDeducted
+              },
               $set: {
-                currentQuantity: snapshot.currentQuantity,
+                updatedBy: currentAuth.staffId
+              }
+            }
+          ).catch(() => null)
+        )
+      );
+
+      await Promise.all(
+        stockSnapshots.map((snapshot) =>
+          Stock.updateOne(
+            {
+              _id: snapshot.stockId,
+              isDeleted: false,
+              lastQuantityChange: snapshot.quantityDeducted * -1,
+              lastMovementType: "Manual Update"
+            },
+            {
+              $set: {
                 lastQuantityChange: snapshot.lastQuantityChange,
                 lastMovementType: snapshot.lastMovementType,
                 lastMovementAt: snapshot.lastMovementAt,
@@ -532,8 +602,10 @@ const createBill = async (payload, currentAuth) => {
       await Wallet.updateOne(
         { _id: wallet._id, isDeleted: false },
         {
+          $inc: {
+            balance: totalAmount
+          },
           $set: {
-            balance: balanceBefore,
             updatedBy: currentAuth.staffId
           }
         }

@@ -38,9 +38,13 @@ const requireAuth = async (request, response, next) => {
     const staff = await Staff.findOne({
       _id: decodedToken.staffId,
       isDeleted: false
-    }).select("_id role username status fullName");
+    }).select("_id role username status fullName +tokenVersion");
 
-    if (!staff || staff.status !== RECORD_STATUS.ACTIVE) {
+    if (
+      !staff ||
+      staff.status !== RECORD_STATUS.ACTIVE ||
+      Number(staff.tokenVersion || 0) !== Number(decodedToken.tokenVersion || 0)
+    ) {
       return response.status(401).json(
         buildApiResponse({
           success: false,

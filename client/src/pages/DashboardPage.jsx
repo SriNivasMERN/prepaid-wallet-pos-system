@@ -1552,7 +1552,10 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
     setAccountPasswordSuccessMessage("");
 
     try {
-      await changeCurrentStaffPassword(accountPasswordForm, authToken);
+      const response = await changeCurrentStaffPassword(accountPasswordForm, authToken);
+      if (response.data?.token && response.data?.staff) {
+        onSessionUpdate?.(response.data);
+      }
       setAccountPasswordForm(accountPasswordInitialForm);
       setAccountPasswordErrors({});
       setAccountPasswordSuccessMessage("Password updated successfully.");

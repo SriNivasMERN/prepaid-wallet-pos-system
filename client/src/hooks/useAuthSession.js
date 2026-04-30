@@ -6,7 +6,7 @@
 
 import { useEffect, useState } from "react";
 
-import { fetchCurrentStaff } from "../features/auth/api/authApi";
+import { fetchCurrentStaff, logoutStaff } from "../features/auth/api/authApi";
 import { clearAuthSession, getAuthSession, saveAuthSession } from "../utils/authStorage";
 
 /**
@@ -93,7 +93,13 @@ export function useAuthSession({ isSetupReady, isSetupComplete }) {
   /**
    * Clears the authenticated session.
    */
-  const removeSession = () => {
+  const removeSession = async () => {
+    const storedSession = getAuthSession();
+
+    if (storedSession?.token) {
+      await logoutStaff(storedSession.token).catch(() => null);
+    }
+
     clearAuthSession();
     setSession(null);
     setIsLoading(false);
