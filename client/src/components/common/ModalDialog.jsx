@@ -23,13 +23,32 @@ function ModalDialog({
   const dialogRef = useRef(null);
   const editableSelector =
     'input:not([type="hidden"]):not([readonly]):not([disabled]), select:not([disabled]), textarea:not([readonly]):not([disabled])';
+  const searchableFieldContainerSelector = ".searchable-select, .autocomplete-field";
+
+  const findModalFocusTarget = () => {
+    const body = dialogRef.current?.querySelector(".dialog-card__body");
+    const firstForm = body?.querySelector("form");
+    const firstFieldGroup = firstForm?.querySelector(".field-group");
+    const firstEditableInForm = firstForm?.querySelector(editableSelector);
+
+    if (
+      firstFieldGroup?.querySelector(searchableFieldContainerSelector) ||
+      firstEditableInForm?.closest(searchableFieldContainerSelector)
+    ) {
+      return null;
+    }
+
+    return Array.from(body?.querySelectorAll(editableSelector) || []).find(
+      (field) => !field.closest(searchableFieldContainerSelector)
+    );
+  };
 
   useEffect(() => {
     if (!isOpen) {
       return;
     }
 
-    const bodyEditableTarget = dialogRef.current?.querySelector(`.dialog-card__body ${editableSelector}`);
+    const bodyEditableTarget = findModalFocusTarget();
     const footerButtonTarget = dialogRef.current?.querySelector(".dialog-card__footer button:not([disabled])");
     const fallbackButtonTarget = dialogRef.current?.querySelector(".dialog-card__header button:not([disabled])");
     const focusTarget = bodyEditableTarget || footerButtonTarget || fallbackButtonTarget;

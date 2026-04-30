@@ -137,6 +137,17 @@ const createCardWithGeneratedNumber = async (cardData, maxAttempts = 20) => {
 };
 
 /**
+ * Creates a card with a provided number or falls back to generated numbering.
+ */
+const createCardWithResolvedNumber = async (cardData) => {
+  if (cardData.cardNumber) {
+    return Card.create(cardData);
+  }
+
+  return createCardWithGeneratedNumber(cardData);
+};
+
+/**
  * Builds the operational readiness profile for one card and linked member.
  */
 const buildCardOperationalProfile = (card, member) => {
@@ -276,7 +287,8 @@ const assignCard = async (payload, currentAuth) => {
   let createdCardId = null;
 
   try {
-    const createdCard = await createCardWithGeneratedNumber({
+    const createdCard = await createCardWithResolvedNumber({
+      cardNumber: values.cardNumber,
       memberId: member._id,
       status: RECORD_STATUS.ACTIVE,
       activatedAt: values.activatedAt,
@@ -461,7 +473,8 @@ const replaceCard = async (cardId, payload, currentAuth) => {
     await currentCard.save();
     currentCardDeactivated = true;
 
-    const replacementCard = await createCardWithGeneratedNumber({
+    const replacementCard = await createCardWithResolvedNumber({
+      cardNumber: values.cardNumber,
       memberId: member._id,
       status: RECORD_STATUS.ACTIVE,
       activatedAt: values.activatedAt,

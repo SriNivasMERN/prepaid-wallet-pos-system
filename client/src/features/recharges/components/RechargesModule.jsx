@@ -4,11 +4,12 @@
  * Purpose: Provides the Recharges module create form, filters, and list connected to backend APIs.
  */
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import IconButton from "../../../components/common/IconButton";
 import ModalDialog from "../../../components/common/ModalDialog";
 import SectionCard from "../../../components/common/SectionCard";
+import SearchableSelect from "../../../components/common/SearchableSelect";
 import { getTodayInputDateValue } from "../../../utils/dateFieldDefaults";
 import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
 import { revealFeedbackInContainer } from "../../../utils/revealFeedbackInContainer";
@@ -113,7 +114,7 @@ function RechargesModule({ authToken, onMetricsChange, onRecordsChange }) {
 
       try {
         const [walletResponse, staffResponse] = await Promise.all([
-          fetchWalletList(authToken, { status: "Active" }),
+          fetchWalletList(authToken, { status: "Active", limit: "12" }),
           fetchStaffList(authToken)
         ]);
         const nextWallets = (walletResponse.data || []).filter(
@@ -186,6 +187,22 @@ function RechargesModule({ authToken, onMetricsChange, onRecordsChange }) {
     () => walletOptions.find((wallet) => wallet.id === rechargeForm.walletId) || null,
     [walletOptions, rechargeForm.walletId]
   );
+
+  const loadRechargeWalletSearchOptions = useCallback(async (search) => {
+    if (!authToken) {
+      return [];
+    }
+
+    const response = await fetchWalletList(authToken, {
+      search,
+      status: "Active",
+      limit: "12"
+    });
+
+    return (response.data || []).filter(
+      (wallet) => wallet.status === "Active" && wallet.member?.status === "Active"
+    );
+  }, [authToken]);
 
   const resetRechargeForm = () => {
     setRechargeForm(rechargeInitialForm);
@@ -279,22 +296,34 @@ function RechargesModule({ authToken, onMetricsChange, onRecordsChange }) {
         <form className="form-grid" onSubmit={handleRechargeSubmit} autoComplete="off">
           <label className="field-group field-group--wide">
             <span>Wallet</span>
-            <select
-              name="walletId"
+            <SearchableSelect
               value={rechargeForm.walletId}
-              onChange={handleRechargeInputChange}
-              autoComplete="off"
+              onChange={(nextWalletId, wallet) => {
+                setRechargeForm((currentState) => ({
+                  ...currentState,
+                  walletId: nextWalletId
+                }));
+                if (wallet) {
+                  setWalletOptions((currentWallets) =>
+                    currentWallets.some((currentWallet) => currentWallet.id === wallet.id)
+                      ? currentWallets
+                      : [wallet, ...currentWallets]
+                  );
+                }
+                setRechargeFormErrors((currentErrors) => ({
+                  ...currentErrors,
+                  walletId: ""
+                }));
+                setRechargeRequestError("");
+                setRechargeSuccessMessage("");
+              }}
+              loadOptions={loadRechargeWalletSearchOptions}
+              getOptionValue={(wallet) => wallet.id}
+              getOptionLabel={(wallet) => `${wallet.member?.fullName || "-"} (${wallet.member?.mobileNumber || "-"})`}
+              getOptionMeta={(wallet) => `Card ${wallet.card?.cardNumber || "-"} · Bal ${formatCurrency(wallet.balance)}`}
+              placeholder={isLoadingWallets ? "Loading wallets..." : "Search member, mobile, or card"}
               disabled={isLoadingWallets}
-            >
-              <option value="">
-                {isLoadingWallets ? "Loading wallets..." : "Select wallet"}
-              </option>
-              {walletOptions.map((wallet) => (
-                <option key={wallet.id} value={wallet.id}>
-                  {wallet.member?.fullName} ({wallet.member?.mobileNumber}) - Bal {formatCurrency(wallet.balance)}
-                </option>
-              ))}
-            </select>
+            />
             {rechargeFormErrors.walletId ? (
               <small className="field-error">{rechargeFormErrors.walletId}</small>
             ) : null}

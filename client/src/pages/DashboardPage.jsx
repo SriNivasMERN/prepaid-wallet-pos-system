@@ -876,6 +876,27 @@ const modulePrimaryActions = {
   Reports: "View Reports"
 };
 
+const editableFieldSelector =
+  'input:not([type="hidden"]):not([readonly]):not([disabled]), select:not([disabled]), textarea:not([readonly]):not([disabled])';
+const searchableFieldContainerSelector = ".searchable-select, .autocomplete-field";
+
+function findFirstNonSearchableEditableField(root) {
+  const firstForm = root.querySelector(".section-card form");
+  const firstFieldGroup = firstForm?.querySelector(".field-group");
+  const firstEditableInForm = firstForm?.querySelector(editableFieldSelector);
+
+  if (
+    firstFieldGroup?.querySelector(searchableFieldContainerSelector) ||
+    firstEditableInForm?.closest(searchableFieldContainerSelector)
+  ) {
+    return null;
+  }
+
+  const editableFields = Array.from(root.querySelectorAll(editableFieldSelector));
+
+  return editableFields.find((field) => !field.closest(searchableFieldContainerSelector)) || null;
+}
+
 function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
   const staffListSectionRef = useRef(null);
   const navigate = useNavigate();
@@ -1116,9 +1137,10 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
 
     const focusTimer = window.setTimeout(() => {
       // Keep keyboard flow predictable when modules switch, but avoid the follow-up scroll jump.
-      const firstEditableField = document.querySelector(
-        '.app-shell__content input:not([type="hidden"]):not([readonly]):not([disabled]), .app-shell__content select:not([disabled]), .app-shell__content textarea:not([readonly]):not([disabled])'
-      );
+      const appContent = document.querySelector(".app-shell__content");
+      const firstEditableField = appContent
+        ? findFirstNonSearchableEditableField(appContent)
+        : null;
 
       if (firstEditableField instanceof HTMLElement) {
         firstEditableField.focus({ preventScroll: true });
@@ -1146,9 +1168,7 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
 
       window.setTimeout(() => {
         // Focus is delayed until the smooth scroll settles so the section lands fully in view.
-        const firstEditableField = firstSectionCard.querySelector(
-          'input:not([type="hidden"]):not([readonly]):not([disabled]), select:not([disabled]), textarea:not([readonly]):not([disabled])'
-        );
+        const firstEditableField = findFirstNonSearchableEditableField(firstSectionCard);
 
         if (firstEditableField instanceof HTMLElement) {
           firstEditableField.focus();

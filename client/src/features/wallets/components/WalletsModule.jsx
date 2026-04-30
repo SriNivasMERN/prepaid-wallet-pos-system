@@ -4,17 +4,17 @@
  * Purpose: Provides the Wallets module create form, filters, and list connected to backend APIs.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import IconButton from "../../../components/common/IconButton";
 import ModalDialog from "../../../components/common/ModalDialog";
 import SectionCard from "../../../components/common/SectionCard";
+import SearchableSelect from "../../../components/common/SearchableSelect";
 import StatusChip from "../../../components/common/StatusChip";
 import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
 import { revealFeedbackInContainer } from "../../../utils/revealFeedbackInContainer";
 import { scrollElementBelowHeader } from "../../../utils/scrollElementBelowHeader";
 import { fetchCardList } from "../../cards/api/cardApi";
-import { fetchMemberList } from "../../members/api/memberApi";
 import {
   createWalletRecord,
   fetchWalletList,
@@ -110,10 +110,10 @@ function WalletsModule({ authToken, onMetricsChange, onRecordsChange }) {
       setIsLoadingMembers(true);
 
       try {
-        const [memberResponse, cardResponse] = await Promise.all([
-          fetchMemberList(authToken, { status: "Active" }),
-          fetchCardList(authToken)
-        ]);
+        const cardResponse = await fetchCardList(authToken, {
+          status: "Active",
+          limit: "12"
+        });
         const nextCards = cardResponse.data || [];
         const nextCardNumberMap = nextCards.reduce((result, card) => {
           if (card.member?.id && card.cardNumber) {
@@ -128,9 +128,9 @@ function WalletsModule({ authToken, onMetricsChange, onRecordsChange }) {
             .map((card) => card.member?.id)
             .filter(Boolean)
         );
-        const nextMembers = (memberResponse.data || []).filter(
-          (member) => !member.linkedWalletId && eligibleMemberIds.has(member.id)
-        );
+        const nextMembers = nextCards
+          .map((card) => card.member)
+          .filter((member) => member && !member.linkedWalletId && eligibleMemberIds.has(member.id));
 
         setCardNumberByMemberId(nextCardNumberMap);
         setMemberOptions(nextMembers);
@@ -191,6 +191,34 @@ function WalletsModule({ authToken, onMetricsChange, onRecordsChange }) {
     setWalletRequestError("");
     setWalletSuccessMessage("");
   };
+
+  const loadWalletMemberSearchOptions = useCallback(async (search) => {
+    if (!authToken) {
+      return [];
+    }
+
+    const response = await fetchCardList(authToken, {
+      search,
+      status: "Active",
+      limit: "12"
+    });
+    const activeCards = response.data || [];
+
+    setCardNumberByMemberId((currentMap) => ({
+      ...currentMap,
+      ...activeCards.reduce((result, card) => {
+        if (card.member?.id && card.cardNumber) {
+          result[card.member.id] = card.cardNumber;
+        }
+
+        return result;
+      }, {})
+    }));
+
+    return activeCards
+      .filter((card) => card.operationalProfile?.canUseInOperations && card.member && !card.member.linkedWalletId)
+      .map((card) => card.member);
+  }, [authToken]);
 
   const closeEditWalletModal = () => {
     setEditingWallet(null);
@@ -379,22 +407,34 @@ function WalletsModule({ authToken, onMetricsChange, onRecordsChange }) {
         <form className="form-grid" onSubmit={handleWalletSubmit} autoComplete="off">
           <label className="field-group">
             <span>Member</span>
-            <select
-              name="memberId"
+            <SearchableSelect
               value={walletForm.memberId}
-              onChange={handleWalletInputChange}
-              autoComplete="off"
+              onChange={(nextMemberId, member) => {
+                setWalletForm((currentState) => ({
+                  ...currentState,
+                  memberId: nextMemberId
+                }));
+                if (member) {
+                  setMemberOptions((currentMembers) =>
+                    currentMembers.some((currentMember) => currentMember.id === member.id)
+                      ? currentMembers
+                      : [member, ...currentMembers]
+                  );
+                }
+                setWalletFormErrors((currentErrors) => ({
+                  ...currentErrors,
+                  memberId: ""
+                }));
+                setWalletRequestError("");
+                setWalletSuccessMessage("");
+              }}
+              loadOptions={loadWalletMemberSearchOptions}
+              getOptionValue={(member) => member.id}
+              getOptionLabel={(member) => `${member.fullName} (${member.mobileNumber})`}
+              getOptionMeta={(member) => `Card ${cardNumberByMemberId[member.id] || "-"}`}
+              placeholder={isLoadingMembers ? "Loading members..." : "Search eligible member"}
               disabled={isLoadingMembers}
-            >
-              <option value="">
-                {isLoadingMembers ? "Loading members..." : "Select member"}
-              </option>
-              {memberOptions.map((member) => (
-                <option key={member.id} value={member.id}>
-                  {member.fullName} ({member.mobileNumber})
-                </option>
-              ))}
-            </select>
+            />
             {walletFormErrors.memberId ? (
               <small className="field-error">{walletFormErrors.memberId}</small>
             ) : null}

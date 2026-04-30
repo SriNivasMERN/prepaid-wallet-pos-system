@@ -24,6 +24,14 @@ export function fetchProductList(token, filters = {}) {
     searchParams.set("unit", filters.unit.trim());
   }
 
+  if (filters.page) {
+    searchParams.set("page", String(filters.page));
+  }
+
+  if (filters.limit) {
+    searchParams.set("limit", String(filters.limit));
+  }
+
   const queryString = searchParams.toString();
   const path = queryString ? `/products?${queryString}` : "/products";
 

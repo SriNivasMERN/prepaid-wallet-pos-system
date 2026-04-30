@@ -4,20 +4,21 @@
  * Purpose: Provides the Stocks module movement form, filters, and stock list connected to backend APIs.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import IconButton from "../../../components/common/IconButton";
 import ModalDialog from "../../../components/common/ModalDialog";
 import SectionCard from "../../../components/common/SectionCard";
+import SearchableSelect from "../../../components/common/SearchableSelect";
 import StatusChip from "../../../components/common/StatusChip";
 import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
 import { revealFeedbackInContainer } from "../../../utils/revealFeedbackInContainer";
 import { scrollElementBelowHeader } from "../../../utils/scrollElementBelowHeader";
 import {
   createStockMovementRecord,
-  fetchActiveProductOptions,
   fetchStockList
 } from "../api/stockApi";
+import { fetchProductList } from "../../products/api/productApi";
 
 const stockInitialForm = {
   productId: "",
@@ -122,17 +123,13 @@ function StocksModule({ authToken, onMetricsChange, onRecordsChange }) {
       }
 
       try {
-        const response = await fetchActiveProductOptions(authToken);
+        const response = await fetchProductList(authToken, {
+          status: "Active",
+          limit: "12"
+        });
         const nextProducts = response.data || [];
 
         setProductOptions(nextProducts);
-        setStockForm((currentState) => ({
-          ...currentState,
-          productId:
-            currentState.productId ||
-            nextProducts[0]?.id ||
-            ""
-        }));
       } catch (error) {
         setStockRequestError(getApiErrorMessage(error));
       }
@@ -175,10 +172,24 @@ function StocksModule({ authToken, onMetricsChange, onRecordsChange }) {
     (stock) => stock.product?.id === stockForm.productId
   );
 
+  const loadStockProductSearchOptions = useCallback(async (search) => {
+    if (!authToken) {
+      return [];
+    }
+
+    const response = await fetchProductList(authToken, {
+      search,
+      status: "Active",
+      limit: "12"
+    });
+
+    return response.data || [];
+  }, [authToken]);
+
   const resetStockForm = () => {
     setStockForm({
       ...stockInitialForm,
-      productId: productOptions[0]?.id || ""
+      productId: ""
     });
     setStockFormErrors({});
     setStockRequestError("");
@@ -267,19 +278,33 @@ function StocksModule({ authToken, onMetricsChange, onRecordsChange }) {
         <form className="form-grid" onSubmit={handleStockSubmit} autoComplete="off">
           <label className="field-group">
             <span>Product</span>
-            <select
-              name="productId"
+            <SearchableSelect
               value={stockForm.productId}
-              onChange={handleStockInputChange}
-              autoComplete="off"
-            >
-              <option value="">Select product</option>
-              {productOptions.map((product) => (
-                <option key={product.id} value={product.id}>
-                  {product.productName} ({product.productCode})
-                </option>
-              ))}
-            </select>
+              onChange={(nextProductId, product) => {
+                setStockForm((currentState) => ({
+                  ...currentState,
+                  productId: nextProductId
+                }));
+                if (product) {
+                  setProductOptions((currentProducts) =>
+                    currentProducts.some((currentProduct) => currentProduct.id === product.id)
+                      ? currentProducts
+                      : [product, ...currentProducts]
+                  );
+                }
+                setStockFormErrors((currentErrors) => ({
+                  ...currentErrors,
+                  productId: ""
+                }));
+                setStockRequestError("");
+                setStockSuccessMessage("");
+              }}
+              loadOptions={loadStockProductSearchOptions}
+              getOptionValue={(product) => product.id}
+              getOptionLabel={(product) => `${product.productName} (${product.productCode})`}
+              getOptionMeta={(product) => `${product.unit} · MRP ${product.sellingPrice ?? 0}`}
+              placeholder="Search product name or code"
+            />
             {stockFormErrors.productId ? (
               <small className="field-error">{stockFormErrors.productId}</small>
             ) : null}

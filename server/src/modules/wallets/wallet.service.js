@@ -280,15 +280,26 @@ const getWalletList = async (query = {}) => {
 
   if (searchValue) {
     const searchPattern = createSearchPattern(searchValue);
-    const memberMatches = await Member.find({
-      isDeleted: false,
-      $or: [
-        { fullName: searchPattern },
-        { mobileNumber: searchPattern }
-      ]
-    }).select("_id").lean();
+    const [memberMatches, cardMatches] = await Promise.all([
+      Member.find({
+        isDeleted: false,
+        $or: [
+          { fullName: searchPattern },
+          { mobileNumber: searchPattern }
+        ]
+      }).select("_id").lean(),
+      Card.find({
+        isDeleted: false,
+        cardNumber: searchPattern
+      }).select("memberId").lean()
+    ]);
 
-    databaseQuery.memberId = { $in: memberMatches.map((member) => member._id) };
+    databaseQuery.memberId = {
+      $in: [
+        ...memberMatches.map((member) => member._id),
+        ...cardMatches.map((card) => card.memberId).filter(Boolean)
+      ]
+    };
   }
 
   const paginationWindow = parsePaginationWindow(query);

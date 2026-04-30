@@ -20,6 +20,14 @@ export function fetchWalletList(token, filters = {}) {
     searchParams.set("status", filters.status.trim());
   }
 
+  if (filters.page) {
+    searchParams.set("page", String(filters.page));
+  }
+
+  if (filters.limit) {
+    searchParams.set("limit", String(filters.limit));
+  }
+
   const queryString = searchParams.toString();
   const path = queryString ? `/wallets?${queryString}` : "/wallets";
 

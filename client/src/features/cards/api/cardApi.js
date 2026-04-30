@@ -24,6 +24,14 @@ export function fetchCardList(token, filters = {}) {
     searchParams.set("memberId", filters.memberId.trim());
   }
 
+  if (filters.page) {
+    searchParams.set("page", String(filters.page));
+  }
+
+  if (filters.limit) {
+    searchParams.set("limit", String(filters.limit));
+  }
+
   const queryString = searchParams.toString();
   const path = queryString ? `/cards?${queryString}` : "/cards";
 

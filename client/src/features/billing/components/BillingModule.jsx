@@ -4,22 +4,23 @@
  * Purpose: Provides the Billing module bill form, filters, and recent bill list connected to backend APIs.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import IconButton from "../../../components/common/IconButton";
 import ModalDialog from "../../../components/common/ModalDialog";
 import SectionCard from "../../../components/common/SectionCard";
+import SearchableSelect from "../../../components/common/SearchableSelect";
 import StatusChip from "../../../components/common/StatusChip";
 import { getTodayInputDateValue } from "../../../utils/dateFieldDefaults";
 import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
 import { revealFeedbackInContainer } from "../../../utils/revealFeedbackInContainer";
 import { scrollElementBelowHeader } from "../../../utils/scrollElementBelowHeader";
 import { fetchCardList } from "../../cards/api/cardApi";
+import { fetchProductList } from "../../products/api/productApi";
 import {
   createBillRecord,
   fetchBillingPrecheck,
-  fetchBillList,
-  fetchBillingProductOptions
+  fetchBillList
 } from "../api/billingApi";
 
 const billingInitialForm = {
@@ -129,14 +130,13 @@ function BillingModule({ authToken, onMetricsChange, onRecordsChange }) {
       }
 
       try {
-        const response = await fetchBillingProductOptions(authToken);
+        const response = await fetchProductList(authToken, {
+          status: "Active",
+          limit: "12"
+        });
         const nextProducts = response.data || [];
 
         setProductOptions(nextProducts);
-        setBillingForm((currentState) => ({
-          ...currentState,
-          productId: currentState.productId || nextProducts[0]?.id || ""
-        }));
       } catch (error) {
         setBillingRequestError(getApiErrorMessage(error));
       }
@@ -223,6 +223,20 @@ function BillingModule({ authToken, onMetricsChange, onRecordsChange }) {
     (product) => product.id === billingForm.productId
   );
 
+  const loadBillingProductSearchOptions = useCallback(async (search) => {
+    if (!authToken) {
+      return [];
+    }
+
+    const response = await fetchProductList(authToken, {
+      search,
+      status: "Active",
+      limit: "12"
+    });
+
+    return response.data || [];
+  }, [authToken]);
+
   const computedTotal = billingItems.reduce(
     (sum, item) => sum + Number(item.lineTotal || 0),
     0
@@ -231,7 +245,7 @@ function BillingModule({ authToken, onMetricsChange, onRecordsChange }) {
   const resetBillingForm = () => {
     setBillingForm({
       ...billingInitialForm,
-      productId: productOptions[0]?.id || ""
+      productId: ""
     });
     setBillingItems([]);
     setBillingFormErrors({});
@@ -338,7 +352,7 @@ function BillingModule({ authToken, onMetricsChange, onRecordsChange }) {
 
     setBillingForm((currentState) => ({
       ...currentState,
-      productId: productOptions[0]?.id || currentState.productId,
+      productId: "",
       quantity: "1"
     }));
     setBillingFormErrors((currentErrors) => ({
@@ -504,19 +518,32 @@ function BillingModule({ authToken, onMetricsChange, onRecordsChange }) {
 
           <label className="field-group">
             <span>Product</span>
-            <select
-              name="productId"
+            <SearchableSelect
               value={billingForm.productId}
-              onChange={handleBillingInputChange}
-              autoComplete="off"
-            >
-              <option value="">Select product</option>
-              {productOptions.map((product) => (
-                <option key={product.id} value={product.id}>
-                  {product.productName} ({product.productCode})
-                </option>
-              ))}
-            </select>
+              onChange={(nextProductId, product) => {
+                setBillingForm((currentState) => ({
+                  ...currentState,
+                  productId: nextProductId
+                }));
+                if (product) {
+                  setProductOptions((currentProducts) =>
+                    currentProducts.some((currentProduct) => currentProduct.id === product.id)
+                      ? currentProducts
+                      : [product, ...currentProducts]
+                  );
+                }
+                setBillingFormErrors((currentErrors) => ({
+                  ...currentErrors,
+                  productId: "",
+                  items: ""
+                }));
+              }}
+              loadOptions={loadBillingProductSearchOptions}
+              getOptionValue={(product) => product.id}
+              getOptionLabel={(product) => `${product.productName} (${product.productCode})`}
+              getOptionMeta={(product) => `${formatCurrency(product.sellingPrice)} · ${product.unit}`}
+              placeholder="Search product name or code"
+            />
             {billingFormErrors.productId ? (
               <small className="field-error">{billingFormErrors.productId}</small>
             ) : null}
