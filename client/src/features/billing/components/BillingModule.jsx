@@ -14,6 +14,7 @@ import { getTodayInputDateValue } from "../../../utils/dateFieldDefaults";
 import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
 import { revealFeedbackInContainer } from "../../../utils/revealFeedbackInContainer";
 import { scrollElementBelowHeader } from "../../../utils/scrollElementBelowHeader";
+import { fetchCardList } from "../../cards/api/cardApi";
 import {
   createBillRecord,
   fetchBillingPrecheck,
@@ -117,6 +118,9 @@ function BillingModule({ authToken, onMetricsChange, onRecordsChange }) {
   const [billingPrecheck, setBillingPrecheck] = useState(null);
   const [isLoadingBillingPrecheck, setIsLoadingBillingPrecheck] = useState(false);
   const [billingPrecheckError, setBillingPrecheckError] = useState("");
+  const [cardSuggestions, setCardSuggestions] = useState([]);
+  const [isLoadingCardSuggestions, setIsLoadingCardSuggestions] = useState(false);
+  const [showCardSuggestions, setShowCardSuggestions] = useState(false);
 
   useEffect(() => {
     const loadProductOptions = async () => {
@@ -185,6 +189,36 @@ function BillingModule({ authToken, onMetricsChange, onRecordsChange }) {
     loadBills();
   }, [authToken, appliedBillFilters, billReloadToken, onMetricsChange, onRecordsChange]);
 
+  useEffect(() => {
+    const searchTerm = billingForm.cardNumber.trim();
+
+    if (!authToken || searchTerm.length < 1) {
+      setCardSuggestions([]);
+      setIsLoadingCardSuggestions(false);
+      return undefined;
+    }
+
+    const suggestionTimer = window.setTimeout(async () => {
+      setIsLoadingCardSuggestions(true);
+
+      try {
+        const response = await fetchCardList(authToken, {
+          search: searchTerm,
+          status: "Active",
+          limit: "8"
+        });
+
+        setCardSuggestions(response.data || []);
+      } catch (error) {
+        setCardSuggestions([]);
+      } finally {
+        setIsLoadingCardSuggestions(false);
+      }
+    }, 250);
+
+    return () => window.clearTimeout(suggestionTimer);
+  }, [authToken, billingForm.cardNumber]);
+
   const pendingProduct = productOptions.find(
     (product) => product.id === billingForm.productId
   );
@@ -225,7 +259,22 @@ function BillingModule({ authToken, onMetricsChange, onRecordsChange }) {
     if (name === "cardNumber") {
       setBillingPrecheck(null);
       setBillingPrecheckError("");
+      setShowCardSuggestions(true);
     }
+  };
+
+  const handleCardSuggestionSelect = (card) => {
+    setBillingForm((currentState) => ({
+      ...currentState,
+      cardNumber: card.cardNumber || currentState.cardNumber
+    }));
+    setBillingFormErrors((currentErrors) => ({
+      ...currentErrors,
+      cardNumber: ""
+    }));
+    setBillingPrecheck(null);
+    setBillingPrecheckError("");
+    setShowCardSuggestions(false);
   };
 
   const handleBillFilterChange = (event) => {
@@ -412,14 +461,42 @@ function BillingModule({ authToken, onMetricsChange, onRecordsChange }) {
         <form className="form-grid" onSubmit={handleBillingSubmit} autoComplete="off">
           <label className="field-group">
             <span>Card Number</span>
-            <input
-              type="text"
-              name="cardNumber"
-              value={billingForm.cardNumber}
-              onChange={handleBillingInputChange}
-              placeholder="Enter linked card number"
-              autoComplete="off"
-            />
+            <div className="autocomplete-field">
+              <input
+                type="text"
+                name="cardNumber"
+                value={billingForm.cardNumber}
+                onChange={handleBillingInputChange}
+                onFocus={() => setShowCardSuggestions(true)}
+                onBlur={() => window.setTimeout(() => setShowCardSuggestions(false), 120)}
+                placeholder="Search or enter linked card number"
+                autoComplete="off"
+              />
+              {showCardSuggestions && billingForm.cardNumber.trim() ? (
+                <div className="autocomplete-panel" role="listbox">
+                  {isLoadingCardSuggestions ? (
+                    <div className="autocomplete-panel__empty">Searching cards...</div>
+                  ) : cardSuggestions.length > 0 ? (
+                    cardSuggestions.map((card) => (
+                      <button
+                        key={card.id}
+                        type="button"
+                        className="autocomplete-option"
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={() => handleCardSuggestionSelect(card)}
+                      >
+                        <strong>{card.cardNumber}</strong>
+                        <span>
+                          {card.member?.fullName || "No member"} · {card.member?.mobileNumber || "-"}
+                        </span>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="autocomplete-panel__empty">No active card found.</div>
+                  )}
+                </div>
+              ) : null}
+            </div>
             {billingFormErrors.cardNumber ? (
               <small className="field-error">{billingFormErrors.cardNumber}</small>
             ) : null}
