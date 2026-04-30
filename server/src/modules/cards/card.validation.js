@@ -14,7 +14,7 @@ const normalizeCardValues = (payload = {}) => {
     cardNumber:
       typeof payload.cardNumber === "string"
         ? payload.cardNumber.trim().toUpperCase()
-        : undefined,
+        : "",
     memberId:
       typeof payload.memberId === "string" ? payload.memberId.trim() : undefined,
     activatedAt:
@@ -30,10 +30,6 @@ const normalizeCardValues = (payload = {}) => {
 const validateAssignCardPayload = (payload = {}) => {
   const errors = [];
   const values = normalizeCardValues(payload);
-
-  if (!values.cardNumber) {
-    errors.push({ field: "cardNumber", message: "Card number is required." });
-  }
 
   if (!values.memberId) {
     errors.push({ field: "memberId", message: "Member is required." });
@@ -89,10 +85,6 @@ const validateAssignCardPayload = (payload = {}) => {
 const validateReplaceCardPayload = (payload = {}) => {
   const errors = [];
   const values = normalizeCardValues(payload);
-
-  if (!values.cardNumber) {
-    errors.push({ field: "cardNumber", message: "Card number is required." });
-  }
 
   if (!values.activatedAt) {
     errors.push({ field: "activatedAt", message: "Activated date is required." });

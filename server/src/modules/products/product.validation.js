@@ -17,6 +17,8 @@ const normalizeProductValues = (payload = {}) => ({
     typeof payload.productCode === "string"
       ? payload.productCode.trim().toUpperCase()
       : undefined,
+  description:
+    typeof payload.description === "string" ? payload.description.trim() : "",
   sellingPrice:
     payload.sellingPrice === "" ||
     payload.sellingPrice === null ||
@@ -30,10 +32,12 @@ const normalizeProductValues = (payload = {}) => ({
 /**
  * Validates create-product payload values.
  */
-const validateProductPayload = (payload = {}) => {
+const validateProductPayload = (payload = {}, options = {}) => {
   const errors = [];
   const values = normalizeProductValues(payload);
   const status = values.status || RECORD_STATUS.ACTIVE;
+  const requireProductCode = options.requireProductCode !== false;
+  const normalizedUnit = values.unit === "Kg" ? "kg" : values.unit;
 
   if (!values.productName) {
     errors.push({ field: "productName", message: "Product name is required." });
@@ -44,22 +48,29 @@ const validateProductPayload = (payload = {}) => {
     });
   }
 
-  if (!values.productCode) {
+  if (requireProductCode && !values.productCode) {
     errors.push({ field: "productCode", message: "Product code is required." });
   }
 
-  if (!Number.isFinite(values.sellingPrice)) {
-    errors.push({ field: "sellingPrice", message: "Selling price is required." });
-  } else if (values.sellingPrice <= 0) {
+  if ((values.description || "").length > 300) {
     errors.push({
-      field: "sellingPrice",
-      message: "Selling price must be greater than zero."
+      field: "description",
+      message: "Description cannot be longer than 300 characters."
     });
   }
 
-  if (!values.unit) {
+  if (!Number.isFinite(values.sellingPrice)) {
+    errors.push({ field: "sellingPrice", message: "MRP is required." });
+  } else if (values.sellingPrice <= 0) {
+    errors.push({
+      field: "sellingPrice",
+      message: "MRP must be greater than zero."
+    });
+  }
+
+  if (!normalizedUnit) {
     errors.push({ field: "unit", message: "Unit is required." });
-  } else if (!PRODUCT_UNITS.includes(values.unit)) {
+  } else if (!PRODUCT_UNITS.includes(normalizedUnit)) {
     errors.push({ field: "unit", message: "Unit is not valid." });
   }
 
@@ -72,14 +83,16 @@ const validateProductPayload = (payload = {}) => {
     values: {
       productName: values.productName,
       productCode: values.productCode,
+      description: values.description,
       sellingPrice: values.sellingPrice,
-      unit: values.unit,
+      unit: normalizedUnit,
       status
     }
   };
 };
 
 module.exports = {
-  validateCreateProductPayload: validateProductPayload,
+  validateCreateProductPayload: (payload) =>
+    validateProductPayload(payload, { requireProductCode: false }),
   validateUpdateProductPayload: validateProductPayload
 };

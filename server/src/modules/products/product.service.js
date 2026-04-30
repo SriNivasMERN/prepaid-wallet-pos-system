@@ -71,6 +71,7 @@ const toProductResponse = (product) => ({
   id: product._id,
   productName: product.productName,
   productCode: product.productCode,
+  description: product.description || "",
   sellingPrice: product.sellingPrice,
   unit: product.unit,
   status: product.status,
@@ -93,6 +94,31 @@ const toProductResponse = (product) => ({
       }
     : null
 });
+
+/**
+ * Builds the next editable product code from existing generated product codes.
+ */
+const generateNextProductCode = async () => {
+  const generatedProducts = await Product.find({
+    productCode: /^PRD-\d+$/i,
+    isDeleted: false
+  })
+    .select("productCode")
+    .lean();
+
+  const highestNumber = generatedProducts.reduce((highest, product) => {
+    const currentNumber = Number.parseInt(
+      String(product.productCode || "").replace(/^PRD-/i, ""),
+      10
+    );
+
+    return Number.isFinite(currentNumber) && currentNumber > highest
+      ? currentNumber
+      : highest;
+  }, 0);
+
+  return `PRD-${String(highestNumber + 1).padStart(3, "0")}`;
+};
 
 /**
  * Loads one product with related staff details.
@@ -136,6 +162,8 @@ const createProduct = async (payload, currentAuth) => {
   if (errors.length > 0) {
     throw createValidationError(errors, "Product validation failed.");
   }
+
+  values.productCode = values.productCode || await generateNextProductCode();
 
   const existingProduct = await Product.exists({
     productCode: values.productCode,
@@ -205,6 +233,7 @@ const updateProduct = async (productId, payload, currentAuth) => {
 
   product.productName = values.productName;
   product.productCode = values.productCode;
+  product.description = values.description;
   product.sellingPrice = values.sellingPrice;
   product.unit = values.unit;
   product.status = values.status;
@@ -279,7 +308,8 @@ const getProductList = async (query = {}) => {
     const searchPattern = createSearchPattern(searchValue);
     databaseQuery.$or = [
       { productName: searchPattern },
-      { productCode: searchPattern }
+      { productCode: searchPattern },
+      { description: searchPattern }
     ];
   }
 
@@ -300,6 +330,7 @@ const getProductList = async (query = {}) => {
 
 module.exports = {
   createProduct,
+  generateNextProductCode,
   getProductList,
   updateProduct,
   updateProductStatus

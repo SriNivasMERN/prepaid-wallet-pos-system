@@ -11,6 +11,7 @@ const { requireAuth, requireRoles } = require("../../middlewares/authMiddleware"
 const {
   createProductHandler,
   getProductListHandler,
+  getNextProductCodeHandler,
   updateProductHandler,
   updateProductStatusHandler
 } = require("./product.controller");
@@ -24,6 +25,11 @@ productsRouter.use(requireRoles(STAFF_ROLES.SUPER_ADMIN, STAFF_ROLES.ADMIN));
  * Returns the product master list.
  */
 productsRouter.get("/", getProductListHandler);
+
+/**
+ * Returns the next generated product code preview.
+ */
+productsRouter.get("/next-code", getNextProductCodeHandler);
 
 /**
  * Creates a new product master record.

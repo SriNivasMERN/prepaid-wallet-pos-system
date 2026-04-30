@@ -86,6 +86,57 @@ const isCardExpired = (expiresAt) => {
 };
 
 /**
+ * Builds the next display-friendly card number from the latest generated card.
+ */
+const generateNextCardNumber = async () => {
+  const generatedCards = await Card.find({
+    cardNumber: /^CARD-\d+$/i,
+    isDeleted: false
+  })
+    .select("cardNumber")
+    .lean();
+
+  const highestNumber = generatedCards.reduce((highest, card) => {
+    const currentNumber = Number.parseInt(
+      String(card.cardNumber || "").replace(/^CARD-/i, ""),
+      10
+    );
+
+    return Number.isFinite(currentNumber) && currentNumber > highest
+      ? currentNumber
+      : highest;
+  }, 0);
+
+  return `CARD-${String(highestNumber + 1).padStart(2, "0")}`;
+};
+
+/**
+ * Creates a card with an auto-generated number and retries if another request used the same number first.
+ */
+const createCardWithGeneratedNumber = async (cardData, maxAttempts = 20) => {
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const cardNumber = await generateNextCardNumber();
+
+    try {
+      return await Card.create({
+        ...cardData,
+        cardNumber
+      });
+    } catch (error) {
+      if (!(error?.code === 11000 && error.keyPattern?.cardNumber)) {
+        throw error;
+      }
+    }
+  }
+
+  throw createConflictError(
+    "cardNumber",
+    "Card number could not be generated. Please try again.",
+    "Card assignment is not allowed."
+  );
+};
+
+/**
  * Builds the operational readiness profile for one card and linked member.
  */
 const buildCardOperationalProfile = (card, member) => {
@@ -208,19 +259,6 @@ const assignCard = async (payload, currentAuth) => {
     );
   }
 
-  const existingCardNumber = await Card.exists({
-    cardNumber: values.cardNumber,
-    isDeleted: false
-  });
-
-  if (existingCardNumber) {
-    throw createConflictError(
-      "cardNumber",
-      "Choose a different card number.",
-      "Card number is already in use."
-    );
-  }
-
   const existingActiveCard = await Card.exists({
     memberId: member._id,
     status: RECORD_STATUS.ACTIVE,
@@ -238,8 +276,7 @@ const assignCard = async (payload, currentAuth) => {
   let createdCardId = null;
 
   try {
-    const createdCard = await Card.create({
-      cardNumber: values.cardNumber,
+    const createdCard = await createCardWithGeneratedNumber({
       memberId: member._id,
       status: RECORD_STATUS.ACTIVE,
       activatedAt: values.activatedAt,
@@ -411,20 +448,6 @@ const replaceCard = async (cardId, payload, currentAuth) => {
     );
   }
 
-  const duplicateCard = await Card.exists({
-    _id: { $ne: currentCard._id },
-    cardNumber: values.cardNumber,
-    isDeleted: false
-  });
-
-  if (duplicateCard) {
-    throw createConflictError(
-      "cardNumber",
-      "Choose a different card number.",
-      "Card number is already in use."
-    );
-  }
-
   const previousCardStatus = currentCard.status;
   const previousCardUpdatedBy = currentCard.updatedBy;
   const previousMemberLinkedCardId = member.linkedCardId;
@@ -438,8 +461,7 @@ const replaceCard = async (cardId, payload, currentAuth) => {
     await currentCard.save();
     currentCardDeactivated = true;
 
-    const replacementCard = await Card.create({
-      cardNumber: values.cardNumber,
+    const replacementCard = await createCardWithGeneratedNumber({
       memberId: member._id,
       status: RECORD_STATUS.ACTIVE,
       activatedAt: values.activatedAt,
@@ -513,6 +535,7 @@ const replaceCard = async (cardId, payload, currentAuth) => {
 
 module.exports = {
   assignCard,
+  generateNextCardNumber,
   getCardList,
   getCardById,
   getCardOperationalProfile,

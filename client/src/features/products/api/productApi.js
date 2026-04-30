@@ -35,6 +35,17 @@ export function fetchProductList(token, filters = {}) {
 }
 
 /**
+ * Fetches the next generated product code preview.
+ */
+export function fetchNextProductCode(token) {
+  return httpRequest("/products/next-code", {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+}
+
+/**
  * Creates a new product record.
  */
 export function createProductRecord(payload, token) {

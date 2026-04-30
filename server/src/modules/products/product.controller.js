@@ -7,6 +7,7 @@
 const { buildApiResponse } = require("../../utils/apiResponse");
 const {
   createProduct,
+  generateNextProductCode,
   getProductList,
   updateProduct,
   updateProductStatus
@@ -23,6 +24,26 @@ const getProductListHandler = async (request, response, next) => {
       buildApiResponse({
         message: "Product list fetched successfully.",
         data
+      })
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Returns the next generated product code preview.
+ */
+const getNextProductCodeHandler = async (request, response, next) => {
+  try {
+    const productCode = await generateNextProductCode();
+
+    response.status(200).json(
+      buildApiResponse({
+        message: "Next product code fetched successfully.",
+        data: {
+          productCode
+        }
       })
     );
   } catch (error) {
@@ -90,6 +111,7 @@ const updateProductStatusHandler = async (request, response, next) => {
 
 module.exports = {
   getProductListHandler,
+  getNextProductCodeHandler,
   createProductHandler,
   updateProductHandler,
   updateProductStatusHandler

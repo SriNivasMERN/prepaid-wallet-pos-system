@@ -10,6 +10,7 @@ const {
   getCardById,
   getCardList,
   getCardOperationalProfile,
+  generateNextCardNumber,
   replaceCard
 } = require("./card.service");
 
@@ -24,6 +25,26 @@ const getCardListHandler = async (request, response, next) => {
       buildApiResponse({
         message: "Card list fetched successfully.",
         data
+      })
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Returns the next generated card number preview.
+ */
+const getNextCardNumberHandler = async (request, response, next) => {
+  try {
+    const cardNumber = await generateNextCardNumber();
+
+    response.status(200).json(
+      buildApiResponse({
+        message: "Next card number fetched successfully.",
+        data: {
+          cardNumber
+        }
       })
     );
   } catch (error) {
@@ -105,6 +126,7 @@ const replaceCardHandler = async (request, response, next) => {
 
 module.exports = {
   getCardListHandler,
+  getNextCardNumberHandler,
   getCardByIdHandler,
   getCardOperationalProfileHandler,
   assignCardHandler,

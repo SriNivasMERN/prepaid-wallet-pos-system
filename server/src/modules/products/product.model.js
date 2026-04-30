@@ -8,7 +8,16 @@ const mongoose = require("mongoose");
 
 const { RECORD_STATUS } = require("../../constants/appConstants");
 
-const PRODUCT_UNITS = ["Piece", "Bottle", "Pack"];
+const PRODUCT_UNITS = [
+  "kg",
+  "Litre",
+  "Piece",
+  "Bottle",
+  "Pack",
+  "Dozen",
+  "Box",
+  "Case"
+];
 
 const productSchema = new mongoose.Schema(
   {
@@ -25,6 +34,12 @@ const productSchema = new mongoose.Schema(
       trim: true,
       uppercase: true,
       maxlength: 40
+    },
+    description: {
+      type: String,
+      trim: true,
+      maxlength: 300,
+      default: ""
     },
     sellingPrice: {
       type: Number,

@@ -15,6 +15,7 @@ import { revealFeedbackInContainer } from "../../../utils/revealFeedbackInContai
 import { scrollElementBelowHeader } from "../../../utils/scrollElementBelowHeader";
 import {
   createProductRecord,
+  fetchNextProductCode,
   fetchProductList,
   updateProductRecord,
   updateProductStatusRecord
@@ -23,10 +24,13 @@ import {
 const productInitialForm = {
   productName: "",
   productCode: "",
+  description: "",
   sellingPrice: "",
-  unit: "Piece",
+  unit: "kg",
   status: "Active"
 };
+
+const productUnits = ["kg", "Litre", "Piece", "Bottle", "Pack", "Dozen", "Box", "Case"];
 
 const productInitialFilters = {
   search: "",
@@ -47,13 +51,17 @@ function validateProductForm(formData) {
     nextErrors.productCode = "Product code is required.";
   }
 
+  if (formData.description.trim().length > 300) {
+    nextErrors.description = "Description cannot be longer than 300 characters.";
+  }
+
   if (!formData.sellingPrice) {
-    nextErrors.sellingPrice = "Selling price is required.";
+    nextErrors.sellingPrice = "MRP is required.";
   } else if (
     !Number.isFinite(Number(formData.sellingPrice)) ||
     Number(formData.sellingPrice) <= 0
   ) {
-    nextErrors.sellingPrice = "Selling price must be greater than zero.";
+    nextErrors.sellingPrice = "MRP must be greater than zero.";
   }
 
   if (!formData.unit) {
@@ -99,6 +107,28 @@ function ProductsModule({ authToken, onMetricsChange, onRecordsChange }) {
   const [isUpdatingProductStatus, setIsUpdatingProductStatus] = useState(false);
 
   useEffect(() => {
+    const loadNextProductCode = async () => {
+      if (!authToken) {
+        return;
+      }
+
+      try {
+        const response = await fetchNextProductCode(authToken);
+        const nextProductCode = response.data?.productCode || "";
+
+        setProductForm((currentState) => ({
+          ...currentState,
+          productCode: currentState.productCode || nextProductCode
+        }));
+      } catch (error) {
+        setProductRequestError(getApiErrorMessage(error));
+      }
+    };
+
+    loadNextProductCode();
+  }, [authToken, productReloadToken]);
+
+  useEffect(() => {
     const loadProducts = async () => {
       if (!authToken) {
         return;
@@ -133,6 +163,18 @@ function ProductsModule({ authToken, onMetricsChange, onRecordsChange }) {
     setProductFormErrors({});
     setProductRequestError("");
     setProductSuccessMessage("");
+    if (authToken) {
+      fetchNextProductCode(authToken)
+        .then((response) => {
+          const nextProductCode = response.data?.productCode || "";
+
+          setProductForm((currentState) => ({
+            ...currentState,
+            productCode: nextProductCode
+          }));
+        })
+        .catch((error) => setProductRequestError(getApiErrorMessage(error)));
+    }
   };
 
   const handleProductInputChange = (event) => {
@@ -193,6 +235,7 @@ function ProductsModule({ authToken, onMetricsChange, onRecordsChange }) {
         {
           productName: productForm.productName.trim(),
           productCode: productForm.productCode.trim(),
+          description: productForm.description.trim(),
           sellingPrice: Number(productForm.sellingPrice),
           unit: productForm.unit,
           status: productForm.status
@@ -217,8 +260,9 @@ function ProductsModule({ authToken, onMetricsChange, onRecordsChange }) {
     setEditProductForm({
       productName: product.productName || "",
       productCode: product.productCode || "",
+      description: product.description || "",
       sellingPrice: String(product.sellingPrice ?? ""),
-      unit: product.unit || "Piece",
+      unit: product.unit || "kg",
       status: product.status || "Active"
     });
     setEditProductFormErrors({});
@@ -253,6 +297,7 @@ function ProductsModule({ authToken, onMetricsChange, onRecordsChange }) {
         {
           productName: editProductForm.productName.trim(),
           productCode: editProductForm.productCode.trim(),
+          description: editProductForm.description.trim(),
           sellingPrice: Number(editProductForm.sellingPrice),
           unit: editProductForm.unit,
           status: editProductForm.status
@@ -360,13 +405,13 @@ function ProductsModule({ authToken, onMetricsChange, onRecordsChange }) {
           </label>
 
           <label className="field-group">
-            <span>Selling Price</span>
+            <span>MRP</span>
             <input
               type="number"
               name="sellingPrice"
               value={productForm.sellingPrice}
               onChange={handleProductInputChange}
-              placeholder="Enter selling price"
+              placeholder="Enter MRP"
               min="0.01"
               step="0.01"
               autoComplete="off"
@@ -384,12 +429,29 @@ function ProductsModule({ authToken, onMetricsChange, onRecordsChange }) {
               onChange={handleProductInputChange}
               autoComplete="off"
             >
-              <option value="Piece">Piece</option>
-              <option value="Bottle">Bottle</option>
-              <option value="Pack">Pack</option>
+              {productUnits.map((unit) => (
+                <option key={unit} value={unit}>
+                  {unit}
+                </option>
+              ))}
             </select>
             {productFormErrors.unit ? (
               <small className="field-error">{productFormErrors.unit}</small>
+            ) : null}
+          </label>
+
+          <label className="field-group">
+            <span>Description</span>
+            <textarea
+              rows="3"
+              name="description"
+              value={productForm.description}
+              onChange={handleProductInputChange}
+              placeholder="Enter product description"
+              autoComplete="off"
+            />
+            {productFormErrors.description ? (
+              <small className="field-error">{productFormErrors.description}</small>
             ) : null}
           </label>
 
@@ -446,9 +508,11 @@ function ProductsModule({ authToken, onMetricsChange, onRecordsChange }) {
               autoComplete="off"
             >
               <option value="">All</option>
-              <option value="Piece">Piece</option>
-              <option value="Bottle">Bottle</option>
-              <option value="Pack">Pack</option>
+              {productUnits.map((unit) => (
+                <option key={unit} value={unit}>
+                  {unit}
+                </option>
+              ))}
             </select>
           </label>
 
@@ -497,7 +561,8 @@ function ProductsModule({ authToken, onMetricsChange, onRecordsChange }) {
               <tr>
                 <th>Product</th>
                 <th>Code</th>
-                <th>Price</th>
+                <th>Description</th>
+                <th>MRP</th>
                 <th>Unit</th>
                 <th>Status</th>
                 <th>Created By</th>
@@ -507,13 +572,14 @@ function ProductsModule({ authToken, onMetricsChange, onRecordsChange }) {
             <tbody>
               {productRecords.length === 0 && !isLoadingProducts ? (
                 <tr>
-                  <td colSpan="7">No product records found.</td>
+                  <td colSpan="8">No product records found.</td>
                 </tr>
               ) : (
                 productRecords.map((product) => (
                   <tr key={product.id}>
                     <td>{product.productName}</td>
                     <td>{product.productCode}</td>
+                    <td>{product.description || "-"}</td>
                     <td>{formatCurrency(product.sellingPrice)}</td>
                     <td>{product.unit}</td>
                     <td>
@@ -580,8 +646,12 @@ function ProductsModule({ authToken, onMetricsChange, onRecordsChange }) {
               <strong>{selectedProductRecord.productCode}</strong>
             </div>
             <div className="details-grid__item">
-              <span>Selling Price</span>
+              <span>MRP</span>
               <strong>{formatCurrency(selectedProductRecord.sellingPrice)}</strong>
+            </div>
+            <div className="details-grid__item details-grid__item--wide">
+              <span>Description</span>
+              <strong>{selectedProductRecord.description || "-"}</strong>
             </div>
             <div className="details-grid__item">
               <span>Unit</span>
@@ -647,7 +717,7 @@ function ProductsModule({ authToken, onMetricsChange, onRecordsChange }) {
           </label>
 
           <label className="field-group">
-            <span>Selling Price</span>
+            <span>MRP</span>
             <input
               type="number"
               name="sellingPrice"
@@ -670,12 +740,29 @@ function ProductsModule({ authToken, onMetricsChange, onRecordsChange }) {
               onChange={handleEditProductInputChange}
               autoComplete="off"
             >
-              <option value="Piece">Piece</option>
-              <option value="Bottle">Bottle</option>
-              <option value="Pack">Pack</option>
+              {productUnits.map((unit) => (
+                <option key={unit} value={unit}>
+                  {unit}
+                </option>
+              ))}
             </select>
             {editProductFormErrors.unit ? (
               <small className="field-error">{editProductFormErrors.unit}</small>
+            ) : null}
+          </label>
+
+          <label className="field-group">
+            <span>Description</span>
+            <textarea
+              rows="3"
+              name="description"
+              value={editProductForm.description}
+              onChange={handleEditProductInputChange}
+              placeholder="Enter product description"
+              autoComplete="off"
+            />
+            {editProductFormErrors.description ? (
+              <small className="field-error">{editProductFormErrors.description}</small>
             ) : null}
           </label>
 

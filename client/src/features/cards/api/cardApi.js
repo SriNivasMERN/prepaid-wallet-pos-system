@@ -48,6 +48,17 @@ export function assignCardToMember(payload, token) {
 }
 
 /**
+ * Fetches the next generated card number preview.
+ */
+export function fetchNextCardNumber(token) {
+  return httpRequest("/cards/next-number", {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+}
+
+/**
  * Replaces one active card while preserving member ownership.
  */
 export function replaceCardRecord(cardId, payload, token) {

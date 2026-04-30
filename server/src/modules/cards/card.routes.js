@@ -12,6 +12,7 @@ const {
   assignCardHandler,
   getCardByIdHandler,
   getCardListHandler,
+  getNextCardNumberHandler,
   getCardOperationalProfileHandler,
   replaceCardHandler
 } = require("./card.controller");
@@ -31,6 +32,11 @@ cardsRouter.use(
  * Returns the card list.
  */
 cardsRouter.get("/", getCardListHandler);
+
+/**
+ * Returns the next generated card number preview.
+ */
+cardsRouter.get("/next-number", getNextCardNumberHandler);
 
 /**
  * Assigns a new card.
