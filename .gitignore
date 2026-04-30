@@ -15,4 +15,5 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 PRD.md
+app-workflow-guide.md
 workflow/

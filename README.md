@@ -121,14 +121,11 @@ prepaid-wallet-pos-system/
 `-- README.md
 ```
 
-## Public And Private Documentation
+## Documentation
 
 - `README.md` is public project documentation.
 - `docs/test-cases/` contains public test coverage documents.
-- `PRD.md` is private and ignored by Git.
-- `workflow/` is private and ignored by Git.
-
-Do not commit private business workflow or PRD content unless the repository policy changes.
+- Internal planning and workflow notes are excluded from version control.
 
 ## Local Setup
 
@@ -176,7 +173,7 @@ http://localhost:5173
 
 ## Environment Variables
 
-Create a private `.env` file inside `server/` when needed.
+Create a local `.env` file inside `server/` when needed.
 
 ```env
 PORT=5000
@@ -251,7 +248,8 @@ Error responses use the same structure with `success: false` and optional field-
 - Keep business logic validation on the backend as the source of truth.
 - Keep role checks enforced on the backend even when frontend hides unavailable modules.
 - Prefer adding reusable helpers/components for repeated UI behavior.
-- Keep private files such as `PRD.md`, `.env`, and `workflow/` out of commits.
+- Keep local environment files and internal planning files out of public commits.
+- Run backend checks and the frontend build before handing over changes.
 
 ## Verification Commands
 
@@ -298,4 +296,4 @@ They cover:
 
 ## Current Status
 
-The application includes the core operational modules required for a prepaid wallet POS workflow and is suitable for local demonstration, controlled QA validation, and future iteration.
+The application includes the core operational modules required for the prepaid wallet POS workflow. It is ready for local demonstration, structured QA validation, and future enhancement. Production deployment should use environment-specific configuration, a managed MongoDB instance, and a strong JWT secret.
