@@ -6,6 +6,7 @@
 - Verify billing list, search, status, and date filters work correctly.
 - Verify bill `View Details` flow behaves correctly while keeping completed bills immutable.
 - Verify frontend validation, duplicate-item protection, and backend billing validation behavior.
+- Verify billing wallet and stock updates remain consistent when billing actions occur close together.
 
 ## Preconditions
 - Approved QA environment and approved QA test data are available for execution.
@@ -213,6 +214,24 @@
    - Expected Result:
      - The create action does not allow a normal bill submission while blocked readiness is shown.
 
+5. Close-together billing requests do not overspend wallet balance
+   - Steps:
+     1. Prepare a valid wallet with limited known balance.
+     2. Submit two billing requests close together where the combined amount would exceed the available balance.
+   - Expected Result:
+     - Only requests covered by the actual available balance succeed.
+     - Wallet balance never becomes negative.
+     - Rejected request shows an insufficient balance conflict.
+
+6. Close-together billing requests do not oversell stock
+   - Steps:
+     1. Prepare a product with limited known stock.
+     2. Submit two billing requests close together where the combined quantity would exceed available stock.
+   - Expected Result:
+     - Only requests covered by actual available stock succeed.
+     - Stock quantity does not go below the allowed result.
+     - Rejected request shows an insufficient stock conflict.
+
 ## API Verification Steps
 - Endpoint: `GET /api/v1/billing`
 - Payload:
@@ -234,6 +253,7 @@
   - `400 Bad Request` for invalid payload.
   - `404 Not Found` for missing linked records.
   - `409 Conflict` for insufficient balance, insufficient stock, duplicate product, inactive product, or other billing-not-allowed conditions.
+  - Wallet and stock updates stay consistent when close-together bill requests are submitted for the same wallet or product.
 
 - Endpoint: `GET /api/v1/billing/precheck`
 - Payload:

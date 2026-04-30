@@ -5,6 +5,8 @@
 - Verify stock list, search, stock status, and movement type filters work correctly.
 - Verify stock `View Details` flow behaves correctly while movement history remains immutable.
 - Verify current quantity updates correctly and stock status is shown correctly after movements.
+- Verify duplicate opening stock is prevented even when duplicate requests are submitted close together.
+- Verify stock status and movement type filtering remain accurate with paginated requests.
 
 ## Preconditions
 - Approved QA environment and approved QA test data are available for execution.
@@ -143,21 +145,30 @@
      - Second opening stock is not created.
      - Duplicate opening error is shown.
 
-5. Inactive product cannot receive stock movement
+5. Duplicate opening stock is rejected under near-simultaneous requests
+   - Steps:
+     1. Prepare one active product with no existing opening movement.
+     2. Submit two `Opening` stock movement API requests for the same product close together.
+   - Expected Result:
+     - Only one opening stock movement is created.
+     - The duplicate request is rejected with a conflict response.
+     - Current quantity is not double-counted.
+
+6. Inactive product cannot receive stock movement
    - Steps:
      1. Attempt stock movement for an inactive product through direct API test.
    - Expected Result:
      - The request is rejected.
      - Error indicates only an active product can receive stock movement.
 
-6. Stock history cannot be edited or deleted through normal UI
+7. Stock history cannot be edited or deleted through normal UI
    - Steps:
      1. Open `Stock`.
      2. Review available row actions and controls.
    - Expected Result:
      - No edit or delete action is exposed for stock history.
 
-7. Cashier cannot access Stock module
+8. Cashier cannot access Stock module
    - Steps:
      1. Log in as `Cashier`.
      2. Try to open `Stock` or call the stocks API.
@@ -188,6 +199,24 @@
    - Expected Result:
      - Current quantity reflects the net effect of both movements correctly.
 
+4. Stock status filter returns correct records when pagination parameters are present
+   - Steps:
+     1. Prepare enough stock records to require multiple pages.
+     2. Create records across different stock statuses.
+     3. Request stock list with `stockStatus`, `page`, and `limit`.
+   - Expected Result:
+     - Returned rows match the selected status.
+     - Page 1 is not empty when matching records exist on later unfiltered pages.
+
+5. Movement type filter returns correct records when pagination parameters are present
+   - Steps:
+     1. Prepare enough stock records to require multiple pages.
+     2. Create rows with different latest movement types.
+     3. Request stock list with `movementType`, `page`, and `limit`.
+   - Expected Result:
+     - Returned rows match the selected movement type.
+     - Pagination is applied after the movement type filter.
+
 ## API Verification Steps
 - Endpoint: `GET /api/v1/stocks`
 - Payload:
@@ -198,6 +227,7 @@
   - `200 OK` for allowed roles.
   - Stock list is returned.
   - Filtering works with provided query parameters.
+  - When `page` and `limit` are supplied with stock-status or movement-type filters, filtering is applied before pagination.
 
 - Endpoint: `POST /api/v1/stocks/movements`
 - Payload:

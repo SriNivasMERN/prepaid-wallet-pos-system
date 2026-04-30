@@ -4,6 +4,7 @@
 - Verify recharge list, search, payment mode, cashier, and date filters work correctly.
 - Verify recharge `View Details` flow behaves correctly while recharge records remain immutable.
 - Verify recharge validation, operational eligibility checks, and balance credit behavior.
+- Verify recharge balance updates remain correct when multiple valid recharges are created close together.
 
 ## Preconditions
 - Approved QA environment and approved QA test data are available for execution.
@@ -169,6 +170,16 @@
    - Expected Result:
      - Today count and value reflect today's recharge entries.
 
+4. Multiple close-together recharges are reflected in final wallet balance
+   - Steps:
+     1. Note the current balance of an eligible active wallet.
+     2. Submit two valid recharge requests for the same wallet close together.
+     3. Reload wallet and recharge details.
+   - Expected Result:
+     - Both recharge records are created if both requests are valid.
+     - Final wallet balance equals starting balance plus both recharge amounts.
+     - Each recharge row has correct `balanceBefore` and `balanceAfter` snapshots for its own operation.
+
 ## API Verification Steps
 - Endpoint: `GET /api/v1/recharges`
 - Payload:
@@ -190,6 +201,7 @@
   - `400 Bad Request` for invalid payload.
   - `404 Not Found` for missing wallet/member/card records.
   - `409 Conflict` for ineligible recharge conditions.
+  - Close-together valid recharge requests do not overwrite each other’s wallet balance updates.
 
 - Endpoint: `GET /api/v1/recharges/:rechargeId`
 - Payload:

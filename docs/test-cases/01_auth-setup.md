@@ -6,6 +6,7 @@
 - Verify invalid login and invalid setup attempts are rejected correctly.
 - Verify protected access to the current authenticated staff session.
 - Verify authenticated staff can manage their own account through `My Account`.
+- Verify logout and password-change session handling invalidate old session tokens correctly.
 
 ## Preconditions
 - Approved QA environment and approved QA test data are available for execution.
@@ -89,7 +90,18 @@
    - Expected Result:
      - Password update succeeds.
      - Success message is shown.
-     - Current session remains usable.
+     - Current session remains usable with the refreshed session returned by the backend.
+
+9. Logout invalidates the active session
+   - Steps:
+     1. Log in with a valid active staff account.
+     2. Capture the active session token for API verification.
+     3. Click `Logout`.
+     4. Attempt to use the previously captured token for `GET /api/v1/auth/me`.
+   - Expected Result:
+     - Logout completes successfully.
+     - The browser session is cleared.
+     - The previously captured token is rejected after logout.
 
 ## Negative Test Cases
 1. Setup form rejects submission when all fields are empty
@@ -214,6 +226,16 @@
      - Password update is rejected.
      - Field validation is shown.
 
+14. Old token is rejected after password change
+   - Steps:
+     1. Log in with a valid active staff account.
+     2. Capture the current token.
+     3. Change password successfully through `My Account`.
+     4. Use the old captured token for `GET /api/v1/auth/me`.
+   - Expected Result:
+     - Password change succeeds and the current browser session remains usable.
+     - The old token is rejected.
+
 ## Edge Cases
 1. Username is entered with different letter casing
    - Steps:
@@ -285,6 +307,15 @@
   - The response returns a token and staff session data.
   - Invalid credentials or inactive account attempts are rejected.
 
+- Endpoint: `POST /api/v1/auth/logout`
+- Payload:
+  1. Send a `POST` request to `/api/v1/auth/logout`.
+  2. Include header `Authorization: Bearer <valid token>`.
+- Expected Response:
+  - Response status is `200` for a valid active session.
+  - The active token is invalidated for future authenticated requests.
+  - Missing, invalid, expired, or already invalidated token requests are rejected.
+
 - Endpoint: `GET /api/v1/auth/me`
 - Payload:
   1. Send a `GET` request to `/api/v1/auth/me`.
@@ -310,6 +341,7 @@
   3. Use approved valid QA values for `currentPassword`, `newPassword`, and `confirmPassword`.
 - Expected Response:
   - Response status is `200` for a valid password change.
+  - The response returns a refreshed token and staff session data.
   - Invalid payload, incorrect current password, or invalid session requests are rejected.
 
 ## UI Verification Steps

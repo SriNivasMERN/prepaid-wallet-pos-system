@@ -4,6 +4,7 @@
 - Verify debit list, search, reason, cashier, and date filters work correctly.
 - Verify debit `View Details` flow behaves correctly while debit records remain immutable.
 - Verify debit validation, insufficient-balance handling, and balance deduction behavior.
+- Verify debit balance updates remain correct when multiple debit requests are submitted close together.
 
 ## Preconditions
 - Approved QA environment and approved QA test data are available for execution.
@@ -177,6 +178,16 @@
    - Expected Result:
      - Today count and value reflect today's debit entries.
 
+4. Close-together debits do not overdraw wallet balance
+   - Steps:
+     1. Note the current balance of an eligible wallet.
+     2. Submit two valid-looking debit requests close together where the combined amount exceeds available balance.
+     3. Reload wallet and debit records.
+   - Expected Result:
+     - Only debit requests covered by the actual wallet balance succeed.
+     - Wallet balance never becomes negative.
+     - Rejected request shows an insufficient balance error.
+
 ## API Verification Steps
 - Endpoint: `GET /api/v1/debits`
 - Payload:
@@ -198,6 +209,7 @@
   - `400 Bad Request` for invalid payload.
   - `404 Not Found` for missing wallet/member/card records.
   - `409 Conflict` for insufficient balance or ineligible debit conditions.
+  - Close-together debit requests do not overwrite or overdraw wallet balance updates.
 
 - Endpoint: `GET /api/v1/debits/:debitId`
 - Payload:

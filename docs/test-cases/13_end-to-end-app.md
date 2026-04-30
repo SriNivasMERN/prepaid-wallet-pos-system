@@ -4,6 +4,7 @@
 - Verify the business flow in proper operational order from first-time setup to final reports review.
 - Verify module dependencies are respected before downstream actions are attempted.
 - Verify Week 6 safe CRUD behavior works correctly across admin and operational modules.
+- Verify latest reliability behavior for session invalidation, stock filtering, and wallet/stock updates.
 
 ## Assumptions
 - Database is empty before testing begins.
@@ -128,9 +129,9 @@
       1. Open `My Account`.
       2. Update one safe profile field.
       3. Change password using valid current and new password values.
-    - Expected Result:
-      - Profile update succeeds and current session reflects the updated values.
-      - Password change succeeds.
+   - Expected Result:
+     - Profile update succeeds and current session reflects the updated values.
+      - Password change succeeds and the current browser session remains usable with refreshed session data.
 
 11. Super Admin creates products needed for downstream operations
    - Steps:
@@ -241,10 +242,18 @@
    - Expected Result:
      - Stock quantity updates correctly.
      - Filters work correctly.
+     - Stock status and movement type filters return correct rows even when pagination parameters are used.
      - Stock details modal opens correctly.
      - No edit/delete action exists for stock history.
 
-22. Cashier login works and restricted modules remain unavailable
+22. Duplicate opening stock remains blocked
+   - Steps:
+     1. Attempt a second opening stock movement for a product that already has opening stock.
+   - Expected Result:
+     - The request is rejected.
+     - Current quantity is not double-counted.
+
+23. Cashier login works and restricted modules remain unavailable
    - Steps:
      1. Log out from Super Admin.
      2. Log in as the created Cashier.
@@ -254,7 +263,7 @@
      - Cashier can access allowed operational modules only.
      - `Staff`, `Products`, `Stock`, and `Reports` remain unavailable.
 
-23. Cashier creates a recharge successfully
+24. Cashier creates a recharge successfully
    - Steps:
      1. Open `Recharges`.
      2. Create a valid recharge for Member A.
@@ -263,7 +272,7 @@
      - Wallet balance increases correctly.
      - Recharge row appears in the list.
 
-24. Recharge list filters and details flow work correctly
+25. Recharge list filters and details flow work correctly
    - Steps:
      1. Search and filter recharge records.
      2. Use `Refresh`.
@@ -273,7 +282,7 @@
      - Recharge details modal opens correctly.
      - Recharge record remains immutable.
 
-25. Billing precheck confirms readiness before bill creation
+26. Billing precheck confirms readiness before bill creation
    - Steps:
      1. Open `Billing`.
      2. Enter Member A's valid card number.
@@ -282,7 +291,7 @@
      - Billing precheck shows member, card, wallet, and readiness state clearly.
      - No blocking reason is shown for the valid funded scenario.
 
-26. Cashier creates a bill successfully using stocked product and funded wallet
+27. Cashier creates a bill successfully using stocked product and funded wallet
    - Steps:
      1. Open `Billing`.
      2. Create a bill for Member A using available product stock and wallet balance.
@@ -292,7 +301,7 @@
      - Product stock reduces correctly.
      - Wallet balance updates correctly.
 
-27. Billing list details flow works correctly
+28. Billing list details flow works correctly
    - Steps:
      1. Search and filter bill records if filters are available.
      2. Use `Refresh`.
@@ -303,7 +312,7 @@
      - Bill line items and balances are shown clearly.
      - Bill record remains immutable after creation.
 
-28. Cashier creates a debit successfully
+29. Cashier creates a debit successfully
    - Steps:
      1. Open `Debits`.
      2. Create a valid debit for Member A.
@@ -312,7 +321,7 @@
      - Wallet balance decreases correctly.
      - Debit row appears in the list.
 
-29. Debits list details flow works correctly
+30. Debits list details flow works correctly
    - Steps:
      1. Search and filter debit records if applicable.
      2. Use `Refresh`.
@@ -322,7 +331,7 @@
      - Debit details modal opens correctly.
      - Debit record remains immutable after creation.
 
-30. Transaction ledger shows both recharge credit and debit records
+31. Transaction ledger shows both recharge credit and debit records
    - Steps:
      1. Open `Transactions`.
      2. Review the ledger after the recharge and debit are created.
@@ -333,7 +342,7 @@
      - Debit appears as `Debit`.
      - Reference values and balances match source operations.
 
-31. Admin login works and admin role restrictions are enforced
+32. Admin login works and admin role restrictions are enforced
    - Steps:
      1. Log out from Cashier.
      2. Log in as the created Admin.
@@ -345,7 +354,7 @@
      - Admin can manage allowed subordinate staff only.
      - Restricted role-management boundaries remain enforced.
 
-32. Reports module shows derived data from completed end-to-end flow
+33. Reports module shows derived data from completed end-to-end flow
    - Steps:
      1. While logged in as Super Admin or Admin, open `Reports`.
      2. Review default `Sales`.
@@ -358,7 +367,7 @@
      - Stock report shows stock-movement-derived data.
      - Summary metrics change correctly by report type.
 
-33. Final data integrity check across all modules passes
+34. Final data integrity check across all modules passes
    - Steps:
      1. Review created records across `Members`, `Cards`, `Wallets`, `Stock`, `Recharges`, `Billing`, `Debits`, `Transactions`, and `Reports`.
      2. Cross-check one full member journey end to end.
@@ -366,6 +375,7 @@
      - Member, card, wallet, billing, debit, recharge, stock, transaction, and report data remain internally consistent.
      - No hidden archive behavior exists.
      - Safe CRUD lifecycle remains visible through normal UI.
+     - Wallet balance and stock quantity reflect the exact net effect of recharge, bill, debit, and stock movement records.
 
 ## Role-Based End-to-End Checks
 - `Super Admin`
@@ -385,6 +395,7 @@
 
 ## Final Acceptance Criteria
 - First-time setup, login, and session handling work correctly.
+- Logout and password-change session refresh behavior work correctly.
 - All module dependencies can be created in correct order from an empty database.
 - Week 6 CRUD behavior works correctly for:
   - `Products`
@@ -397,6 +408,8 @@
   - `Recharges`
   - `Debits`
   - `Stock`
+- Stock filtering remains accurate with filtered paginated requests.
+- Wallet and stock quantities remain consistent after operational actions.
 - Derived visibility works correctly for:
   - `Transactions`
   - `Reports`
