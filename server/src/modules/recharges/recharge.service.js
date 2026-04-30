@@ -151,7 +151,8 @@ const getRechargeDocumentById = async (rechargeId) => {
     .populate("memberId", "fullName mobileNumber status")
     .populate("cardId", "cardNumber status expiresAt")
     .populate("createdBy", "fullName username role")
-    .populate("updatedBy", "fullName username role");
+    .populate("updatedBy", "fullName username role")
+    .lean();
 
   if (!recharge) {
     throw createNotFoundError(
@@ -173,7 +174,7 @@ const getWalletForRechargeFlow = async (walletId) => {
   const wallet = await Wallet.findOne({
     _id: walletId,
     isDeleted: false
-  }).populate("memberId", "fullName mobileNumber status linkedCardId linkedWalletId");
+  }).populate("memberId", "fullName mobileNumber status linkedCardId linkedWalletId").lean();
 
   if (!wallet) {
     throw createNotFoundError("walletId", "Wallet record was not found.", "Wallet was not found.");
@@ -196,7 +197,7 @@ const createRecharge = async (payload, currentAuth) => {
   const member = await Member.findOne({
     _id: wallet.memberId?._id || wallet.memberId,
     isDeleted: false
-  });
+  }).lean();
 
   if (!member) {
     throw createNotFoundError("memberId", "Member record was not found.", "Member was not found.");
@@ -229,7 +230,7 @@ const createRecharge = async (payload, currentAuth) => {
   const card = await Card.findOne({
     _id: member.linkedCardId,
     isDeleted: false
-  });
+  }).lean();
 
   if (!card) {
     throw createNotFoundError("cardId", "Card record was not found.", "Card was not found.");

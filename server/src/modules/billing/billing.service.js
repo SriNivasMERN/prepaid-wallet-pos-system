@@ -185,7 +185,8 @@ const getBillDocumentById = async (billId) => {
     .populate("memberId", "fullName mobileNumber status")
     .populate("cardId", "cardNumber status expiresAt")
     .populate("createdBy", "fullName username role")
-    .populate("updatedBy", "fullName username role");
+    .populate("updatedBy", "fullName username role")
+    .lean();
 
   if (!bill) {
     throw createNotFoundError("billId", "Bill record was not found.", "Bill was not found.");
@@ -201,7 +202,7 @@ const getBillingContextByCardNumber = async (cardNumber) => {
   const card = await Card.findOne({
     cardNumber: new RegExp(`^${cardNumber.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i"),
     isDeleted: false
-  });
+  }).lean();
 
   if (!card) {
     throw createNotFoundError("cardNumber", "Card record was not found.", "Billing is not allowed.");
@@ -210,7 +211,7 @@ const getBillingContextByCardNumber = async (cardNumber) => {
   const member = await Member.findOne({
     _id: card.memberId,
     isDeleted: false
-  });
+  }).lean();
 
   if (!member) {
     throw createNotFoundError("memberId", "Member record was not found.", "Billing is not allowed.");
@@ -227,7 +228,7 @@ const getBillingContextByCardNumber = async (cardNumber) => {
   const wallet = await Wallet.findOne({
     _id: member.linkedWalletId,
     isDeleted: false
-  });
+  }).lean();
 
   if (!wallet) {
     throw createNotFoundError("walletId", "Wallet record was not found.", "Billing is not allowed.");
@@ -305,7 +306,7 @@ const buildBillItems = async (requestedItems) => {
   const products = await Product.find({
     _id: { $in: productIds },
     isDeleted: false
-  });
+  }).lean();
 
   if (products.length !== productIds.length) {
     throw createNotFoundError(
@@ -320,7 +321,7 @@ const buildBillItems = async (requestedItems) => {
   const stocks = await Stock.find({
     productId: { $in: productIds },
     isDeleted: false
-  });
+  }).lean();
   const stockMap = new Map(stocks.map((stock) => [String(stock.productId), stock]));
 
   return requestedItems.map((item, index) => {

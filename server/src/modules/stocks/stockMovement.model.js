@@ -70,6 +70,16 @@ const stockMovementSchema = new mongoose.Schema(
 
 stockMovementSchema.index({ stockId: 1, createdAt: -1 });
 stockMovementSchema.index({ productId: 1, createdAt: -1 });
+stockMovementSchema.index(
+  { productId: 1, movementType: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      isDeleted: false,
+      movementType: "Opening"
+    }
+  }
+);
 stockMovementSchema.index({ isDeleted: 1, movementType: 1, createdAt: -1 });
 stockMovementSchema.index({ isDeleted: 1, createdAt: -1 });
 

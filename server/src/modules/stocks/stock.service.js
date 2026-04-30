@@ -135,7 +135,8 @@ const getStockByProductId = async (productId) => {
     isDeleted: false
   })
     .populate("updatedBy", "fullName username role")
-    .populate("createdBy", "fullName username role");
+    .populate("createdBy", "fullName username role")
+    .lean();
 };
 
 /**
@@ -145,7 +146,7 @@ const getLatestStockMovementByProductId = async (productId) => {
   return StockMovement.findOne({
     productId,
     isDeleted: false
-  }).sort({ createdAt: -1 });
+  }).sort({ createdAt: -1 }).lean();
 };
 
 /**
@@ -163,7 +164,7 @@ const createStockMovement = async (payload, currentAuth) => {
   const product = await Product.findOne({
     _id: values.productId,
     isDeleted: false
-  });
+  }).lean();
 
   if (!product) {
     throw createNotFoundError("productId", "Product record was not found.", "Product was not found.");
@@ -180,7 +181,7 @@ const createStockMovement = async (payload, currentAuth) => {
   let stock = await Stock.findOne({
     productId: product._id,
     isDeleted: false
-  });
+  }).lean();
 
   const hasOpeningMovement = await StockMovement.exists({
     productId: product._id,
@@ -302,6 +303,14 @@ const createStockMovement = async (payload, currentAuth) => {
           }
         }
       ).catch(() => null);
+    }
+
+    if (error?.code === 11000 && values.movementType === "Opening") {
+      throw createConflictError(
+        "movementType",
+        "Opening stock can only be recorded once per product.",
+        "Stock movement is not allowed."
+      );
     }
 
     throw error;
