@@ -115,7 +115,7 @@ function FirstTimeSetupPage({ onSetupComplete }) {
 
   return (
     <div className="auth-page">
-      <SectionCard className="login-card login-card--auth">
+      <SectionCard className="login-card login-card--auth setup-card">
         <form className="form-grid login-form" onSubmit={handleSubmit}>
           <div className="login-form__branding">
             <span className="brand-badge login-form__badge">PWP</span>

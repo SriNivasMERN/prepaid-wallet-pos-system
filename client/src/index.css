@@ -184,6 +184,12 @@ small {
   padding: 2.5rem;
 }
 
+.public-shell--login .public-shell__content {
+  align-items: center;
+  min-height: 100vh;
+  padding-block: 1.35rem;
+}
+
 .auth-page,
 .feedback-page {
   width: 100%;
@@ -245,6 +251,10 @@ small {
   padding: 1.7rem 1.6rem 1.6rem;
 }
 
+.setup-card.login-card--auth .section-card__body {
+  padding: 1.25rem 1.5rem 1.3rem;
+}
+
 .section-card__header {
   display: flex;
   align-items: center;
@@ -295,12 +305,21 @@ small {
   gap: 0.95rem;
 }
 
+.setup-card .login-form {
+  gap: 0.72rem;
+}
+
 .login-form__branding {
   display: grid;
   justify-items: center;
   gap: 0.9rem;
   text-align: center;
   margin-bottom: 0.15rem;
+}
+
+.setup-card .login-form__branding {
+  gap: 0.65rem;
+  margin-bottom: 0;
 }
 
 .login-form__branding h1 {
@@ -324,12 +343,20 @@ small {
   letter-spacing: 0.06em;
 }
 
+.setup-card .login-form__badge {
+  height: 44px;
+}
+
 .auth-form__title {
   margin-top: 0.15rem;
   text-align: center;
   color: #244a66;
   font-size: 1rem;
   font-weight: 700;
+}
+
+.setup-card .auth-form__title {
+  margin-top: 0;
 }
 
 .form-grid--member-create {
@@ -411,6 +438,11 @@ small {
   padding: 0.85rem 0.95rem;
   font-size: 0.98rem;
   font-weight: 500;
+}
+
+.setup-card .login-form input {
+  min-height: 3.15rem;
+  padding-block: 0.72rem;
 }
 
 .login-form input::placeholder {
@@ -502,6 +534,10 @@ small {
   font-size: 1rem;
   font-weight: 700;
   letter-spacing: 0;
+}
+
+.setup-card .login-form__actions .primary-button {
+  padding-block: 0.82rem;
 }
 
 .form-actions--full {
