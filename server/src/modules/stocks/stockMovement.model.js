@@ -71,6 +71,7 @@ const stockMovementSchema = new mongoose.Schema(
 stockMovementSchema.index({ stockId: 1, createdAt: -1 });
 stockMovementSchema.index({ productId: 1, createdAt: -1 });
 stockMovementSchema.index({ isDeleted: 1, movementType: 1, createdAt: -1 });
+stockMovementSchema.index({ isDeleted: 1, createdAt: -1 });
 
 const StockMovement = mongoose.model("StockMovement", stockMovementSchema);
 

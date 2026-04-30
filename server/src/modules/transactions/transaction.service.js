@@ -155,26 +155,31 @@ const getTransactionList = async (query = {}) => {
   const typeValue = typeof query.type === "string" ? query.type.trim() : "";
   const databaseQuery = await buildTransactionQuery(query);
   const paginationWindow = parsePaginationWindow(query);
+  const sourceLimit = paginationWindow ? paginationWindow.skip + paginationWindow.limit : null;
 
   const shouldLoadCredits = !typeValue || typeValue === "Credit";
   const shouldLoadDebits = !typeValue || typeValue === "Debit";
+  const applySourceWindow = (transactionQuery) =>
+    sourceLimit ? transactionQuery.limit(sourceLimit) : transactionQuery;
 
   const [rechargeTransactions, debitTransactions] = await Promise.all([
     shouldLoadCredits
-      ? Recharge.find(databaseQuery)
-          .populate("memberId", "fullName mobileNumber status")
-          .populate("cardId", "cardNumber status")
-          .populate("createdBy", "fullName username role")
-          .sort({ createdAt: -1 })
-          .lean()
+      ? applySourceWindow(
+          Recharge.find(databaseQuery)
+            .populate("memberId", "fullName mobileNumber status")
+            .populate("cardId", "cardNumber status")
+            .populate("createdBy", "fullName username role")
+            .sort({ createdAt: -1 })
+        ).lean()
       : Promise.resolve([]),
     shouldLoadDebits
-      ? Debit.find(databaseQuery)
-          .populate("memberId", "fullName mobileNumber status")
-          .populate("cardId", "cardNumber status")
-          .populate("createdBy", "fullName username role")
-          .sort({ createdAt: -1 })
-          .lean()
+      ? applySourceWindow(
+          Debit.find(databaseQuery)
+            .populate("memberId", "fullName mobileNumber status")
+            .populate("cardId", "cardNumber status")
+            .populate("createdBy", "fullName username role")
+            .sort({ createdAt: -1 })
+        ).lean()
       : Promise.resolve([])
   ]);
 

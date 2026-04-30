@@ -77,7 +77,8 @@ const buildSalesReport = async (fromDate, toDate) => {
     .populate("memberId", "fullName mobileNumber")
     .populate("cardId", "cardNumber")
     .populate("createdBy", "fullName username role")
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .lean();
 
   const records = bills.map((bill) => ({
     id: bill._id,
@@ -128,7 +129,8 @@ const buildRechargesReport = async (fromDate, toDate) => {
     .populate("memberId", "fullName mobileNumber")
     .populate("cardId", "cardNumber")
     .populate("createdBy", "fullName username role")
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .lean();
 
   const records = recharges.map((recharge) => ({
     id: recharge._id,
@@ -191,7 +193,8 @@ const buildDebitsReport = async (fromDate, toDate) => {
     .populate("memberId", "fullName mobileNumber")
     .populate("cardId", "cardNumber")
     .populate("createdBy", "fullName username role")
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .lean();
 
   const records = debits.map((debit) => ({
     id: debit._id,
@@ -244,7 +247,8 @@ const buildStockReport = async (fromDate, toDate) => {
   const stockMovements = await StockMovement.find(buildBaseQuery(fromDate, toDate))
     .populate("productId", "productName productCode unit")
     .populate("createdBy", "fullName username role")
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .lean();
 
   const records = stockMovements.map((movement) => ({
     id: movement._id,

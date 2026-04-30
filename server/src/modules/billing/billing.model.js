@@ -153,6 +153,7 @@ billSchema.index({ memberId: 1, createdAt: -1 });
 billSchema.index({ cardId: 1, createdAt: -1 });
 billSchema.index({ isDeleted: 1, status: 1, createdAt: -1 });
 billSchema.index({ isDeleted: 1, createdBy: 1, createdAt: -1 });
+billSchema.index({ isDeleted: 1, createdAt: -1 });
 
 const Bill = mongoose.model("Bill", billSchema);
 
