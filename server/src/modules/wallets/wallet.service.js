@@ -227,6 +227,8 @@ const createWallet = async (payload, currentAuth) => {
     );
   }
 
+  let createdWalletId = null;
+
   try {
     const createdWallet = await Wallet.create({
       memberId: member._id,
@@ -235,6 +237,7 @@ const createWallet = async (payload, currentAuth) => {
       createdBy: currentAuth.staffId,
       updatedBy: currentAuth.staffId
     });
+    createdWalletId = createdWallet._id;
 
     member.linkedWalletId = createdWallet._id;
     member.updatedBy = currentAuth.staffId;
@@ -250,6 +253,10 @@ const createWallet = async (payload, currentAuth) => {
         "This member already has a wallet.",
         "Wallet creation is not allowed."
       );
+    }
+
+    if (createdWalletId) {
+      await Wallet.deleteOne({ _id: createdWalletId }).catch(() => null);
     }
 
     throw error;

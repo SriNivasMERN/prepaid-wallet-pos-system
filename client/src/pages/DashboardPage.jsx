@@ -2085,7 +2085,7 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
                             <IconButton
                               icon="edit"
                               label={`Edit ${activeScreen.title} row ${rowIndex}`}
-                              title="Edit pattern is prepared for module-specific rollout."
+                              title="Edit is not available for this view."
                               disabled
                             />
                           </div>

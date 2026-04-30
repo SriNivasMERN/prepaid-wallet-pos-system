@@ -196,6 +196,10 @@ const createStockMovement = async (payload, currentAuth) => {
     );
   }
 
+  let createdStockId = null;
+  let createdMovementId = null;
+  let stockSnapshot = null;
+
   if (!stock) {
     stock = await Stock.create({
       productId: product._id,
@@ -203,29 +207,63 @@ const createStockMovement = async (payload, currentAuth) => {
       createdBy: currentAuth.staffId,
       updatedBy: currentAuth.staffId
     });
+    createdStockId = stock._id;
   }
 
   const quantityBefore = Number(stock.currentQuantity || 0);
   const quantityAfter = quantityBefore + values.quantityChange;
 
-  const movement = await StockMovement.create({
-    stockId: stock._id,
-    productId: product._id,
-    quantityBefore,
-    quantityChange: values.quantityChange,
-    quantityAfter,
-    movementType: values.movementType,
-    notes: values.notes,
-    createdBy: currentAuth.staffId,
-    updatedBy: currentAuth.staffId
-  });
+  try {
+    stockSnapshot = {
+      currentQuantity: stock.currentQuantity,
+      lastQuantityChange: stock.lastQuantityChange,
+      lastMovementType: stock.lastMovementType,
+      lastMovementAt: stock.lastMovementAt
+    };
 
-  stock.currentQuantity = quantityAfter;
-  stock.lastQuantityChange = values.quantityChange;
-  stock.lastMovementType = values.movementType;
-  stock.lastMovementAt = movement.createdAt;
-  stock.updatedBy = currentAuth.staffId;
-  await stock.save();
+    const movement = await StockMovement.create({
+      stockId: stock._id,
+      productId: product._id,
+      quantityBefore,
+      quantityChange: values.quantityChange,
+      quantityAfter,
+      movementType: values.movementType,
+      notes: values.notes,
+      createdBy: currentAuth.staffId,
+      updatedBy: currentAuth.staffId
+    });
+    createdMovementId = movement._id;
+
+    stock.currentQuantity = quantityAfter;
+    stock.lastQuantityChange = values.quantityChange;
+    stock.lastMovementType = values.movementType;
+    stock.lastMovementAt = movement.createdAt;
+    stock.updatedBy = currentAuth.staffId;
+    await stock.save();
+  } catch (error) {
+    if (createdMovementId) {
+      await StockMovement.deleteOne({ _id: createdMovementId }).catch(() => null);
+    }
+
+    if (createdStockId) {
+      await Stock.deleteOne({ _id: createdStockId }).catch(() => null);
+    } else if (stockSnapshot) {
+      await Stock.updateOne(
+        { _id: stock._id, isDeleted: false },
+        {
+          $set: {
+            currentQuantity: stockSnapshot.currentQuantity,
+            lastQuantityChange: stockSnapshot.lastQuantityChange,
+            lastMovementType: stockSnapshot.lastMovementType,
+            lastMovementAt: stockSnapshot.lastMovementAt,
+            updatedBy: currentAuth.staffId
+          }
+        }
+      ).catch(() => null);
+    }
+
+    throw error;
+  }
 
   const hydratedStock = await getStockByProductId(product._id);
   const latestMovement = await getLatestStockMovementByProductId(product._id);

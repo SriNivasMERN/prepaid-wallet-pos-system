@@ -27,6 +27,7 @@ export const PERMISSION_ACCESS_BY_ROLE = {
     "manage_cards",
     "manage_wallets",
     "process_recharges",
+    "process_debits",
     "manage_products",
     "process_billing",
     "view_transactions",
@@ -39,6 +40,7 @@ export const PERMISSION_ACCESS_BY_ROLE = {
     "manage_cards",
     "manage_wallets",
     "process_recharges",
+    "process_debits",
     "manage_products",
     "process_billing",
     "view_transactions",
@@ -50,6 +52,7 @@ export const PERMISSION_ACCESS_BY_ROLE = {
     "manage_cards",
     "manage_wallets",
     "process_recharges",
+    "process_debits",
     "process_billing",
     "view_transactions"
   ]

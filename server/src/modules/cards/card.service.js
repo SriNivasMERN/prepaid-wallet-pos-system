@@ -235,6 +235,8 @@ const assignCard = async (payload, currentAuth) => {
     );
   }
 
+  let createdCardId = null;
+
   try {
     const createdCard = await Card.create({
       cardNumber: values.cardNumber,
@@ -245,6 +247,7 @@ const assignCard = async (payload, currentAuth) => {
       createdBy: currentAuth.staffId,
       updatedBy: currentAuth.staffId
     });
+    createdCardId = createdCard._id;
 
     member.linkedCardId = createdCard._id;
     member.updatedBy = currentAuth.staffId;
@@ -272,6 +275,10 @@ const assignCard = async (payload, currentAuth) => {
           "Card assignment is not allowed."
         );
       }
+    }
+
+    if (createdCardId) {
+      await Card.deleteOne({ _id: createdCardId }).catch(() => null);
     }
 
     throw error;
@@ -418,11 +425,19 @@ const replaceCard = async (cardId, payload, currentAuth) => {
     );
   }
 
-  currentCard.status = RECORD_STATUS.INACTIVE;
-  currentCard.updatedBy = currentAuth.staffId;
-  await currentCard.save();
+  const previousCardStatus = currentCard.status;
+  const previousCardUpdatedBy = currentCard.updatedBy;
+  const previousMemberLinkedCardId = member.linkedCardId;
+  let replacementCardId = null;
+  let currentCardDeactivated = false;
+  let memberRelinked = false;
 
   try {
+    currentCard.status = RECORD_STATUS.INACTIVE;
+    currentCard.updatedBy = currentAuth.staffId;
+    await currentCard.save();
+    currentCardDeactivated = true;
+
     const replacementCard = await Card.create({
       cardNumber: values.cardNumber,
       memberId: member._id,
@@ -432,10 +447,12 @@ const replaceCard = async (cardId, payload, currentAuth) => {
       createdBy: currentAuth.staffId,
       updatedBy: currentAuth.staffId
     });
+    replacementCardId = replacementCard._id;
 
     member.linkedCardId = replacementCard._id;
     member.updatedBy = currentAuth.staffId;
     await member.save();
+    memberRelinked = true;
 
     const hydratedOldCard = await getCardDocumentById(currentCard._id);
     const hydratedReplacementCard = await getCardDocumentById(replacementCard._id);
@@ -452,7 +469,37 @@ const replaceCard = async (cardId, payload, currentAuth) => {
       })
     };
   } catch (error) {
-    if (error?.code === 11000 && error.keyPattern?.cardNumber) {
+    const duplicateCardNumberError = error?.code === 11000 && error.keyPattern?.cardNumber;
+
+    if (replacementCardId) {
+      await Card.deleteOne({ _id: replacementCardId }).catch(() => null);
+    }
+
+    if (memberRelinked || String(member.linkedCardId || "") !== String(previousMemberLinkedCardId || "")) {
+      await Member.updateOne(
+        { _id: member._id, isDeleted: false },
+        {
+          $set: {
+            linkedCardId: previousMemberLinkedCardId,
+            updatedBy: currentAuth.staffId
+          }
+        }
+      ).catch(() => null);
+    }
+
+    if (currentCardDeactivated) {
+      await Card.updateOne(
+        { _id: currentCard._id, isDeleted: false },
+        {
+          $set: {
+            status: previousCardStatus,
+            updatedBy: previousCardUpdatedBy
+          }
+        }
+      ).catch(() => null);
+    }
+
+    if (duplicateCardNumberError) {
       throw createConflictError(
         "cardNumber",
         "Choose a different card number.",
