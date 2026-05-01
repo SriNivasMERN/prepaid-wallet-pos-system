@@ -99,23 +99,34 @@ const toProductResponse = (product) => ({
  * Builds the next editable product code from existing generated product codes.
  */
 const generateNextProductCode = async () => {
-  const generatedProducts = await Product.find({
-    productCode: /^PRD-\d+$/i,
-    isDeleted: false
-  })
-    .select("productCode")
-    .lean();
+  const [result] = await Product.aggregate([
+    {
+      $match: {
+        productCode: /^PRD-\d+$/i,
+        isDeleted: false
+      }
+    },
+    {
+      $project: {
+        codeNumber: {
+          $toInt: {
+            $arrayElemAt: [
+              { $split: [{ $toUpper: "$productCode" }, "PRD-"] },
+              1
+            ]
+          }
+        }
+      }
+    },
+    {
+      $group: {
+        _id: null,
+        highestNumber: { $max: "$codeNumber" }
+      }
+    }
+  ]);
 
-  const highestNumber = generatedProducts.reduce((highest, product) => {
-    const currentNumber = Number.parseInt(
-      String(product.productCode || "").replace(/^PRD-/i, ""),
-      10
-    );
-
-    return Number.isFinite(currentNumber) && currentNumber > highest
-      ? currentNumber
-      : highest;
-  }, 0);
+  const highestNumber = Number(result?.highestNumber || 0);
 
   return `PRD-${String(highestNumber + 1).padStart(3, "0")}`;
 };
@@ -130,6 +141,7 @@ const getProductDocumentById = async (productId) => {
     _id: productId,
     isDeleted: false
   })
+    .select("productName productCode description sellingPrice unit status createdAt updatedAt createdBy updatedBy")
     .populate("createdBy", "fullName username role")
     .populate("updatedBy", "fullName username role");
 
@@ -148,6 +160,7 @@ const hydrateProductById = async (productId) => {
     _id: productId,
     isDeleted: false
   })
+    .select("productName productCode description sellingPrice unit status createdAt updatedAt createdBy updatedBy")
     .populate("createdBy", "fullName username role")
     .populate("updatedBy", "fullName username role")
     .lean();
@@ -315,6 +328,7 @@ const getProductList = async (query = {}) => {
 
   const paginationWindow = parsePaginationWindow(query);
   let productQuery = Product.find(databaseQuery)
+    .select("productName productCode description sellingPrice unit status createdAt updatedAt createdBy updatedBy")
     .populate("createdBy", "fullName username role")
     .populate("updatedBy", "fullName username role")
     .sort({ createdAt: -1 });

@@ -350,7 +350,9 @@ const getStockList = async (query = {}) => {
 
   const paginationWindow = parsePaginationWindow(query);
   const shouldFilterComputedRows = Boolean(stockStatusValue || movementTypeValue);
-  let productQueryBuilder = Product.find(productQuery).sort({ productName: 1 });
+  let productQueryBuilder = Product.find(productQuery)
+    .select("productName productCode unit status")
+    .sort({ productName: 1 });
 
   if (paginationWindow && !shouldFilterComputedRows) {
     productQueryBuilder = productQueryBuilder.skip(paginationWindow.skip).limit(paginationWindow.limit);
@@ -367,6 +369,7 @@ const getStockList = async (query = {}) => {
     productId: { $in: productIds },
     isDeleted: false
   })
+    .select("productId currentQuantity stockStatus createdAt updatedAt createdBy updatedBy")
     .populate("updatedBy", "fullName username role")
     .populate("createdBy", "fullName username role")
     .lean();

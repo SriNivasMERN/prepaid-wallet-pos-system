@@ -89,23 +89,34 @@ const isCardExpired = (expiresAt) => {
  * Builds the next display-friendly card number from the latest generated card.
  */
 const generateNextCardNumber = async () => {
-  const generatedCards = await Card.find({
-    cardNumber: /^CARD-\d+$/i,
-    isDeleted: false
-  })
-    .select("cardNumber")
-    .lean();
+  const [result] = await Card.aggregate([
+    {
+      $match: {
+        cardNumber: /^CARD-\d+$/i,
+        isDeleted: false
+      }
+    },
+    {
+      $project: {
+        cardNumberValue: {
+          $toInt: {
+            $arrayElemAt: [
+              { $split: [{ $toUpper: "$cardNumber" }, "CARD-"] },
+              1
+            ]
+          }
+        }
+      }
+    },
+    {
+      $group: {
+        _id: null,
+        highestNumber: { $max: "$cardNumberValue" }
+      }
+    }
+  ]);
 
-  const highestNumber = generatedCards.reduce((highest, card) => {
-    const currentNumber = Number.parseInt(
-      String(card.cardNumber || "").replace(/^CARD-/i, ""),
-      10
-    );
-
-    return Number.isFinite(currentNumber) && currentNumber > highest
-      ? currentNumber
-      : highest;
-  }, 0);
+  const highestNumber = Number(result?.highestNumber || 0);
 
   return `CARD-${String(highestNumber + 1).padStart(2, "0")}`;
 };
@@ -221,6 +232,7 @@ const getCardDocumentById = async (cardId) => {
     _id: cardId,
     isDeleted: false
   })
+    .select("cardNumber memberId status activatedAt expiresAt createdAt updatedAt createdBy updatedBy")
     .populate("memberId", "fullName mobileNumber status linkedCardId linkedWalletId")
     .populate("createdBy", "fullName username role")
     .populate("updatedBy", "fullName username role");
@@ -241,7 +253,7 @@ const getMemberForCardFlow = async (memberId) => {
   const member = await Member.findOne({
     _id: memberId,
     isDeleted: false
-  });
+  }).select("fullName mobileNumber status linkedCardId linkedWalletId updatedBy");
 
   if (!member) {
     throw createNotFoundError("memberId", "Member record was not found.", "Member was not found.");
@@ -373,6 +385,7 @@ const getCardList = async (query = {}) => {
 
   const paginationWindow = parsePaginationWindow(query);
   let cardQuery = Card.find(databaseQuery)
+    .select("cardNumber memberId status activatedAt expiresAt createdAt updatedAt createdBy updatedBy")
     .populate("memberId", "fullName mobileNumber status linkedCardId linkedWalletId")
     .populate("createdBy", "fullName username role")
     .populate("updatedBy", "fullName username role")
