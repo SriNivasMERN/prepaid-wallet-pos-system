@@ -4,6 +4,7 @@
 - Verify the Reports module loads live derived report data from backend records.
 - Verify report type, from-date, and to-date filters work correctly.
 - Verify summary cards, records table, and dashboard report metrics update correctly for each report type.
+- Verify report date filters start blank so report records are not limited to the current date by default.
 
 ## Preconditions
 - Approved QA environment and approved QA test data are available for execution.
@@ -85,7 +86,15 @@
      - Only records within the selected date range are shown.
      - Summary values reflect only the filtered records.
 
-8. Refresh reloads current report with applied filters
+8. Report date filters are blank by default
+   - Steps:
+     1. Open `Reports`.
+     2. Review `From Date` and `To Date` before applying filters.
+   - Expected Result:
+     - Both date fields are blank by default.
+     - Reports are not limited to the current date unless the user selects a date range.
+
+9. Refresh reloads current report with applied filters
    - Steps:
      1. Apply a report type and optional date filters.
      2. Click `Refresh`.
@@ -93,16 +102,17 @@
      - The report reloads successfully.
      - The currently applied filters remain effective.
 
-9. Reset restores default report state
+10. Reset restores default report state
    - Steps:
      1. Select a non-default report type.
      2. Apply one or more date filters.
      3. Click `Reset`.
    - Expected Result:
      - Filters return to default values.
+     - `From Date` and `To Date` return to blank.
      - Default `Sales` report reloads.
 
-10. Dashboard report metrics update with selected report type
+11. Dashboard report metrics update with selected report type
    - Steps:
      1. Open `Reports`.
      2. Review the top dashboard metrics.

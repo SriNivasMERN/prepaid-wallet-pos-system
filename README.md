@@ -67,6 +67,9 @@ The application is designed for small business counter operations where staff ne
 - Card assignment supports generated editable card numbers and default one-year expiry to reduce manual entry.
 - Searchable selectors are used for high-volume lookups such as members, wallets, products, and card numbers.
 - Search-first forms avoid forced default cursor placement so users can choose when to start searching.
+- List and report date filters start blank so historical records are not hidden by a default current-day filter.
+- Numeric amount, quantity, and MRP fields ignore mouse-wheel changes to prevent accidental value changes while scrolling.
+- Billing uses `MRP` consistently in visible labels and tables.
 - Atomic wallet and stock updates for billing, recharge, debit, and stock movement flows.
 - Stock opening guard, stock status visibility, and movement history.
 - Unified transaction ledger for credit/debit activity.
@@ -301,4 +304,4 @@ They cover:
 
 ## Current Status
 
-The application includes the core operational modules required for the prepaid wallet POS workflow. It is ready for local demonstration, structured QA validation, and future enhancement, with searchable high-volume selectors and clearer form-focus behavior for operational screens. Production deployment should use environment-specific configuration, a managed MongoDB instance, and a strong JWT secret.
+The application includes the core operational modules required for the prepaid wallet POS workflow. It is ready for local demonstration, structured QA validation, and future enhancement, with searchable high-volume selectors, blank list/report date filters, scroll-safe numeric inputs, and clearer form-focus behavior for operational screens. Production deployment should use environment-specific configuration, a managed MongoDB instance, and a strong JWT secret.

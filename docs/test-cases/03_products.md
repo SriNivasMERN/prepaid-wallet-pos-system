@@ -6,6 +6,7 @@
 - Verify product `View`, `Edit`, and `Activate` / `Mark Inactive` flows behave correctly.
 - Verify duplicate product code protection, frontend validation, and backend validation behavior.
 - Verify generated editable product code, `MRP`, description, and supported unit behavior.
+- Verify `MRP` cannot be changed accidentally by mouse-wheel scrolling.
 
 ## Preconditions
 - Approved QA environment and approved QA test data are available for execution.
@@ -117,6 +118,15 @@
    - Expected Result:
      - Product status changes to `Active`.
      - Product remains visible in the normal list.
+
+12. MRP field does not change on mouse-wheel scroll
+   - Steps:
+     1. Open `Products`.
+     2. Enter a valid `MRP`.
+     3. Scroll the mouse wheel while the `MRP` field is focused.
+   - Expected Result:
+     - The `MRP` value does not increase or decrease because of mouse-wheel scrolling.
+     - Page scrolling does not silently alter the product price.
 
 ## Negative Test Cases
 1. Product form rejects empty required fields

@@ -4,6 +4,7 @@
 - Verify the ledger combines recharge credit entries and manual debit entries.
 - Verify search, type, and date range filters work correctly.
 - Verify transaction ordering, reference format, and response structure are correct.
+- Verify transaction date range filters start blank so old records are visible unless the user narrows the range.
 
 ## Preconditions
 - Approved QA environment and approved QA test data are available for execution.
@@ -73,22 +74,31 @@
    - Expected Result:
      - Only transaction records within the selected date range are shown.
 
-8. Reset transaction filters restores default listing
+8. Transaction date range filters are blank by default
+   - Steps:
+     1. Open `Transactions`.
+     2. Review `From Date` and `To Date` before applying filters.
+   - Expected Result:
+     - Both date fields are blank by default.
+     - The ledger is not limited to the current date unless the user selects a date range.
+
+9. Reset transaction filters restores default listing
    - Steps:
      1. Apply one or more transaction filters.
      2. Click `Reset`.
    - Expected Result:
      - Filter inputs return to default values.
+     - `From Date` and `To Date` return to blank.
      - The ledger reloads without the previous filters.
 
-9. Refresh reloads the transaction ledger
+10. Refresh reloads the transaction ledger
    - Steps:
      1. Open `Transactions`.
      2. Click `Refresh`.
    - Expected Result:
      - The ledger reloads successfully.
 
-10. Ledger order is newest first
+11. Ledger order is newest first
    - Steps:
      1. Open `Transactions`.
      2. Review the created timestamps of consecutive rows.

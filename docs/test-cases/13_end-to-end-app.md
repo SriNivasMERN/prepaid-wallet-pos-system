@@ -139,6 +139,7 @@
      1. Open `Products`.
      2. Confirm generated editable product code is shown.
      3. Create at least two active products with valid name, code, `MRP`, unit, optional description, and status.
+     4. Confirm mouse-wheel scrolling does not change the `MRP` value.
    - Expected Result:
      - Products are created successfully.
      - Product rows appear in the list.
@@ -240,6 +241,7 @@
      1. Open `Stock`.
      2. Search for an active product by product name or product code.
      3. Record valid opening stock for at least one active product.
+     4. Confirm mouse-wheel scrolling does not change the stock quantity value.
    - Expected Result:
      - Stock movement succeeds.
      - Stock list shows current quantity.
@@ -279,6 +281,7 @@
      1. Open `Recharges`.
      2. Search for Member A's wallet by member, mobile number, or card number.
      3. Create a valid recharge for Member A.
+     4. Confirm mouse-wheel scrolling does not change the amount value.
    - Expected Result:
      - Recharge succeeds.
      - Wallet balance increases correctly.
@@ -292,6 +295,7 @@
      3. Click `View` on the created recharge row.
    - Expected Result:
      - Recharge list behavior is correct.
+     - Date filter remains blank unless the user selects a date.
      - Recharge details modal opens correctly.
      - Recharge record remains immutable.
 
@@ -309,7 +313,9 @@
      1. Open `Billing`.
      2. Search for or enter Member A's card number.
      3. Search for available products by product name or product code.
-     4. Create a bill for Member A using available product stock and wallet balance.
+     4. Confirm product price wording uses `MRP`.
+     5. Create a bill for Member A using available product stock and wallet balance.
+     6. Confirm mouse-wheel scrolling does not change the quantity value.
    - Expected Result:
      - Billing succeeds.
      - Bill row appears in the list.
@@ -323,8 +329,9 @@
      3. Click `View` on the created bill row.
    - Expected Result:
      - Billing list loads correctly.
+     - Date filter remains blank unless the user selects a date.
      - Bill details modal opens correctly.
-     - Bill line items and balances are shown clearly.
+     - Bill line items, `MRP`, and balances are shown clearly.
      - Bill record remains immutable after creation.
 
 29. Cashier creates a debit successfully
@@ -332,6 +339,7 @@
      1. Open `Debits`.
      2. Search for Member A's wallet by member, mobile number, or card number.
      3. Create a valid debit for Member A.
+     4. Confirm mouse-wheel scrolling does not change the amount value.
    - Expected Result:
      - Debit succeeds.
      - Wallet balance decreases correctly.
@@ -345,6 +353,7 @@
      3. Click `View` on the created debit row.
    - Expected Result:
      - Debits list loads correctly.
+     - Date filter remains blank unless the user selects a date.
      - Debit details modal opens correctly.
      - Debit record remains immutable after creation.
 
@@ -354,6 +363,7 @@
      2. Review the ledger after the recharge and debit are created.
      3. Search by member, mobile number, or card.
      4. Filter by `Credit` and `Debit`.
+     5. Confirm date range filters remain blank unless the user selects dates.
    - Expected Result:
      - Recharge appears as `Credit`.
      - Debit appears as `Debit`.
@@ -376,7 +386,8 @@
      1. While logged in as Super Admin or Admin, open `Reports`.
      2. Review default `Sales`.
      3. Switch to `Recharges`, `Debits`, and `Stock`.
-     4. Apply valid date filters.
+     4. Confirm date range filters remain blank unless the user selects dates.
+     5. Apply valid date filters when a narrowed report review is required.
    - Expected Result:
      - Sales report shows billing-derived records.
      - Recharges report shows recharge-derived data.

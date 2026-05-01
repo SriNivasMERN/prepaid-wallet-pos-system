@@ -8,6 +8,7 @@
 - Verify duplicate opening stock is prevented even when duplicate requests are submitted close together.
 - Verify stock status and movement type filtering remain accurate with paginated requests.
 - Verify product selection uses searchable lookup behavior and does not force focus to quantity before a product is selected.
+- Verify stock quantity fields cannot be changed accidentally by mouse-wheel scrolling.
 
 ## Preconditions
 - Approved QA environment and approved QA test data are available for execution.
@@ -63,7 +64,16 @@
      - The user does not need to scroll through a long product dropdown.
      - `Quantity Change` does not receive automatic focus on page entry.
 
-5. Search stock by product name or product code
+5. Quantity change field does not change on mouse-wheel scroll
+   - Steps:
+     1. Open `Stock`.
+     2. Enter a valid quantity change.
+     3. Scroll the mouse wheel while the quantity field is focused.
+   - Expected Result:
+     - The quantity value does not increase or decrease because of mouse-wheel scrolling.
+     - Page scrolling does not silently alter the stock movement quantity.
+
+6. Search stock by product name or product code
    - Steps:
      1. Open `Stock`.
      2. Enter a known product name or product code in `Search Product`.
@@ -71,7 +81,7 @@
    - Expected Result:
      - Matching stock records are shown.
 
-6. Filter stock by stock status
+7. Filter stock by stock status
    - Steps:
      1. Open `Stock`.
      2. Select a stock status.
@@ -79,7 +89,7 @@
    - Expected Result:
      - Only stock rows with the selected status are shown.
 
-7. Filter stock by movement type
+8. Filter stock by movement type
    - Steps:
      1. Open `Stock`.
      2. Select `Opening` or `Manual Update`.
@@ -87,7 +97,7 @@
    - Expected Result:
      - Only stock rows matching the selected latest movement type are shown.
 
-8. Reset stock filters restores default listing
+9. Reset stock filters restores default listing
    - Steps:
      1. Apply one or more stock filters.
      2. Click `Reset`.
@@ -95,7 +105,7 @@
      - Filter inputs return to default values.
      - The stock list reloads without previous filters.
 
-9. Refresh reloads the stock list with current filters
+10. Refresh reloads the stock list with current filters
    - Steps:
      1. Apply one or more stock filters.
      2. Click `Refresh`.
@@ -103,7 +113,7 @@
      - The list reloads successfully.
      - Currently applied filters remain effective.
 
-10. View action opens stock details modal
+11. View action opens stock details modal
    - Steps:
      1. Open `Stock`.
      2. Click `View` on a stock row.
@@ -111,7 +121,7 @@
      - `Stock Details` modal opens.
      - Product, code, current quantity, last change, movement type, stock status, and notes are shown.
 
-11. Dashboard stock metrics reflect live records
+12. Dashboard stock metrics reflect live records
    - Steps:
      1. Open `Stock`.
      2. Create stock movements that produce `Available`, `Low Stock`, or `Negative Stock` conditions where applicable.

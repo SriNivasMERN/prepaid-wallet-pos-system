@@ -8,6 +8,7 @@
 - Verify frontend validation, duplicate-item protection, and backend billing validation behavior.
 - Verify billing wallet and stock updates remain consistent when billing actions occur close together.
 - Verify card number and product entry support searchable lookup behavior for faster bill creation.
+- Verify billing filters do not default to the current date, product price is labelled as `MRP`, and quantity cannot be changed accidentally by mouse-wheel scrolling.
 
 ## Preconditions
 - Approved QA environment and approved QA test data are available for execution.
@@ -56,7 +57,33 @@
      - Matching active products are shown without scrolling through a long product dropdown.
      - Selected card and product values remain visible after selection.
 
-4. Billing precheck shows readiness details for valid card
+4. Billing product price uses MRP wording
+   - Steps:
+     1. Open `Billing`.
+     2. Select a valid product.
+     3. Review the product price field and bill item table.
+   - Expected Result:
+     - Visible product price wording uses `MRP`.
+     - `Unit Price` is not shown in the Billing UI.
+
+5. Billing date filter is blank by default
+   - Steps:
+     1. Open `Billing`.
+     2. Review the `Date` filter before applying any filters.
+   - Expected Result:
+     - The `Date` filter is blank.
+     - Bill records are not limited to the current date unless the user selects a date.
+
+6. Quantity field does not change on mouse-wheel scroll
+   - Steps:
+     1. Open `Billing`.
+     2. Enter a valid quantity.
+     3. Scroll the mouse wheel while the quantity field is focused.
+   - Expected Result:
+     - The quantity value does not increase or decrease because of mouse-wheel scrolling.
+     - Page scrolling does not silently alter the bill quantity.
+
+7. Billing precheck shows readiness details for valid card
    - Steps:
      1. Open `Billing`.
      2. Enter a valid linked card number.
@@ -66,7 +93,7 @@
      - Billing-ready state is shown clearly.
      - No blocking reason is shown when the card is ready for billing.
 
-5. Search bills by bill number, member name, or card number
+8. Search bills by bill number, member name, or card number
    - Steps:
      1. Open `Billing`.
      2. Use `Search Bill`.
@@ -74,7 +101,7 @@
    - Expected Result:
      - Matching bill records are shown.
 
-6. Filter bills by status
+9. Filter bills by status
    - Steps:
      1. Open `Billing`.
      2. Select `Completed` in the status filter.
@@ -82,7 +109,7 @@
    - Expected Result:
      - Only completed bill rows are shown.
 
-7. Filter bills by date
+10. Filter bills by date
    - Steps:
      1. Open `Billing`.
      2. Select a valid billing date in the `Date` filter.
@@ -90,15 +117,16 @@
    - Expected Result:
      - Only bills created on the selected date are shown.
 
-8. Reset billing filters restores default listing
+11. Reset billing filters restores default listing
    - Steps:
      1. Apply one or more billing filters.
      2. Click `Reset`.
    - Expected Result:
      - Filter inputs return to default values.
+     - The `Date` filter returns to blank.
      - The bills list reloads without previous filters.
 
-9. Refresh reloads the bills list with current filters
+12. Refresh reloads the bills list with current filters
    - Steps:
      1. Apply one or more filters.
      2. Click `Refresh`.
@@ -106,13 +134,14 @@
      - The list reloads successfully.
      - Currently applied filters remain effective.
 
-10. View action opens bill details modal
+13. View action opens bill details modal
    - Steps:
      1. Open `Billing`.
      2. Click `View` on a bill row.
    - Expected Result:
      - `Bill Details` modal opens.
      - Bill number, status, member, card, balance before, balance after, and line items are shown.
+     - Line item price columns use `MRP` wording.
 
 ## Negative Test Cases
 1. Billing form rejects empty card number on submit
