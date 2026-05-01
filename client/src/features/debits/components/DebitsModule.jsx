@@ -12,6 +12,7 @@ import SectionCard from "../../../components/common/SectionCard";
 import SearchableSelect from "../../../components/common/SearchableSelect";
 import { LoadingState, TableEmptyState } from "../../../components/common/VisualStates";
 import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
+import { preventNumberInputWheel } from "../../../utils/preventNumberInputWheel";
 import { revealFeedbackInContainer } from "../../../utils/revealFeedbackInContainer";
 import { scrollElementBelowHeader } from "../../../utils/scrollElementBelowHeader";
 import { fetchStaffList } from "../../staff/api/staffApi";
@@ -360,6 +361,7 @@ function DebitsModule({ authToken, onMetricsChange, onRecordsChange }) {
               name="amount"
               value={debitForm.amount}
               onChange={handleDebitInputChange}
+              onWheel={preventNumberInputWheel}
               placeholder="Enter amount"
               min="0.01"
               step="0.01"

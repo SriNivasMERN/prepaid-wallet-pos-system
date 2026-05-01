@@ -13,6 +13,7 @@ import SearchableSelect from "../../../components/common/SearchableSelect";
 import StatusChip from "../../../components/common/StatusChip";
 import { LoadingState, TableEmptyState } from "../../../components/common/VisualStates";
 import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
+import { preventNumberInputWheel } from "../../../utils/preventNumberInputWheel";
 import { revealFeedbackInContainer } from "../../../utils/revealFeedbackInContainer";
 import { scrollElementBelowHeader } from "../../../utils/scrollElementBelowHeader";
 import { fetchCardList } from "../../cards/api/cardApi";
@@ -550,7 +551,7 @@ function BillingModule({ authToken, onMetricsChange, onRecordsChange }) {
           </label>
 
           <label className="field-group">
-            <span>Unit Price</span>
+            <span>MRP</span>
             <input
               type="text"
               value={formatCurrency(pendingProduct?.sellingPrice || 0)}
@@ -565,6 +566,7 @@ function BillingModule({ authToken, onMetricsChange, onRecordsChange }) {
               name="quantity"
               value={billingForm.quantity}
               onChange={handleBillingInputChange}
+              onWheel={preventNumberInputWheel}
               min="1"
               step="1"
               autoComplete="off"
@@ -649,7 +651,7 @@ function BillingModule({ authToken, onMetricsChange, onRecordsChange }) {
                 <tr>
                   <th>Product</th>
                   <th>Code</th>
-                  <th>Unit Price</th>
+                  <th>MRP</th>
                   <th>Qty</th>
                   <th>Line Total</th>
                   <th>Action</th>
@@ -866,7 +868,7 @@ function BillingModule({ authToken, onMetricsChange, onRecordsChange }) {
                     <th>Code</th>
                     <th>Unit</th>
                     <th>Qty</th>
-                    <th>Unit Price</th>
+                    <th>MRP</th>
                     <th>Line Total</th>
                   </tr>
                 </thead>

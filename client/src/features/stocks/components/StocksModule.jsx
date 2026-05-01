@@ -13,6 +13,7 @@ import SearchableSelect from "../../../components/common/SearchableSelect";
 import StatusChip from "../../../components/common/StatusChip";
 import { LoadingState, TableEmptyState } from "../../../components/common/VisualStates";
 import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
+import { preventNumberInputWheel } from "../../../utils/preventNumberInputWheel";
 import { revealFeedbackInContainer } from "../../../utils/revealFeedbackInContainer";
 import { scrollElementBelowHeader } from "../../../utils/scrollElementBelowHeader";
 import {
@@ -316,6 +317,7 @@ function StocksModule({ authToken, onMetricsChange, onRecordsChange }) {
             <input
               type="number"
               value={selectedStockProductRecord?.currentQuantity ?? 0}
+              onWheel={preventNumberInputWheel}
               readOnly
             />
           </label>
@@ -327,6 +329,7 @@ function StocksModule({ authToken, onMetricsChange, onRecordsChange }) {
               name="quantityChange"
               value={stockForm.quantityChange}
               onChange={handleStockInputChange}
+              onWheel={preventNumberInputWheel}
               placeholder="Enter quantity change"
               autoComplete="off"
             />

@@ -151,7 +151,7 @@ const moduleScreens = {
       { label: "Quantity", type: "number" }
     ],
     filters: ["Bill Number", "Cashier", "Status"],
-    columns: ["Product", "Unit Price", "Quantity", "Line Total", "Stock Status"]
+    columns: ["Product", "MRP", "Quantity", "Line Total", "Stock Status"]
   },
   Transactions: {
     title: "Transactions",

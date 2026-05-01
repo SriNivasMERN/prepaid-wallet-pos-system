@@ -12,6 +12,7 @@ import SectionCard from "../../../components/common/SectionCard";
 import StatusChip from "../../../components/common/StatusChip";
 import { LoadingState, TableEmptyState } from "../../../components/common/VisualStates";
 import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
+import { preventNumberInputWheel } from "../../../utils/preventNumberInputWheel";
 import { revealFeedbackInContainer } from "../../../utils/revealFeedbackInContainer";
 import { scrollElementBelowHeader } from "../../../utils/scrollElementBelowHeader";
 import {
@@ -412,6 +413,7 @@ function ProductsModule({ authToken, onMetricsChange, onRecordsChange }) {
               name="sellingPrice"
               value={productForm.sellingPrice}
               onChange={handleProductInputChange}
+              onWheel={preventNumberInputWheel}
               placeholder="Enter MRP"
               min="0.01"
               step="0.01"
@@ -727,6 +729,7 @@ function ProductsModule({ authToken, onMetricsChange, onRecordsChange }) {
               name="sellingPrice"
               value={editProductForm.sellingPrice}
               onChange={handleEditProductInputChange}
+              onWheel={preventNumberInputWheel}
               min="0.01"
               step="0.01"
               autoComplete="off"
