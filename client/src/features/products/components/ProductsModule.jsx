@@ -109,13 +109,17 @@ function ProductsModule({ authToken, onMetricsChange, onRecordsChange }) {
   const [isUpdatingProductStatus, setIsUpdatingProductStatus] = useState(false);
 
   useEffect(() => {
+    const productCodeController = new AbortController();
+
     const loadNextProductCode = async () => {
       if (!authToken) {
         return;
       }
 
       try {
-        const response = await fetchNextProductCode(authToken);
+        const response = await fetchNextProductCode(authToken, {
+          signal: productCodeController.signal
+        });
         const nextProductCode = response.data?.productCode || "";
 
         setProductForm((currentState) => ({
@@ -123,14 +127,22 @@ function ProductsModule({ authToken, onMetricsChange, onRecordsChange }) {
           productCode: currentState.productCode || nextProductCode
         }));
       } catch (error) {
+        if (error.name === "AbortError") {
+          return;
+        }
+
         setProductRequestError(getApiErrorMessage(error));
       }
     };
 
     loadNextProductCode();
+
+    return () => productCodeController.abort();
   }, [authToken, productReloadToken]);
 
   useEffect(() => {
+    const productListController = new AbortController();
+
     const loadProducts = async () => {
       if (!authToken) {
         return;
@@ -140,7 +152,9 @@ function ProductsModule({ authToken, onMetricsChange, onRecordsChange }) {
       setProductRequestError("");
 
       try {
-        const response = await fetchProductList(authToken, appliedProductFilters);
+        const response = await fetchProductList(authToken, appliedProductFilters, {
+          signal: productListController.signal
+        });
         const nextRecords = response.data || [];
 
         setProductRecords(nextRecords);
@@ -151,13 +165,21 @@ function ProductsModule({ authToken, onMetricsChange, onRecordsChange }) {
           stockAlerts: 0
         });
       } catch (error) {
+        if (error.name === "AbortError") {
+          return;
+        }
+
         setProductRequestError(getApiErrorMessage(error));
       } finally {
-        setIsLoadingProducts(false);
+        if (!productListController.signal.aborted) {
+          setIsLoadingProducts(false);
+        }
       }
     };
 
     loadProducts();
+
+    return () => productListController.abort();
   }, [authToken, appliedProductFilters, productReloadToken, onMetricsChange, onRecordsChange]);
 
   const resetProductForm = () => {

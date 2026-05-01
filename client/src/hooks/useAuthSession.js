@@ -19,6 +19,7 @@ export function useAuthSession({ isSetupReady, isSetupComplete }) {
 
   useEffect(() => {
     let isMounted = true;
+    const sessionController = new AbortController();
 
     const handleSessionExpired = () => {
       clearAuthSession();
@@ -62,7 +63,9 @@ export function useAuthSession({ isSetupReady, isSetupComplete }) {
       }
 
       try {
-        const response = await fetchCurrentStaff(storedSession.token);
+        const response = await fetchCurrentStaff(storedSession.token, {
+          signal: sessionController.signal
+        });
         const nextSession = {
           token: storedSession.token,
           staff: response.data
@@ -74,6 +77,10 @@ export function useAuthSession({ isSetupReady, isSetupComplete }) {
           setSession(nextSession);
         }
       } catch (error) {
+        if (error.name === "AbortError") {
+          return;
+        }
+
         clearAuthSession();
         if (isMounted) {
           setSession(null);
@@ -89,6 +96,7 @@ export function useAuthSession({ isSetupReady, isSetupComplete }) {
 
     return () => {
       isMounted = false;
+      sessionController.abort();
       window.removeEventListener(AUTH_SESSION_EXPIRED_EVENT, handleSessionExpired);
     };
   }, [isSetupReady, isSetupComplete]);

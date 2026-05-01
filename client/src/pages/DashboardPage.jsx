@@ -1048,6 +1048,8 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
   }, [currentStaff?.fullName, currentStaff?.username]);
 
   useEffect(() => {
+    const staffListController = new AbortController();
+
     const loadStaff = async () => {
       if (activeModule !== "Staff" || !authToken) {
         return;
@@ -1057,16 +1059,26 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
       setStaffRequestError("");
 
       try {
-        const response = await fetchStaffList(authToken, appliedStaffFilters);
+        const response = await fetchStaffList(authToken, appliedStaffFilters, {
+          signal: staffListController.signal
+        });
         setStaffRecords(response.data || []);
       } catch (error) {
+        if (error.name === "AbortError") {
+          return;
+        }
+
         setStaffRequestError(getApiErrorMessage(error));
       } finally {
-        setIsLoadingStaff(false);
+        if (!staffListController.signal.aborted) {
+          setIsLoadingStaff(false);
+        }
       }
     };
 
     loadStaff();
+
+    return () => staffListController.abort();
   }, [activeModule, authToken, appliedStaffFilters]);
 
   const activeScreen = moduleScreens[activeModule];

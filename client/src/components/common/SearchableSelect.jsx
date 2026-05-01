@@ -36,12 +36,15 @@ function SearchableSelect({
     }
 
     const requestId = requestSequenceRef.current;
+    const requestController = new AbortController();
 
     const loadTimer = window.setTimeout(async () => {
       setIsLoading(true);
 
       try {
-        const nextOptions = await loadOptions(trimmedSearch);
+        const nextOptions = await loadOptions(trimmedSearch, {
+          signal: requestController.signal
+        });
         if (requestSequenceRef.current === requestId) {
           setOptions(Array.isArray(nextOptions) ? nextOptions : []);
         }
@@ -56,7 +59,11 @@ function SearchableSelect({
       }
     }, 250);
 
-    return () => window.clearTimeout(loadTimer);
+    return () => {
+      requestSequenceRef.current += 1;
+      requestController.abort();
+      window.clearTimeout(loadTimer);
+    };
   }, [disabled, loadOptions, minSearchLength, searchText]);
 
   useEffect(

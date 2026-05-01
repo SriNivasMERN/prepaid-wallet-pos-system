@@ -9,7 +9,7 @@ import { httpRequest } from "../../../api/http";
 /**
  * Fetches the debit list with optional search, reason, date, and cashier filters.
  */
-export function fetchDebitList(token, filters = {}) {
+export function fetchDebitList(token, filters = {}, options = {}) {
   const searchParams = new URLSearchParams();
 
   if (filters.search?.trim()) {
@@ -32,7 +32,9 @@ export function fetchDebitList(token, filters = {}) {
   const path = queryString ? `/debits?${queryString}` : "/debits";
 
   return httpRequest(path, {
+    ...options,
     headers: {
+      ...(options.headers || {}),
       Authorization: `Bearer ${token}`
     }
   });

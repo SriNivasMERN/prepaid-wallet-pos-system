@@ -9,7 +9,7 @@ import { httpRequest } from "../../../api/http";
 /**
  * Fetches the card list with optional search, status, and member filters.
  */
-export function fetchCardList(token, filters = {}) {
+export function fetchCardList(token, filters = {}, options = {}) {
   const searchParams = new URLSearchParams();
 
   if (filters.search?.trim()) {
@@ -36,7 +36,9 @@ export function fetchCardList(token, filters = {}) {
   const path = queryString ? `/cards?${queryString}` : "/cards";
 
   return httpRequest(path, {
+    ...options,
     headers: {
+      ...(options.headers || {}),
       Authorization: `Bearer ${token}`
     }
   });
@@ -58,9 +60,11 @@ export function assignCardToMember(payload, token) {
 /**
  * Fetches the next generated card number preview.
  */
-export function fetchNextCardNumber(token) {
+export function fetchNextCardNumber(token, options = {}) {
   return httpRequest("/cards/next-number", {
+    ...options,
     headers: {
+      ...(options.headers || {}),
       Authorization: `Bearer ${token}`
     }
   });

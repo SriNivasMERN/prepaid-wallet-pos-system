@@ -62,6 +62,8 @@ function TransactionsModule({ authToken, onMetricsChange, onRecordsChange }) {
   const [transactionReloadToken, setTransactionReloadToken] = useState(0);
 
   useEffect(() => {
+    const transactionListController = new AbortController();
+
     const loadTransactions = async () => {
       if (!authToken) {
         return;
@@ -71,7 +73,9 @@ function TransactionsModule({ authToken, onMetricsChange, onRecordsChange }) {
       setTransactionRequestError("");
 
       try {
-        const response = await fetchTransactionList(authToken, appliedTransactionFilters);
+        const response = await fetchTransactionList(authToken, appliedTransactionFilters, {
+          signal: transactionListController.signal
+        });
         const nextRecords = response.data || [];
         const today = new Date();
 
@@ -89,13 +93,21 @@ function TransactionsModule({ authToken, onMetricsChange, onRecordsChange }) {
           debits: nextRecords.filter((transaction) => transaction.type === "Debit").length
         });
       } catch (error) {
+        if (error.name === "AbortError") {
+          return;
+        }
+
         setTransactionRequestError(getApiErrorMessage(error));
       } finally {
-        setIsLoadingTransactions(false);
+        if (!transactionListController.signal.aborted) {
+          setIsLoadingTransactions(false);
+        }
       }
     };
 
     loadTransactions();
+
+    return () => transactionListController.abort();
   }, [authToken, appliedTransactionFilters, transactionReloadToken, onMetricsChange, onRecordsChange]);
 
   const handleTransactionFilterChange = (event) => {

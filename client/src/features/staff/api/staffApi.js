@@ -6,7 +6,7 @@
 
 import { httpRequest } from "../../../api/http";
 
-export function fetchStaffList(token, filters = {}) {
+export function fetchStaffList(token, filters = {}, options = {}) {
   const searchParams = new URLSearchParams();
 
   if (filters.search?.trim()) {
@@ -25,7 +25,9 @@ export function fetchStaffList(token, filters = {}) {
   const path = queryString ? `/staff?${queryString}` : "/staff";
 
   return httpRequest(path, {
+    ...options,
     headers: {
+      ...(options.headers || {}),
       Authorization: `Bearer ${token}`
     }
   });

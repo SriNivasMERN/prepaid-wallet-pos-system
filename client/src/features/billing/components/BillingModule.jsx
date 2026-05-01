@@ -125,6 +125,8 @@ function BillingModule({ authToken, onMetricsChange, onRecordsChange }) {
   const [showCardSuggestions, setShowCardSuggestions] = useState(false);
 
   useEffect(() => {
+    const productOptionsController = new AbortController();
+
     const loadProductOptions = async () => {
       if (!authToken) {
         return;
@@ -134,19 +136,29 @@ function BillingModule({ authToken, onMetricsChange, onRecordsChange }) {
         const response = await fetchProductList(authToken, {
           status: "Active",
           limit: "12"
+        }, {
+          signal: productOptionsController.signal
         });
         const nextProducts = response.data || [];
 
         setProductOptions(nextProducts);
       } catch (error) {
+        if (error.name === "AbortError") {
+          return;
+        }
+
         setBillingRequestError(getApiErrorMessage(error));
       }
     };
 
     loadProductOptions();
+
+    return () => productOptionsController.abort();
   }, [authToken]);
 
   useEffect(() => {
+    const billListController = new AbortController();
+
     const loadBills = async () => {
       if (!authToken) {
         return;
@@ -156,7 +168,9 @@ function BillingModule({ authToken, onMetricsChange, onRecordsChange }) {
       setBillingRequestError("");
 
       try {
-        const response = await fetchBillList(authToken, appliedBillFilters);
+        const response = await fetchBillList(authToken, appliedBillFilters, {
+          signal: billListController.signal
+        });
         const nextRecords = response.data || [];
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -181,13 +195,21 @@ function BillingModule({ authToken, onMetricsChange, onRecordsChange }) {
           stockWarnings: 0
         });
       } catch (error) {
+        if (error.name === "AbortError") {
+          return;
+        }
+
         setBillingRequestError(getApiErrorMessage(error));
       } finally {
-        setIsLoadingBills(false);
+        if (!billListController.signal.aborted) {
+          setIsLoadingBills(false);
+        }
       }
     };
 
     loadBills();
+
+    return () => billListController.abort();
   }, [authToken, appliedBillFilters, billReloadToken, onMetricsChange, onRecordsChange]);
 
   useEffect(() => {
@@ -199,6 +221,8 @@ function BillingModule({ authToken, onMetricsChange, onRecordsChange }) {
       return undefined;
     }
 
+    const suggestionController = new AbortController();
+
     const suggestionTimer = window.setTimeout(async () => {
       setIsLoadingCardSuggestions(true);
 
@@ -207,24 +231,35 @@ function BillingModule({ authToken, onMetricsChange, onRecordsChange }) {
           search: searchTerm,
           status: "Active",
           limit: "8"
+        }, {
+          signal: suggestionController.signal
         });
 
         setCardSuggestions(response.data || []);
       } catch (error) {
+        if (error.name === "AbortError") {
+          return;
+        }
+
         setCardSuggestions([]);
       } finally {
-        setIsLoadingCardSuggestions(false);
+        if (!suggestionController.signal.aborted) {
+          setIsLoadingCardSuggestions(false);
+        }
       }
     }, 250);
 
-    return () => window.clearTimeout(suggestionTimer);
+    return () => {
+      suggestionController.abort();
+      window.clearTimeout(suggestionTimer);
+    };
   }, [authToken, billingForm.cardNumber]);
 
   const pendingProduct = productOptions.find(
     (product) => product.id === billingForm.productId
   );
 
-  const loadBillingProductSearchOptions = useCallback(async (search) => {
+  const loadBillingProductSearchOptions = useCallback(async (search, requestOptions = {}) => {
     if (!authToken) {
       return [];
     }
@@ -233,7 +268,7 @@ function BillingModule({ authToken, onMetricsChange, onRecordsChange }) {
       search,
       status: "Active",
       limit: "12"
-    });
+    }, requestOptions);
 
     return response.data || [];
   }, [authToken]);

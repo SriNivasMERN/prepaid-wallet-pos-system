@@ -106,6 +106,8 @@ function RechargesModule({ authToken, onMetricsChange, onRecordsChange }) {
   const [selectedRechargeRecord, setSelectedRechargeRecord] = useState(null);
 
   useEffect(() => {
+    const formOptionsController = new AbortController();
+
     const loadFormOptions = async () => {
       if (!authToken) {
         return;
@@ -115,8 +117,12 @@ function RechargesModule({ authToken, onMetricsChange, onRecordsChange }) {
 
       try {
         const [walletResponse, staffResponse] = await Promise.all([
-          fetchWalletList(authToken, { status: "Active", limit: "12" }),
-          fetchStaffList(authToken)
+          fetchWalletList(authToken, { status: "Active", limit: "12" }, {
+            signal: formOptionsController.signal
+          }),
+          fetchStaffList(authToken, {}, {
+            signal: formOptionsController.signal
+          })
         ]);
         const nextWallets = (walletResponse.data || []).filter(
           (wallet) => wallet.status === "Active" && wallet.member?.status === "Active"
@@ -133,16 +139,26 @@ function RechargesModule({ authToken, onMetricsChange, onRecordsChange }) {
               : ""
         }));
       } catch (error) {
+        if (error.name === "AbortError") {
+          return;
+        }
+
         setRechargeRequestError(getApiErrorMessage(error));
       } finally {
-        setIsLoadingWallets(false);
+        if (!formOptionsController.signal.aborted) {
+          setIsLoadingWallets(false);
+        }
       }
     };
 
     loadFormOptions();
+
+    return () => formOptionsController.abort();
   }, [authToken, rechargeReloadToken]);
 
   useEffect(() => {
+    const rechargeListController = new AbortController();
+
     const loadRecharges = async () => {
       if (!authToken) {
         return;
@@ -152,7 +168,9 @@ function RechargesModule({ authToken, onMetricsChange, onRecordsChange }) {
       setRechargeRequestError("");
 
       try {
-        const response = await fetchRechargeList(authToken, appliedRechargeFilters);
+        const response = await fetchRechargeList(authToken, appliedRechargeFilters, {
+          signal: rechargeListController.signal
+        });
         const nextRecords = response.data || [];
         const today = new Date();
 
@@ -175,13 +193,21 @@ function RechargesModule({ authToken, onMetricsChange, onRecordsChange }) {
           recentEntries: nextRecords.length
         });
       } catch (error) {
+        if (error.name === "AbortError") {
+          return;
+        }
+
         setRechargeRequestError(getApiErrorMessage(error));
       } finally {
-        setIsLoadingRecharges(false);
+        if (!rechargeListController.signal.aborted) {
+          setIsLoadingRecharges(false);
+        }
       }
     };
 
     loadRecharges();
+
+    return () => rechargeListController.abort();
   }, [authToken, appliedRechargeFilters, rechargeReloadToken, onMetricsChange, onRecordsChange]);
 
   const selectedWallet = useMemo(
@@ -189,7 +215,7 @@ function RechargesModule({ authToken, onMetricsChange, onRecordsChange }) {
     [walletOptions, rechargeForm.walletId]
   );
 
-  const loadRechargeWalletSearchOptions = useCallback(async (search) => {
+  const loadRechargeWalletSearchOptions = useCallback(async (search, requestOptions = {}) => {
     if (!authToken) {
       return [];
     }
@@ -198,7 +224,7 @@ function RechargesModule({ authToken, onMetricsChange, onRecordsChange }) {
       search,
       status: "Active",
       limit: "12"
-    });
+    }, requestOptions);
 
     return (response.data || []).filter(
       (wallet) => wallet.status === "Active" && wallet.member?.status === "Active"

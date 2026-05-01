@@ -9,7 +9,7 @@ import { httpRequest } from "../../../api/http";
 /**
  * Fetches the transaction list with optional search, type, and date range filters.
  */
-export function fetchTransactionList(token, filters = {}) {
+export function fetchTransactionList(token, filters = {}, options = {}) {
   const searchParams = new URLSearchParams();
 
   if (filters.search?.trim()) {
@@ -32,7 +32,9 @@ export function fetchTransactionList(token, filters = {}) {
   const path = queryString ? `/transactions?${queryString}` : "/transactions";
 
   return httpRequest(path, {
+    ...options,
     headers: {
+      ...(options.headers || {}),
       Authorization: `Bearer ${token}`
     }
   });

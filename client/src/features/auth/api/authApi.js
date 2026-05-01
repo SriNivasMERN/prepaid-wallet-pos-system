@@ -9,8 +9,8 @@ import { httpRequest } from "../../../api/http";
 /**
  * Fetches whether the system still requires first-time setup.
  */
-export function fetchSetupStatus() {
-  return httpRequest("/auth/setup-status");
+export function fetchSetupStatus(options = {}) {
+  return httpRequest("/auth/setup-status", options);
 }
 
 /**
@@ -48,9 +48,11 @@ export function logoutStaff(token) {
 /**
  * Fetches the current staff profile using the login token.
  */
-export function fetchCurrentStaff(token) {
+export function fetchCurrentStaff(token, options = {}) {
   return httpRequest("/auth/me", {
+    ...options,
     headers: {
+      ...(options.headers || {}),
       Authorization: `Bearer ${token}`
     }
   });

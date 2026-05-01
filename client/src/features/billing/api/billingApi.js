@@ -9,7 +9,7 @@ import { httpRequest } from "../../../api/http";
 /**
  * Fetches the bill list with optional search, status, and date filters.
  */
-export function fetchBillList(token, filters = {}) {
+export function fetchBillList(token, filters = {}, options = {}) {
   const searchParams = new URLSearchParams();
 
   if (filters.search?.trim()) {
@@ -28,7 +28,9 @@ export function fetchBillList(token, filters = {}) {
   const path = queryString ? `/billing?${queryString}` : "/billing";
 
   return httpRequest(path, {
+    ...options,
     headers: {
+      ...(options.headers || {}),
       Authorization: `Bearer ${token}`
     }
   });
@@ -50,12 +52,14 @@ export function createBillRecord(payload, token) {
 /**
  * Fetches the billing readiness profile for one card number.
  */
-export function fetchBillingPrecheck(cardNumber, token) {
+export function fetchBillingPrecheck(cardNumber, token, options = {}) {
   const searchParams = new URLSearchParams();
   searchParams.set("cardNumber", cardNumber.trim());
 
   return httpRequest(`/billing/precheck?${searchParams.toString()}`, {
+    ...options,
     headers: {
+      ...(options.headers || {}),
       Authorization: `Bearer ${token}`
     }
   });
@@ -64,9 +68,11 @@ export function fetchBillingPrecheck(cardNumber, token) {
 /**
  * Loads active product options for billing line items.
  */
-export function fetchBillingProductOptions(token) {
+export function fetchBillingProductOptions(token, options = {}) {
   return httpRequest("/products?status=Active", {
+    ...options,
     headers: {
+      ...(options.headers || {}),
       Authorization: `Bearer ${token}`
     }
   });

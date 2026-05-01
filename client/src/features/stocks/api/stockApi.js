@@ -9,7 +9,7 @@ import { httpRequest } from "../../../api/http";
 /**
  * Fetches the stock list with optional search, stock status, and movement type filters.
  */
-export function fetchStockList(token, filters = {}) {
+export function fetchStockList(token, filters = {}, options = {}) {
   const searchParams = new URLSearchParams();
 
   if (filters.search?.trim()) {
@@ -28,7 +28,9 @@ export function fetchStockList(token, filters = {}) {
   const path = queryString ? `/stocks?${queryString}` : "/stocks";
 
   return httpRequest(path, {
+    ...options,
     headers: {
+      ...(options.headers || {}),
       Authorization: `Bearer ${token}`
     }
   });
@@ -50,9 +52,11 @@ export function createStockMovementRecord(payload, token) {
 /**
  * Loads active product options for stock movement selection.
  */
-export function fetchActiveProductOptions(token) {
+export function fetchActiveProductOptions(token, options = {}) {
   return httpRequest("/products?status=Active", {
+    ...options,
     headers: {
+      ...(options.headers || {}),
       Authorization: `Bearer ${token}`
     }
   });

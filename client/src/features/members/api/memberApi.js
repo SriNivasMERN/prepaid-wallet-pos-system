@@ -9,7 +9,7 @@ import { httpRequest } from "../../../api/http";
 /**
  * Fetches the member list with optional search and status filters.
  */
-export function fetchMemberList(token, filters = {}) {
+export function fetchMemberList(token, filters = {}, options = {}) {
   const searchParams = new URLSearchParams();
 
   if (filters.search?.trim()) {
@@ -32,7 +32,9 @@ export function fetchMemberList(token, filters = {}) {
   const path = queryString ? `/members?${queryString}` : "/members";
 
   return httpRequest(path, {
+    ...options,
     headers: {
+      ...(options.headers || {}),
       Authorization: `Bearer ${token}`
     }
   });

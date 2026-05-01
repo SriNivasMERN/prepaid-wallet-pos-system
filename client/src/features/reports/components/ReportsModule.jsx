@@ -150,6 +150,8 @@ function ReportsModule({ authToken, onMetricsChange, onRecordsChange }) {
   });
 
   useEffect(() => {
+    const reportController = new AbortController();
+
     const loadReport = async () => {
       if (!authToken) {
         return;
@@ -159,7 +161,9 @@ function ReportsModule({ authToken, onMetricsChange, onRecordsChange }) {
       setReportRequestError("");
 
       try {
-        const response = await fetchReport(authToken, appliedReportFilters);
+        const response = await fetchReport(authToken, appliedReportFilters, {
+          signal: reportController.signal
+        });
         const nextReport = response.data || {
           reportType: appliedReportFilters.type || "Sales",
           summary: {},
@@ -179,13 +183,21 @@ function ReportsModule({ authToken, onMetricsChange, onRecordsChange }) {
           )
         );
       } catch (error) {
+        if (error.name === "AbortError") {
+          return;
+        }
+
         setReportRequestError(getApiErrorMessage(error));
       } finally {
-        setIsLoadingReport(false);
+        if (!reportController.signal.aborted) {
+          setIsLoadingReport(false);
+        }
       }
     };
 
     loadReport();
+
+    return () => reportController.abort();
   }, [authToken, appliedReportFilters, reportReloadToken, onMetricsChange, onRecordsChange]);
 
   const handleReportFilterChange = (event) => {

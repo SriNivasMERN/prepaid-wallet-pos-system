@@ -138,6 +138,8 @@ function CardsModule({ authToken, onMetricsChange, onRecordsChange }) {
   const [cardProfileRequestError, setCardProfileRequestError] = useState("");
 
   useEffect(() => {
+    const memberOptionsController = new AbortController();
+
     const loadMembers = async () => {
       if (!authToken) {
         return;
@@ -149,6 +151,8 @@ function CardsModule({ authToken, onMetricsChange, onRecordsChange }) {
         const response = await fetchMemberList(authToken, {
           status: "Active",
           limit: "12"
+        }, {
+          signal: memberOptionsController.signal
         });
         const nextMembers = response.data || [];
 
@@ -162,23 +166,35 @@ function CardsModule({ authToken, onMetricsChange, onRecordsChange }) {
               : ""
         }));
       } catch (error) {
+        if (error.name === "AbortError") {
+          return;
+        }
+
         setCardRequestError(getApiErrorMessage(error));
       } finally {
-        setIsLoadingMembers(false);
+        if (!memberOptionsController.signal.aborted) {
+          setIsLoadingMembers(false);
+        }
       }
     };
 
     loadMembers();
+
+    return () => memberOptionsController.abort();
   }, [authToken, cardReloadToken]);
 
   useEffect(() => {
+    const cardNumberController = new AbortController();
+
     const loadNextCardNumber = async () => {
       if (!authToken) {
         return;
       }
 
       try {
-        const response = await fetchNextCardNumber(authToken);
+        const response = await fetchNextCardNumber(authToken, {
+          signal: cardNumberController.signal
+        });
         const nextCardNumber = response.data?.cardNumber || "";
 
         setCardNumberPreview(nextCardNumber);
@@ -187,14 +203,22 @@ function CardsModule({ authToken, onMetricsChange, onRecordsChange }) {
           cardNumber: nextCardNumber
         }));
       } catch (error) {
+        if (error.name === "AbortError") {
+          return;
+        }
+
         setCardRequestError(getApiErrorMessage(error));
       }
     };
 
     loadNextCardNumber();
+
+    return () => cardNumberController.abort();
   }, [authToken, cardReloadToken]);
 
   useEffect(() => {
+    const cardListController = new AbortController();
+
     const loadCards = async () => {
       if (!authToken) {
         return;
@@ -204,7 +228,9 @@ function CardsModule({ authToken, onMetricsChange, onRecordsChange }) {
       setCardRequestError("");
 
       try {
-        const response = await fetchCardList(authToken, appliedCardFilters);
+        const response = await fetchCardList(authToken, appliedCardFilters, {
+          signal: cardListController.signal
+        });
         const nextRecords = response.data || [];
         const todayValue = new Date();
 
@@ -226,13 +252,21 @@ function CardsModule({ authToken, onMetricsChange, onRecordsChange }) {
           replaced: nextRecords.filter((card) => card.status === "Inactive").length
         });
       } catch (error) {
+        if (error.name === "AbortError") {
+          return;
+        }
+
         setCardRequestError(getApiErrorMessage(error));
       } finally {
-        setIsLoadingCards(false);
+        if (!cardListController.signal.aborted) {
+          setIsLoadingCards(false);
+        }
       }
     };
 
     loadCards();
+
+    return () => cardListController.abort();
   }, [authToken, appliedCardFilters, cardReloadToken, onMetricsChange, onRecordsChange]);
 
   const resetCardForm = () => {
@@ -245,7 +279,7 @@ function CardsModule({ authToken, onMetricsChange, onRecordsChange }) {
     setCardSuccessMessage("");
   };
 
-  const loadMemberSearchOptions = useCallback(async (search) => {
+  const loadMemberSearchOptions = useCallback(async (search, requestOptions = {}) => {
     if (!authToken) {
       return [];
     }
@@ -254,7 +288,7 @@ function CardsModule({ authToken, onMetricsChange, onRecordsChange }) {
       search,
       status: "Active",
       limit: "12"
-    });
+    }, requestOptions);
 
     return response.data || [];
   }, [authToken]);

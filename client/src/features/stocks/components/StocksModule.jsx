@@ -119,6 +119,8 @@ function StocksModule({ authToken, onMetricsChange, onRecordsChange }) {
   const [selectedStockRecord, setSelectedStockRecord] = useState(null);
 
   useEffect(() => {
+    const productOptionsController = new AbortController();
+
     const loadProductOptions = async () => {
       if (!authToken) {
         return;
@@ -128,19 +130,29 @@ function StocksModule({ authToken, onMetricsChange, onRecordsChange }) {
         const response = await fetchProductList(authToken, {
           status: "Active",
           limit: "12"
+        }, {
+          signal: productOptionsController.signal
         });
         const nextProducts = response.data || [];
 
         setProductOptions(nextProducts);
       } catch (error) {
+        if (error.name === "AbortError") {
+          return;
+        }
+
         setStockRequestError(getApiErrorMessage(error));
       }
     };
 
     loadProductOptions();
+
+    return () => productOptionsController.abort();
   }, [authToken]);
 
   useEffect(() => {
+    const stockListController = new AbortController();
+
     const loadStocks = async () => {
       if (!authToken) {
         return;
@@ -150,7 +162,9 @@ function StocksModule({ authToken, onMetricsChange, onRecordsChange }) {
       setStockRequestError("");
 
       try {
-        const response = await fetchStockList(authToken, appliedStockFilters);
+        const response = await fetchStockList(authToken, appliedStockFilters, {
+          signal: stockListController.signal
+        });
         const nextRecords = response.data || [];
 
         setStockRecords(nextRecords);
@@ -161,20 +175,28 @@ function StocksModule({ authToken, onMetricsChange, onRecordsChange }) {
           negative: nextRecords.filter((stock) => stock.stockStatus === "Negative Stock").length
         });
       } catch (error) {
+        if (error.name === "AbortError") {
+          return;
+        }
+
         setStockRequestError(getApiErrorMessage(error));
       } finally {
-        setIsLoadingStocks(false);
+        if (!stockListController.signal.aborted) {
+          setIsLoadingStocks(false);
+        }
       }
     };
 
     loadStocks();
+
+    return () => stockListController.abort();
   }, [authToken, appliedStockFilters, stockReloadToken, onMetricsChange, onRecordsChange]);
 
   const selectedStockProductRecord = stockRecords.find(
     (stock) => stock.product?.id === stockForm.productId
   );
 
-  const loadStockProductSearchOptions = useCallback(async (search) => {
+  const loadStockProductSearchOptions = useCallback(async (search, requestOptions = {}) => {
     if (!authToken) {
       return [];
     }
@@ -183,7 +205,7 @@ function StocksModule({ authToken, onMetricsChange, onRecordsChange }) {
       search,
       status: "Active",
       limit: "12"
-    });
+    }, requestOptions);
 
     return response.data || [];
   }, [authToken]);

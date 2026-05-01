@@ -9,7 +9,7 @@ import { httpRequest } from "../../../api/http";
 /**
  * Fetches the recharge list with optional search, date, payment mode, and cashier filters.
  */
-export function fetchRechargeList(token, filters = {}) {
+export function fetchRechargeList(token, filters = {}, options = {}) {
   const searchParams = new URLSearchParams();
 
   if (filters.search?.trim()) {
@@ -32,7 +32,9 @@ export function fetchRechargeList(token, filters = {}) {
   const path = queryString ? `/recharges?${queryString}` : "/recharges";
 
   return httpRequest(path, {
+    ...options,
     headers: {
+      ...(options.headers || {}),
       Authorization: `Bearer ${token}`
     }
   });

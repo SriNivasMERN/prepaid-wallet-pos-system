@@ -9,7 +9,7 @@ import { httpRequest } from "../../../api/http";
 /**
  * Fetches the wallet list with optional search and status filters.
  */
-export function fetchWalletList(token, filters = {}) {
+export function fetchWalletList(token, filters = {}, options = {}) {
   const searchParams = new URLSearchParams();
 
   if (filters.search?.trim()) {
@@ -32,7 +32,9 @@ export function fetchWalletList(token, filters = {}) {
   const path = queryString ? `/wallets?${queryString}` : "/wallets";
 
   return httpRequest(path, {
+    ...options,
     headers: {
+      ...(options.headers || {}),
       Authorization: `Bearer ${token}`
     }
   });

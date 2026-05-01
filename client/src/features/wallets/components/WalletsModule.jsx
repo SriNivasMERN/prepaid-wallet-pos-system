@@ -103,6 +103,8 @@ function WalletsModule({ authToken, onMetricsChange, onRecordsChange }) {
   const [isUpdatingWalletStatus, setIsUpdatingWalletStatus] = useState(false);
 
   useEffect(() => {
+    const memberOptionsController = new AbortController();
+
     const loadMembers = async () => {
       if (!authToken) {
         return;
@@ -114,6 +116,8 @@ function WalletsModule({ authToken, onMetricsChange, onRecordsChange }) {
         const cardResponse = await fetchCardList(authToken, {
           status: "Active",
           limit: "12"
+        }, {
+          signal: memberOptionsController.signal
         });
         const nextCards = cardResponse.data || [];
         const nextCardNumberMap = nextCards.reduce((result, card) => {
@@ -144,17 +148,27 @@ function WalletsModule({ authToken, onMetricsChange, onRecordsChange }) {
               : ""
         }));
       } catch (error) {
+        if (error.name === "AbortError") {
+          return;
+        }
+
         setCardNumberByMemberId({});
         setWalletRequestError(getApiErrorMessage(error));
       } finally {
-        setIsLoadingMembers(false);
+        if (!memberOptionsController.signal.aborted) {
+          setIsLoadingMembers(false);
+        }
       }
     };
 
     loadMembers();
+
+    return () => memberOptionsController.abort();
   }, [authToken, walletReloadToken]);
 
   useEffect(() => {
+    const walletListController = new AbortController();
+
     const loadWallets = async () => {
       if (!authToken) {
         return;
@@ -164,7 +178,9 @@ function WalletsModule({ authToken, onMetricsChange, onRecordsChange }) {
       setWalletRequestError("");
 
       try {
-        const response = await fetchWalletList(authToken, appliedWalletFilters);
+        const response = await fetchWalletList(authToken, appliedWalletFilters, {
+          signal: walletListController.signal
+        });
         const nextRecords = response.data || [];
 
         setWalletRecords(nextRecords);
@@ -177,13 +193,21 @@ function WalletsModule({ authToken, onMetricsChange, onRecordsChange }) {
           inactive: nextRecords.filter((wallet) => wallet.status === "Inactive").length
         });
       } catch (error) {
+        if (error.name === "AbortError") {
+          return;
+        }
+
         setWalletRequestError(getApiErrorMessage(error));
       } finally {
-        setIsLoadingWallets(false);
+        if (!walletListController.signal.aborted) {
+          setIsLoadingWallets(false);
+        }
       }
     };
 
     loadWallets();
+
+    return () => walletListController.abort();
   }, [authToken, appliedWalletFilters, walletReloadToken, onMetricsChange, onRecordsChange]);
 
   const resetWalletForm = () => {
@@ -193,7 +217,7 @@ function WalletsModule({ authToken, onMetricsChange, onRecordsChange }) {
     setWalletSuccessMessage("");
   };
 
-  const loadWalletMemberSearchOptions = useCallback(async (search) => {
+  const loadWalletMemberSearchOptions = useCallback(async (search, requestOptions = {}) => {
     if (!authToken) {
       return [];
     }
@@ -202,7 +226,7 @@ function WalletsModule({ authToken, onMetricsChange, onRecordsChange }) {
       search,
       status: "Active",
       limit: "12"
-    });
+    }, requestOptions);
     const activeCards = response.data || [];
 
     setCardNumberByMemberId((currentMap) => ({

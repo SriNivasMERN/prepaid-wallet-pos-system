@@ -9,7 +9,7 @@ import { httpRequest } from "../../../api/http";
 /**
  * Fetches one report response with optional type and date range filters.
  */
-export function fetchReport(token, filters = {}) {
+export function fetchReport(token, filters = {}, options = {}) {
   const searchParams = new URLSearchParams();
 
   if (filters.type?.trim()) {
@@ -28,7 +28,9 @@ export function fetchReport(token, filters = {}) {
   const path = queryString ? `/reports?${queryString}` : "/reports";
 
   return httpRequest(path, {
+    ...options,
     headers: {
+      ...(options.headers || {}),
       Authorization: `Bearer ${token}`
     }
   });

@@ -21,7 +21,7 @@ export function useSetupStatus() {
   /**
    * Reloads setup status from the backend.
    */
-  const refreshSetupStatus = async () => {
+  const refreshSetupStatus = async (options = {}) => {
     setState((currentState) => ({
       ...currentState,
       isLoading: true,
@@ -29,13 +29,17 @@ export function useSetupStatus() {
     }));
 
     try {
-      const response = await fetchSetupStatus();
+      const response = await fetchSetupStatus(options);
       setState({
         isLoading: false,
         isSetupComplete: Boolean(response?.data?.isSetupComplete),
         errorMessage: ""
       });
     } catch (error) {
+      if (error.name === "AbortError") {
+        return;
+      }
+
       setState({
         isLoading: false,
         isSetupComplete: false,
@@ -45,7 +49,13 @@ export function useSetupStatus() {
   };
 
   useEffect(() => {
-    refreshSetupStatus();
+    const setupStatusController = new AbortController();
+
+    refreshSetupStatus({
+      signal: setupStatusController.signal
+    });
+
+    return () => setupStatusController.abort();
   }, []);
 
   return {

@@ -80,6 +80,8 @@ function MembersModule({ authToken, onMetricsChange, onRecordsChange }) {
   const [memberProfileRequestError, setMemberProfileRequestError] = useState("");
 
   useEffect(() => {
+    const memberListController = new AbortController();
+
     const loadMembers = async () => {
       if (!authToken) {
         return;
@@ -89,7 +91,9 @@ function MembersModule({ authToken, onMetricsChange, onRecordsChange }) {
       setMemberRequestError("");
 
       try {
-        const response = await fetchMemberList(authToken, appliedMemberFilters);
+        const response = await fetchMemberList(authToken, appliedMemberFilters, {
+          signal: memberListController.signal
+        });
         const nextRecords = response.data || [];
 
         setMemberRecords(nextRecords);
@@ -100,13 +104,21 @@ function MembersModule({ authToken, onMetricsChange, onRecordsChange }) {
           inactive: nextRecords.filter((member) => member.status === "Inactive").length
         });
       } catch (error) {
+        if (error.name === "AbortError") {
+          return;
+        }
+
         setMemberRequestError(getApiErrorMessage(error));
       } finally {
-        setIsLoadingMembers(false);
+        if (!memberListController.signal.aborted) {
+          setIsLoadingMembers(false);
+        }
       }
     };
 
     loadMembers();
+
+    return () => memberListController.abort();
   }, [authToken, appliedMemberFilters, memberReloadToken, onMetricsChange, onRecordsChange]);
 
   const resetMemberForm = () => {

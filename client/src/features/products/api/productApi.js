@@ -9,7 +9,7 @@ import { httpRequest } from "../../../api/http";
 /**
  * Fetches the product list with optional search, status, and unit filters.
  */
-export function fetchProductList(token, filters = {}) {
+export function fetchProductList(token, filters = {}, options = {}) {
   const searchParams = new URLSearchParams();
 
   if (filters.search?.trim()) {
@@ -36,7 +36,9 @@ export function fetchProductList(token, filters = {}) {
   const path = queryString ? `/products?${queryString}` : "/products";
 
   return httpRequest(path, {
+    ...options,
     headers: {
+      ...(options.headers || {}),
       Authorization: `Bearer ${token}`
     }
   });
@@ -45,9 +47,11 @@ export function fetchProductList(token, filters = {}) {
 /**
  * Fetches the next generated product code preview.
  */
-export function fetchNextProductCode(token) {
+export function fetchNextProductCode(token, options = {}) {
   return httpRequest("/products/next-code", {
+    ...options,
     headers: {
+      ...(options.headers || {}),
       Authorization: `Bearer ${token}`
     }
   });
