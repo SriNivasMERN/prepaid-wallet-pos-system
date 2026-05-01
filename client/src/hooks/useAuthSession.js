@@ -6,6 +6,7 @@
 
 import { useEffect, useState } from "react";
 
+import { AUTH_SESSION_EXPIRED_EVENT } from "../api/http";
 import { fetchCurrentStaff, logoutStaff } from "../features/auth/api/authApi";
 import { clearAuthSession, getAuthSession, saveAuthSession } from "../utils/authStorage";
 
@@ -18,6 +19,16 @@ export function useAuthSession({ isSetupReady, isSetupComplete }) {
 
   useEffect(() => {
     let isMounted = true;
+
+    const handleSessionExpired = () => {
+      clearAuthSession();
+      if (isMounted) {
+        setSession(null);
+        setIsLoading(false);
+      }
+    };
+
+    window.addEventListener(AUTH_SESSION_EXPIRED_EVENT, handleSessionExpired);
 
     /**
      * Verifies any saved token with the backend before trusting it.
@@ -78,6 +89,7 @@ export function useAuthSession({ isSetupReady, isSetupComplete }) {
 
     return () => {
       isMounted = false;
+      window.removeEventListener(AUTH_SESSION_EXPIRED_EVENT, handleSessionExpired);
     };
   }, [isSetupReady, isSetupComplete]);
 

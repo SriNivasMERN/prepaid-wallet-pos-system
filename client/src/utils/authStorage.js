@@ -10,14 +10,24 @@ const AUTH_STORAGE_KEY = "prepaid-wallet-pos-auth";
  * Saves the login session for later route checks.
  */
 export function saveAuthSession(sessionData) {
-  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(sessionData));
+  try {
+    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(sessionData));
+  } catch {
+    // If browser storage is unavailable, keep the app from crashing.
+  }
 }
 
 /**
  * Reads the saved login session from the browser.
  */
 export function getAuthSession() {
-  const rawValue = localStorage.getItem(AUTH_STORAGE_KEY);
+  let rawValue = null;
+
+  try {
+    rawValue = localStorage.getItem(AUTH_STORAGE_KEY);
+  } catch {
+    return null;
+  }
 
   if (!rawValue) {
     return null;
@@ -25,8 +35,8 @@ export function getAuthSession() {
 
   try {
     return JSON.parse(rawValue);
-  } catch (error) {
-    localStorage.removeItem(AUTH_STORAGE_KEY);
+  } catch {
+    clearAuthSession();
     return null;
   }
 }
@@ -35,5 +45,9 @@ export function getAuthSession() {
  * Clears the saved login session.
  */
 export function clearAuthSession() {
-  localStorage.removeItem(AUTH_STORAGE_KEY);
+  try {
+    localStorage.removeItem(AUTH_STORAGE_KEY);
+  } catch {
+    // Ignore storage cleanup failures; callers still clear React state.
+  }
 }

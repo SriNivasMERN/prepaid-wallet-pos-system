@@ -5,11 +5,19 @@
  */
 
 import { API_BASE_URL } from "../constants/appConstants";
+import { clearAuthSession } from "../utils/authStorage";
+
+const AUTH_SESSION_EXPIRED_EVENT = "prepaid-wallet-pos:session-expired";
+
+function hasAuthorizationHeader(headers = {}) {
+  return Boolean(headers.Authorization || headers.authorization);
+}
 
 /**
  * Sends an API request and returns parsed JSON when available.
  */
 export async function httpRequest(path, options = {}) {
+  const hasAuthHeader = hasAuthorizationHeader(options.headers);
   const requestOptions = {
     ...options,
     headers: {
@@ -30,6 +38,11 @@ export async function httpRequest(path, options = {}) {
     : null;
 
   if (!response.ok) {
+    if (response.status === 401 && hasAuthHeader) {
+      clearAuthSession();
+      window.dispatchEvent(new Event(AUTH_SESSION_EXPIRED_EVENT));
+    }
+
     const error = new Error(
       responseData?.message || "Request could not be completed."
     );
@@ -39,3 +52,5 @@ export async function httpRequest(path, options = {}) {
 
   return responseData;
 }
+
+export { AUTH_SESSION_EXPIRED_EVENT };
