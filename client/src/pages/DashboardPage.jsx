@@ -1756,6 +1756,7 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
                 ))}
         </section>
 
+        <section key={activeModule} className="module-transition-panel">
         {activeModule === "Staff" ? (
           <>
             <SectionCard title="Create Staff Account">
@@ -2124,6 +2125,7 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
               </SectionCard>
           </>
         )}
+        </section>
       </main>
 
       <ModalDialog

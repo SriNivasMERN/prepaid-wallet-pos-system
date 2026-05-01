@@ -719,16 +719,47 @@ small {
 
 .form-message {
   grid-column: 1 / -1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
   border-radius: 16px;
   padding: 0.88rem 0.95rem;
   font-size: 0.9rem;
   font-weight: 600;
+  animation: message-rise 0.26s ease both;
 }
 
 .form-message:not(.form-message--error) {
   background: rgba(19, 117, 107, 0.08);
   color: #0f6d63;
   border: 2px solid rgba(78, 155, 146, 0.24);
+}
+
+.form-message:not(.form-message--error)::before {
+  content: "";
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(232, 250, 246, 0.88)),
+    #ffffff;
+  border: 2px solid rgba(78, 155, 146, 0.42);
+  box-shadow: 0 8px 16px rgba(18, 104, 94, 0.12);
+}
+
+.form-message:not(.form-message--error)::after {
+  content: "";
+  position: absolute;
+  left: 1.32rem;
+  top: 50%;
+  width: 0.48rem;
+  height: 0.26rem;
+  border-left: 2px solid #0f7b70;
+  border-bottom: 2px solid #0f7b70;
+  transform: translateY(-62%) rotate(-45deg);
+  animation: success-check 0.34s ease 0.08s both;
 }
 
 .form-message--error {
@@ -986,6 +1017,12 @@ small {
   padding: var(--page-gutter);
   display: grid;
   gap: 1.25rem;
+}
+
+.module-transition-panel {
+  display: grid;
+  gap: 1.25rem;
+  animation: module-panel-in 0.28s ease both;
 }
 
 .page-header {
@@ -1291,6 +1328,27 @@ small {
 
 .data-table tbody tr {
   transition: background 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+  animation: table-row-in 0.28s ease both;
+}
+
+.data-table tbody tr:nth-child(2) {
+  animation-delay: 0.025s;
+}
+
+.data-table tbody tr:nth-child(3) {
+  animation-delay: 0.05s;
+}
+
+.data-table tbody tr:nth-child(4) {
+  animation-delay: 0.075s;
+}
+
+.data-table tbody tr:nth-child(5) {
+  animation-delay: 0.1s;
+}
+
+.data-table tbody tr:nth-child(n + 6) {
+  animation-delay: 0.12s;
 }
 
 .data-table tbody tr td {
@@ -1604,6 +1662,56 @@ small {
   50% {
     opacity: 1;
     box-shadow: 0 0 0 0.35rem rgba(39, 97, 127, 0.08);
+  }
+}
+
+@keyframes module-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+    filter: blur(2px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes message-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.99);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes success-check {
+  from {
+    opacity: 0;
+    transform: translateY(-62%) rotate(-45deg) scale(0.7);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(-62%) rotate(-45deg) scale(1);
+  }
+}
+
+@keyframes table-row-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.995);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 
