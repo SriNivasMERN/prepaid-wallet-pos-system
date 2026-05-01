@@ -8,19 +8,14 @@ import { useEffect, useState } from "react";
 
 import SectionCard from "../../../components/common/SectionCard";
 import { LoadingState, TableEmptyState } from "../../../components/common/VisualStates";
-import { getTodayInputDateValue } from "../../../utils/dateFieldDefaults";
 import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
 import { fetchReport } from "../api/reportApi";
 
-const createReportInitialFilters = () => {
-  const today = getTodayInputDateValue();
-
-  return {
-    type: "Sales",
-    fromDate: today,
-    toDate: today
-  };
-};
+const createReportInitialFilters = () => ({
+  type: "Sales",
+  fromDate: "",
+  toDate: ""
+});
 
 function formatCurrency(value) {
   const amount = Number(value);

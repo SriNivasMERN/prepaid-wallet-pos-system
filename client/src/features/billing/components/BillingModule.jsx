@@ -12,7 +12,6 @@ import SectionCard from "../../../components/common/SectionCard";
 import SearchableSelect from "../../../components/common/SearchableSelect";
 import StatusChip from "../../../components/common/StatusChip";
 import { LoadingState, TableEmptyState } from "../../../components/common/VisualStates";
-import { getTodayInputDateValue } from "../../../utils/dateFieldDefaults";
 import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
 import { revealFeedbackInContainer } from "../../../utils/revealFeedbackInContainer";
 import { scrollElementBelowHeader } from "../../../utils/scrollElementBelowHeader";
@@ -34,7 +33,7 @@ const billingInitialForm = {
 const createBillingInitialFilters = () => ({
   search: "",
   status: "",
-  date: getTodayInputDateValue()
+  date: ""
 });
 
 function validateBillingForm({ cardNumber, items }) {

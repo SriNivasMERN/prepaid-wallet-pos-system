@@ -11,7 +11,6 @@ import ModalDialog from "../../../components/common/ModalDialog";
 import SectionCard from "../../../components/common/SectionCard";
 import SearchableSelect from "../../../components/common/SearchableSelect";
 import { LoadingState, TableEmptyState } from "../../../components/common/VisualStates";
-import { getTodayInputDateValue } from "../../../utils/dateFieldDefaults";
 import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
 import { revealFeedbackInContainer } from "../../../utils/revealFeedbackInContainer";
 import { scrollElementBelowHeader } from "../../../utils/scrollElementBelowHeader";
@@ -28,7 +27,7 @@ const rechargeInitialForm = {
 
 const createRechargeInitialFilters = () => ({
   search: "",
-  date: getTodayInputDateValue(),
+  date: "",
   paymentMode: "",
   cashierId: ""
 });

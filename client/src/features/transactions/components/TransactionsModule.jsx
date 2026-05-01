@@ -8,20 +8,15 @@ import { useEffect, useState } from "react";
 
 import SectionCard from "../../../components/common/SectionCard";
 import { LoadingState, TableEmptyState } from "../../../components/common/VisualStates";
-import { getTodayInputDateValue } from "../../../utils/dateFieldDefaults";
 import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
 import { fetchTransactionList } from "../api/transactionApi";
 
-const createTransactionInitialFilters = () => {
-  const today = getTodayInputDateValue();
-
-  return {
-    search: "",
-    type: "",
-    fromDate: today,
-    toDate: today
-  };
-};
+const createTransactionInitialFilters = () => ({
+  search: "",
+  type: "",
+  fromDate: "",
+  toDate: ""
+});
 
 function formatCurrency(value) {
   const amount = Number(value);
