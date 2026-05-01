@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 function SearchableSelect({
   value,
@@ -17,6 +17,8 @@ function SearchableSelect({
   const [options, setOptions] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const blurTimerRef = useRef(null);
+  const requestSequenceRef = useRef(0);
 
   const selectedOption = useMemo(
     () => options.find((option) => getOptionValue(option) === value) || null,
@@ -24,6 +26,7 @@ function SearchableSelect({
   );
 
   useEffect(() => {
+    requestSequenceRef.current += 1;
     const trimmedSearch = searchText.trim();
 
     if (disabled || trimmedSearch.length < minSearchLength) {
@@ -32,21 +35,40 @@ function SearchableSelect({
       return undefined;
     }
 
+    const requestId = requestSequenceRef.current;
+
     const loadTimer = window.setTimeout(async () => {
       setIsLoading(true);
 
       try {
         const nextOptions = await loadOptions(trimmedSearch);
-        setOptions(Array.isArray(nextOptions) ? nextOptions : []);
+        if (requestSequenceRef.current === requestId) {
+          setOptions(Array.isArray(nextOptions) ? nextOptions : []);
+        }
       } catch {
-        setOptions([]);
+        if (requestSequenceRef.current === requestId) {
+          setOptions([]);
+        }
       } finally {
-        setIsLoading(false);
+        if (requestSequenceRef.current === requestId) {
+          setIsLoading(false);
+        }
       }
     }, 250);
 
     return () => window.clearTimeout(loadTimer);
   }, [disabled, loadOptions, minSearchLength, searchText]);
+
+  useEffect(
+    () => () => {
+      requestSequenceRef.current += 1;
+
+      if (blurTimerRef.current) {
+        window.clearTimeout(blurTimerRef.current);
+      }
+    },
+    []
+  );
 
   useEffect(() => {
     if (!value) {
@@ -82,8 +104,16 @@ function SearchableSelect({
         type="text"
         value={searchText}
         onChange={handleInputChange}
-        onFocus={() => setIsOpen(true)}
-        onBlur={() => window.setTimeout(() => setIsOpen(false), 120)}
+        onFocus={() => {
+          if (blurTimerRef.current) {
+            window.clearTimeout(blurTimerRef.current);
+          }
+
+          setIsOpen(true);
+        }}
+        onBlur={() => {
+          blurTimerRef.current = window.setTimeout(() => setIsOpen(false), 120);
+        }}
         placeholder={placeholder}
         autoComplete="off"
         disabled={disabled}

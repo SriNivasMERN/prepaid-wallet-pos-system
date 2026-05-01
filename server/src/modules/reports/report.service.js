@@ -74,6 +74,7 @@ const buildBaseQuery = (fromDate, toDate) => {
  */
 const buildSalesReport = async (fromDate, toDate) => {
   const bills = await Bill.find(buildBaseQuery(fromDate, toDate))
+    .select("billNumber totalAmount itemCount status createdAt memberId cardId createdBy")
     .populate("memberId", "fullName mobileNumber")
     .populate("cardId", "cardNumber")
     .populate("createdBy", "fullName username role")
@@ -110,12 +111,25 @@ const buildSalesReport = async (fromDate, toDate) => {
       : null
   }));
 
+  const salesSummary = records.reduce(
+    (summary, record) => {
+      summary.totalAmount += Number(record.totalAmount || 0);
+      summary.totalItems += Number(record.itemCount || 0);
+
+      return summary;
+    },
+    {
+      totalAmount: 0,
+      totalItems: 0
+    }
+  );
+
   return {
     reportType: "Sales",
     summary: {
       totalBills: records.length,
-      totalAmount: records.reduce((sum, record) => sum + Number(record.totalAmount || 0), 0),
-      totalItems: records.reduce((sum, record) => sum + Number(record.itemCount || 0), 0)
+      totalAmount: salesSummary.totalAmount,
+      totalItems: salesSummary.totalItems
     },
     records
   };
@@ -126,6 +140,7 @@ const buildSalesReport = async (fromDate, toDate) => {
  */
 const buildRechargesReport = async (fromDate, toDate) => {
   const recharges = await Recharge.find(buildBaseQuery(fromDate, toDate))
+    .select("amount paymentMode balanceBefore balanceAfter notes createdAt memberId cardId createdBy")
     .populate("memberId", "fullName mobileNumber")
     .populate("cardId", "cardNumber")
     .populate("createdBy", "fullName username role")
@@ -164,21 +179,22 @@ const buildRechargesReport = async (fromDate, toDate) => {
       : null
   }));
 
+  let totalAmount = 0;
   const paymentModeTotals = records.reduce((totals, record) => {
     const paymentMode = record.paymentMode || "Unknown";
     const nextAmount = Number(record.amount || 0);
 
-    return {
-      ...totals,
-      [paymentMode]: Number(totals[paymentMode] || 0) + nextAmount
-    };
+    totalAmount += nextAmount;
+    totals[paymentMode] = Number(totals[paymentMode] || 0) + nextAmount;
+
+    return totals;
   }, {});
 
   return {
     reportType: "Recharges",
     summary: {
       totalRecharges: records.length,
-      totalAmount: records.reduce((sum, record) => sum + Number(record.amount || 0), 0),
+      totalAmount,
       paymentModeTotals
     },
     records
@@ -190,6 +206,7 @@ const buildRechargesReport = async (fromDate, toDate) => {
  */
 const buildDebitsReport = async (fromDate, toDate) => {
   const debits = await Debit.find(buildBaseQuery(fromDate, toDate))
+    .select("amount reason balanceBefore balanceAfter notes createdAt memberId cardId createdBy")
     .populate("memberId", "fullName mobileNumber")
     .populate("cardId", "cardNumber")
     .populate("createdBy", "fullName username role")
@@ -228,13 +245,32 @@ const buildDebitsReport = async (fromDate, toDate) => {
       : null
   }));
 
+  const debitSummary = records.reduce(
+    (summary, record) => {
+      summary.totalAmount += Number(record.amount || 0);
+
+      if (record.reason === "Billing") {
+        summary.billingDebits += 1;
+      } else {
+        summary.manualDebits += 1;
+      }
+
+      return summary;
+    },
+    {
+      totalAmount: 0,
+      billingDebits: 0,
+      manualDebits: 0
+    }
+  );
+
   return {
     reportType: "Debits",
     summary: {
       totalDebits: records.length,
-      totalAmount: records.reduce((sum, record) => sum + Number(record.amount || 0), 0),
-      billingDebits: records.filter((record) => record.reason === "Billing").length,
-      manualDebits: records.filter((record) => record.reason !== "Billing").length
+      totalAmount: debitSummary.totalAmount,
+      billingDebits: debitSummary.billingDebits,
+      manualDebits: debitSummary.manualDebits
     },
     records
   };
@@ -245,6 +281,7 @@ const buildDebitsReport = async (fromDate, toDate) => {
  */
 const buildStockReport = async (fromDate, toDate) => {
   const stockMovements = await StockMovement.find(buildBaseQuery(fromDate, toDate))
+    .select("quantityBefore quantityChange quantityAfter movementType notes createdAt productId createdBy")
     .populate("productId", "productName productCode unit")
     .populate("createdBy", "fullName username role")
     .sort({ createdAt: -1 })
@@ -277,19 +314,36 @@ const buildStockReport = async (fromDate, toDate) => {
       : null
   }));
 
+  const stockSummary = records.reduce(
+    (summary, record) => {
+      const quantityChange = Number(record.quantityChange || 0);
+
+      if (quantityChange > 0) {
+        summary.inwardQuantity += quantityChange;
+      }
+
+      if (quantityChange < 0) {
+        summary.outwardQuantity += Math.abs(quantityChange);
+      }
+
+      summary.netQuantityChange += quantityChange;
+
+      return summary;
+    },
+    {
+      inwardQuantity: 0,
+      outwardQuantity: 0,
+      netQuantityChange: 0
+    }
+  );
+
   return {
     reportType: "Stock",
     summary: {
       totalMovements: records.length,
-      inwardQuantity: records.reduce(
-        (sum, record) => sum + (Number(record.quantityChange || 0) > 0 ? Number(record.quantityChange || 0) : 0),
-        0
-      ),
-      outwardQuantity: records.reduce(
-        (sum, record) => sum + (Number(record.quantityChange || 0) < 0 ? Math.abs(Number(record.quantityChange || 0)) : 0),
-        0
-      ),
-      netQuantityChange: records.reduce((sum, record) => sum + Number(record.quantityChange || 0), 0)
+      inwardQuantity: stockSummary.inwardQuantity,
+      outwardQuantity: stockSummary.outwardQuantity,
+      netQuantityChange: stockSummary.netQuantityChange
     },
     records
   };

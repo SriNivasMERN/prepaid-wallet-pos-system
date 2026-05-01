@@ -130,9 +130,8 @@ prepaid-wallet-pos-system/
 
 ## Documentation
 
-- `README.md` is public project documentation.
-- `docs/test-cases/` contains public test coverage documents.
-- Internal planning and workflow notes are excluded from version control.
+- `README.md` provides the project overview, setup guidance, and module summary.
+- `docs/test-cases/` contains module-wise QA coverage documents.
 
 ## Local Setup
 
@@ -256,7 +255,6 @@ Error responses use the same structure with `success: false` and optional field-
 - Keep business logic validation on the backend as the source of truth.
 - Keep role checks enforced on the backend even when frontend hides unavailable modules.
 - Prefer adding reusable helpers/components for repeated UI behavior.
-- Keep local environment files and internal planning files out of public commits.
 - Run backend checks and the frontend build before handing over changes.
 
 ## Verification Commands

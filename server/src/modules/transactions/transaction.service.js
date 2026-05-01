@@ -127,17 +127,19 @@ const buildTransactionQuery = async (query = {}) => {
 
   if (searchValue) {
     const searchPattern = createSearchPattern(searchValue);
-    const memberMatches = await Member.find({
-      isDeleted: false,
-      $or: [
-        { fullName: searchPattern },
-        { mobileNumber: searchPattern }
-      ]
-    }).select("_id").lean();
-    const cardMatches = await Card.find({
-      isDeleted: false,
-      cardNumber: searchPattern
-    }).select("_id").lean();
+    const [memberMatches, cardMatches] = await Promise.all([
+      Member.find({
+        isDeleted: false,
+        $or: [
+          { fullName: searchPattern },
+          { mobileNumber: searchPattern }
+        ]
+      }).select("_id").lean(),
+      Card.find({
+        isDeleted: false,
+        cardNumber: searchPattern
+      }).select("_id").lean()
+    ]);
 
     databaseQuery.$or = [
       { memberId: { $in: memberMatches.map((member) => member._id) } },
@@ -152,13 +154,13 @@ const buildTransactionQuery = async (query = {}) => {
  * Returns the derived transaction ledger with optional search, type, and date range filters.
  */
 const getTransactionList = async (query = {}) => {
-  const typeValue = typeof query.type === "string" ? query.type.trim() : "";
+  const typeValue = typeof query.type === "string" ? query.type.trim().toLowerCase() : "";
   const databaseQuery = await buildTransactionQuery(query);
   const paginationWindow = parsePaginationWindow(query);
   const sourceLimit = paginationWindow ? paginationWindow.skip + paginationWindow.limit : null;
 
-  const shouldLoadCredits = !typeValue || typeValue === "Credit";
-  const shouldLoadDebits = !typeValue || typeValue === "Debit";
+  const shouldLoadCredits = !typeValue || typeValue === "credit";
+  const shouldLoadDebits = !typeValue || typeValue === "debit";
   const applySourceWindow = (transactionQuery) =>
     sourceLimit ? transactionQuery.limit(sourceLimit) : transactionQuery;
 
@@ -166,6 +168,7 @@ const getTransactionList = async (query = {}) => {
     shouldLoadCredits
       ? applySourceWindow(
           Recharge.find(databaseQuery)
+            .select("amount balanceBefore balanceAfter paymentMode notes createdAt memberId cardId createdBy")
             .populate("memberId", "fullName mobileNumber status")
             .populate("cardId", "cardNumber status")
             .populate("createdBy", "fullName username role")
@@ -175,6 +178,7 @@ const getTransactionList = async (query = {}) => {
     shouldLoadDebits
       ? applySourceWindow(
           Debit.find(databaseQuery)
+            .select("amount balanceBefore balanceAfter reason notes createdAt memberId cardId createdBy")
             .populate("memberId", "fullName mobileNumber status")
             .populate("cardId", "cardNumber status")
             .populate("createdBy", "fullName username role")
