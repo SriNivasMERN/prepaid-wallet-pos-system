@@ -5,6 +5,7 @@
 - Verify wallet `View`, `Edit`, and `Activate` / `Mark Inactive` flows behave correctly.
 - Verify wallet creation validation, member eligibility rules, and duplicate-wallet prevention.
 - Verify wallet detail and update flows remain administrative only and do not mutate balance history.
+- Verify member selection uses searchable lookup behavior and does not force focus to the status field on page entry.
 
 ## Preconditions
 - Approved QA environment and approved QA test data are available for execution.
@@ -21,17 +22,20 @@
      - The `Filters` section is visible.
      - The wallets list loads successfully.
 
-2. Eligible members appear in wallet creation dropdown
+2. Eligible members appear in wallet creation searchable selector
    - Steps:
      1. Open `Wallets`.
-     2. Open the `Member` dropdown in the create form.
+     2. Click the `Member` search field in the create form.
+     3. Search by member name or mobile number.
    - Expected Result:
      - Only eligible active members without a wallet and with a usable linked card are available.
+     - Matching members can be selected without scrolling through a long static dropdown.
+     - The `Wallet Status` field does not receive automatic focus when the page opens.
 
 3. Create wallet with valid eligible member
    - Steps:
      1. Open `Wallets`.
-     2. Select an eligible member.
+     2. Search for and select an eligible member.
      3. Select a valid wallet status.
      4. Click `Create Wallet`.
    - Expected Result:

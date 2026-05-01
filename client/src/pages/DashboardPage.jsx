@@ -12,6 +12,7 @@ import IconButton from "../components/common/IconButton";
 import ModalDialog from "../components/common/ModalDialog";
 import SectionCard from "../components/common/SectionCard";
 import StatusChip from "../components/common/StatusChip";
+import { EmptyState, LoadingState, TableEmptyState } from "../components/common/VisualStates";
 import { APP_NAME, STAFF_ROLES } from "../constants/appConstants";
 import {
   getAllowedModulesForRole,
@@ -1934,7 +1935,7 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
               >
                 {staffRequestError ? <div className="form-message form-message--error">{staffRequestError}</div> : null}
                 {staffSuccessMessage ? <div className="form-message">{staffSuccessMessage}</div> : null}
-                {isLoadingStaff ? <div className="feedback-actions">Loading staff...</div> : null}
+                {isLoadingStaff ? <LoadingState message="Loading staff..." /> : null}
                 <div className="table-wrapper">
                 <table className="data-table data-table--dense">
                   <thead>
@@ -1949,9 +1950,11 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
                   </thead>
                   <tbody>
                     {staffRecords.length === 0 && !isLoadingStaff ? (
-                      <tr>
-                        <td colSpan="6">No staff records found.</td>
-                      </tr>
+                      <TableEmptyState
+                        colSpan={6}
+                        title="No staff records found"
+                        message="Create staff or adjust the current filters."
+                      />
                     ) : (
                       staffRecords.map((staff) => (
                         <tr key={staff.id}>
@@ -2137,7 +2140,10 @@ function DashboardPage({ currentStaff, authToken, onLogout, onSessionUpdate }) {
         {selectedMetricCard ? (
           <div className="table-wrapper">
             {selectedMetricCard.records.length === 0 ? (
-              <div className="feedback-actions">No matching records found.</div>
+              <EmptyState
+                title="No matching records found"
+                message="Try another metric card or adjust the module data."
+              />
             ) : (
               <table className="data-table data-table--dense">
                 <thead>

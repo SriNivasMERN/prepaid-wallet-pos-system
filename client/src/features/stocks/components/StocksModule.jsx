@@ -11,6 +11,7 @@ import ModalDialog from "../../../components/common/ModalDialog";
 import SectionCard from "../../../components/common/SectionCard";
 import SearchableSelect from "../../../components/common/SearchableSelect";
 import StatusChip from "../../../components/common/StatusChip";
+import { LoadingState, TableEmptyState } from "../../../components/common/VisualStates";
 import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
 import { revealFeedbackInContainer } from "../../../utils/revealFeedbackInContainer";
 import { scrollElementBelowHeader } from "../../../utils/scrollElementBelowHeader";
@@ -444,7 +445,7 @@ function StocksModule({ authToken, onMetricsChange, onRecordsChange }) {
           }
         >
           {stockSuccessMessage ? <div className="form-message">{stockSuccessMessage}</div> : null}
-          {isLoadingStocks ? <div className="feedback-actions">Loading stock...</div> : null}
+          {isLoadingStocks ? <LoadingState message="Loading stock..." /> : null}
           <div className="table-wrapper">
           <table className="data-table data-table--dense">
             <thead>
@@ -461,9 +462,11 @@ function StocksModule({ authToken, onMetricsChange, onRecordsChange }) {
             </thead>
             <tbody>
               {stockRecords.length === 0 && !isLoadingStocks ? (
-                <tr>
-                  <td colSpan="8">No stock records found.</td>
-                </tr>
+                  <TableEmptyState
+                    colSpan={8}
+                    title="No stock records found"
+                    message="Record stock movement or adjust the filters."
+                  />
               ) : (
                 stockRecords.map((stock) => (
                   <tr key={stock.id}>

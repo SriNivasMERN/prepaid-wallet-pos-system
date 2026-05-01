@@ -10,6 +10,7 @@ import IconButton from "../../../components/common/IconButton";
 import ModalDialog from "../../../components/common/ModalDialog";
 import SectionCard from "../../../components/common/SectionCard";
 import StatusChip from "../../../components/common/StatusChip";
+import { LoadingState, TableEmptyState } from "../../../components/common/VisualStates";
 import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
 import { revealFeedbackInContainer } from "../../../utils/revealFeedbackInContainer";
 import { scrollElementBelowHeader } from "../../../utils/scrollElementBelowHeader";
@@ -555,7 +556,7 @@ function ProductsModule({ authToken, onMetricsChange, onRecordsChange }) {
           }
         >
           {productSuccessMessage ? <div className="form-message">{productSuccessMessage}</div> : null}
-          {isLoadingProducts ? <div className="feedback-actions">Loading products...</div> : null}
+          {isLoadingProducts ? <LoadingState message="Loading products..." /> : null}
           <div className="table-wrapper">
           <table className="data-table data-table--dense">
             <thead>
@@ -572,9 +573,11 @@ function ProductsModule({ authToken, onMetricsChange, onRecordsChange }) {
             </thead>
             <tbody>
               {productRecords.length === 0 && !isLoadingProducts ? (
-                <tr>
-                  <td colSpan="8">No product records found.</td>
-                </tr>
+                  <TableEmptyState
+                    colSpan={8}
+                    title="No product records found"
+                    message="Create a product or adjust the product filters."
+                  />
               ) : (
                 productRecords.map((product) => (
                   <tr key={product.id}>

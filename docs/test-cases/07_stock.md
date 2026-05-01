@@ -7,6 +7,7 @@
 - Verify current quantity updates correctly and stock status is shown correctly after movements.
 - Verify duplicate opening stock is prevented even when duplicate requests are submitted close together.
 - Verify stock status and movement type filtering remain accurate with paginated requests.
+- Verify product selection uses searchable lookup behavior and does not force focus to quantity before a product is selected.
 
 ## Preconditions
 - Approved QA environment and approved QA test data are available for execution.
@@ -29,7 +30,7 @@
 2. Create opening stock with valid data
    - Steps:
      1. Open `Stock`.
-     2. Select an active product with no existing opening stock.
+     2. Search for and select an active product with no existing opening stock.
      3. Enter a positive quantity change.
      4. Select `Opening` as movement type.
      5. Optionally enter valid notes.
@@ -43,7 +44,7 @@
 3. Create manual stock update with valid data
    - Steps:
      1. Open `Stock`.
-     2. Select an active product.
+     2. Search for and select an active product.
      3. Enter a positive or negative non-zero quantity change.
      4. Select `Manual Update` as movement type.
      5. Click `Save Stock Movement`.
@@ -52,7 +53,17 @@
      - The stock list reloads successfully.
      - Current quantity is updated correctly.
 
-4. Search stock by product name or product code
+4. Product lookup supports search before stock entry
+   - Steps:
+     1. Open `Stock`.
+     2. Click the `Product` search field.
+     3. Search by product name or product code.
+   - Expected Result:
+     - Matching active products are shown for selection.
+     - The user does not need to scroll through a long product dropdown.
+     - `Quantity Change` does not receive automatic focus on page entry.
+
+5. Search stock by product name or product code
    - Steps:
      1. Open `Stock`.
      2. Enter a known product name or product code in `Search Product`.
@@ -60,7 +71,7 @@
    - Expected Result:
      - Matching stock records are shown.
 
-5. Filter stock by stock status
+6. Filter stock by stock status
    - Steps:
      1. Open `Stock`.
      2. Select a stock status.
@@ -68,7 +79,7 @@
    - Expected Result:
      - Only stock rows with the selected status are shown.
 
-6. Filter stock by movement type
+7. Filter stock by movement type
    - Steps:
      1. Open `Stock`.
      2. Select `Opening` or `Manual Update`.
@@ -76,7 +87,7 @@
    - Expected Result:
      - Only stock rows matching the selected latest movement type are shown.
 
-7. Reset stock filters restores default listing
+8. Reset stock filters restores default listing
    - Steps:
      1. Apply one or more stock filters.
      2. Click `Reset`.
@@ -84,7 +95,7 @@
      - Filter inputs return to default values.
      - The stock list reloads without previous filters.
 
-8. Refresh reloads the stock list with current filters
+9. Refresh reloads the stock list with current filters
    - Steps:
      1. Apply one or more stock filters.
      2. Click `Refresh`.
@@ -92,7 +103,7 @@
      - The list reloads successfully.
      - Currently applied filters remain effective.
 
-9. View action opens stock details modal
+10. View action opens stock details modal
    - Steps:
      1. Open `Stock`.
      2. Click `View` on a stock row.
@@ -100,7 +111,7 @@
      - `Stock Details` modal opens.
      - Product, code, current quantity, last change, movement type, stock status, and notes are shown.
 
-10. Dashboard stock metrics reflect live records
+11. Dashboard stock metrics reflect live records
    - Steps:
      1. Open `Stock`.
      2. Create stock movements that produce `Available`, `Low Stock`, or `Negative Stock` conditions where applicable.

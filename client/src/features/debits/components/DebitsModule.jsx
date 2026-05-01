@@ -10,6 +10,7 @@ import IconButton from "../../../components/common/IconButton";
 import ModalDialog from "../../../components/common/ModalDialog";
 import SectionCard from "../../../components/common/SectionCard";
 import SearchableSelect from "../../../components/common/SearchableSelect";
+import { LoadingState, TableEmptyState } from "../../../components/common/VisualStates";
 import { getTodayInputDateValue } from "../../../utils/dateFieldDefaults";
 import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
 import { revealFeedbackInContainer } from "../../../utils/revealFeedbackInContainer";
@@ -492,7 +493,7 @@ function DebitsModule({ authToken, onMetricsChange, onRecordsChange }) {
           }
         >
           {debitSuccessMessage ? <div className="form-message">{debitSuccessMessage}</div> : null}
-          {isLoadingDebits ? <div className="feedback-actions">Loading debits...</div> : null}
+          {isLoadingDebits ? <LoadingState message="Loading debits..." /> : null}
           <div className="table-wrapper">
           <table className="data-table data-table--dense">
             <thead>
@@ -509,9 +510,11 @@ function DebitsModule({ authToken, onMetricsChange, onRecordsChange }) {
             </thead>
             <tbody>
               {debitRecords.length === 0 && !isLoadingDebits ? (
-                <tr>
-                  <td colSpan="8">No debit records found.</td>
-                </tr>
+                  <TableEmptyState
+                    colSpan={8}
+                    title="No debit records found"
+                    message="Create a debit or adjust the current filters."
+                  />
               ) : (
                 debitRecords.map((debit) => (
                   <tr key={debit.id}>

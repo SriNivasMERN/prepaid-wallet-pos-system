@@ -5,6 +5,7 @@
 - Verify recharge `View Details` flow behaves correctly while recharge records remain immutable.
 - Verify recharge validation, operational eligibility checks, and balance credit behavior.
 - Verify recharge balance updates remain correct when multiple valid recharges are created close together.
+- Verify wallet selection uses searchable lookup behavior and does not force focus to amount on page entry.
 
 ## Preconditions
 - Approved QA environment and approved QA test data are available for execution.
@@ -24,7 +25,7 @@
 2. Create recharge with valid data
    - Steps:
      1. Open `Recharges`.
-     2. Select an eligible wallet.
+     2. Search for and select an eligible wallet by member, mobile number, or card number.
      3. Enter a valid amount greater than zero.
      4. Select a valid payment mode.
      5. Optionally enter notes within allowed length.
@@ -35,7 +36,17 @@
      - The new recharge appears in the list after reload.
      - Wallet balance increases by the recharge amount.
 
-3. Search recharges by member name, mobile number, or card number
+3. Wallet lookup supports search before recharge entry
+   - Steps:
+     1. Open `Recharges`.
+     2. Click the `Wallet` search field.
+     3. Search by member name, mobile number, or card number.
+   - Expected Result:
+     - Matching eligible wallets are shown for selection.
+     - The user does not need to scroll through a long wallet dropdown.
+     - `Amount` does not receive automatic focus on page entry.
+
+4. Search recharges by member name, mobile number, or card number
    - Steps:
      1. Open `Recharges`.
      2. Use `Search Recharges`.
@@ -43,7 +54,7 @@
    - Expected Result:
      - Matching recharge records are shown.
 
-4. Filter recharges by payment mode
+5. Filter recharges by payment mode
    - Steps:
      1. Open `Recharges`.
      2. Select a payment mode.
@@ -51,7 +62,7 @@
    - Expected Result:
      - Only recharge records with the selected payment mode are shown.
 
-5. Filter recharges by cashier
+6. Filter recharges by cashier
    - Steps:
      1. Open `Recharges`.
      2. Select a staff record in the `Cashier` filter.
@@ -59,7 +70,7 @@
    - Expected Result:
      - Only recharge records created by the selected cashier are shown.
 
-6. Filter recharges by date
+7. Filter recharges by date
    - Steps:
      1. Open `Recharges`.
      2. Select a date in the `Date` filter.
@@ -67,7 +78,7 @@
    - Expected Result:
      - Only recharge records created on the selected date are shown.
 
-7. Reset recharge filters restores default listing
+8. Reset recharge filters restores default listing
    - Steps:
      1. Apply one or more recharge filters.
      2. Click `Reset`.
@@ -75,7 +86,7 @@
      - Filter inputs return to default values.
      - The recharge list reloads without previous filters.
 
-8. Refresh reloads the recharge list with current filters
+9. Refresh reloads the recharge list with current filters
    - Steps:
      1. Apply one or more filters.
      2. Click `Refresh`.
@@ -83,7 +94,7 @@
      - The list reloads successfully.
      - Currently applied filters remain effective.
 
-9. View action opens recharge details modal
+10. View action opens recharge details modal
    - Steps:
      1. Open `Recharges`.
      2. Click `View` on a recharge row.

@@ -7,6 +7,7 @@
 import { useEffect, useState } from "react";
 
 import SectionCard from "../../../components/common/SectionCard";
+import { LoadingState, TableEmptyState } from "../../../components/common/VisualStates";
 import { getTodayInputDateValue } from "../../../utils/dateFieldDefaults";
 import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
 import { fetchReport } from "../api/reportApi";
@@ -274,7 +275,7 @@ function ReportsModule({ authToken, onMetricsChange, onRecordsChange }) {
 
       <SectionCard title={`${reportData.reportType} Summary`}>
         {reportRequestError ? <div className="form-message form-message--error">{reportRequestError}</div> : null}
-        {isLoadingReport ? <div className="feedback-actions">Loading report...</div> : null}
+        {isLoadingReport ? <LoadingState message="Loading report..." /> : null}
         <div className="metric-grid">
           {summaryEntries.length === 0 && !isLoadingReport ? (
             <button type="button" className="metric-card metric-card--muted">
@@ -315,9 +316,11 @@ function ReportsModule({ authToken, onMetricsChange, onRecordsChange }) {
             </thead>
             <tbody>
               {reportData.records.length === 0 && !isLoadingReport ? (
-                <tr>
-                  <td colSpan={String(reportColumns.length)}>No report records found.</td>
-                </tr>
+                  <TableEmptyState
+                    colSpan={reportColumns.length}
+                    title="No report records found"
+                    message="Try a different report type or date range."
+                  />
               ) : reportData.reportType === "Sales" ? (
                 reportData.records.map((record) => (
                   <tr key={record.id}>

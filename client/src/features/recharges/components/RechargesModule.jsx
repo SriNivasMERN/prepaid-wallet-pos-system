@@ -10,6 +10,7 @@ import IconButton from "../../../components/common/IconButton";
 import ModalDialog from "../../../components/common/ModalDialog";
 import SectionCard from "../../../components/common/SectionCard";
 import SearchableSelect from "../../../components/common/SearchableSelect";
+import { LoadingState, TableEmptyState } from "../../../components/common/VisualStates";
 import { getTodayInputDateValue } from "../../../utils/dateFieldDefaults";
 import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
 import { revealFeedbackInContainer } from "../../../utils/revealFeedbackInContainer";
@@ -495,7 +496,7 @@ function RechargesModule({ authToken, onMetricsChange, onRecordsChange }) {
           }
         >
           {rechargeSuccessMessage ? <div className="form-message">{rechargeSuccessMessage}</div> : null}
-          {isLoadingRecharges ? <div className="feedback-actions">Loading recharges...</div> : null}
+          {isLoadingRecharges ? <LoadingState message="Loading recharges..." /> : null}
           <div className="table-wrapper">
           <table className="data-table data-table--dense">
             <thead>
@@ -512,9 +513,11 @@ function RechargesModule({ authToken, onMetricsChange, onRecordsChange }) {
             </thead>
             <tbody>
               {rechargeRecords.length === 0 && !isLoadingRecharges ? (
-                <tr>
-                  <td colSpan="8">No recharge records found.</td>
-                </tr>
+                  <TableEmptyState
+                    colSpan={8}
+                    title="No recharge records found"
+                    message="Create a recharge or adjust the current filters."
+                  />
               ) : (
                 rechargeRecords.map((recharge) => (
                   <tr key={recharge.id}>

@@ -216,10 +216,12 @@
 18. Wallet is created for eligible member
    - Steps:
      1. Open `Wallets`.
-     2. Create a wallet for Member A.
+     2. Search for Member A in the member lookup.
+     3. Create a wallet for Member A.
    - Expected Result:
      - Wallet is created successfully.
      - Wallet row appears in the list.
+     - `Wallet Status` does not receive automatic focus on page entry.
 
 19. Wallet search, view, edit, and lifecycle flow work correctly
    - Steps:
@@ -236,10 +238,12 @@
 20. Opening stock is created for active products
    - Steps:
      1. Open `Stock`.
-     2. Record valid opening stock for at least one active product.
+     2. Search for an active product by product name or product code.
+     3. Record valid opening stock for at least one active product.
    - Expected Result:
      - Stock movement succeeds.
      - Stock list shows current quantity.
+     - `Quantity Change` does not receive automatic focus before product selection.
 
 21. Additional stock movement works and stock details can be viewed
    - Steps:
@@ -273,11 +277,13 @@
 24. Cashier creates a recharge successfully
    - Steps:
      1. Open `Recharges`.
-     2. Create a valid recharge for Member A.
+     2. Search for Member A's wallet by member, mobile number, or card number.
+     3. Create a valid recharge for Member A.
    - Expected Result:
      - Recharge succeeds.
      - Wallet balance increases correctly.
      - Recharge row appears in the list.
+     - `Amount` does not receive automatic focus before wallet selection.
 
 25. Recharge list filters and details flow work correctly
    - Steps:
@@ -301,7 +307,9 @@
 27. Cashier creates a bill successfully using stocked product and funded wallet
    - Steps:
      1. Open `Billing`.
-     2. Create a bill for Member A using available product stock and wallet balance.
+     2. Search for or enter Member A's card number.
+     3. Search for available products by product name or product code.
+     4. Create a bill for Member A using available product stock and wallet balance.
    - Expected Result:
      - Billing succeeds.
      - Bill row appears in the list.
@@ -322,11 +330,13 @@
 29. Cashier creates a debit successfully
    - Steps:
      1. Open `Debits`.
-     2. Create a valid debit for Member A.
+     2. Search for Member A's wallet by member, mobile number, or card number.
+     3. Create a valid debit for Member A.
    - Expected Result:
      - Debit succeeds.
      - Wallet balance decreases correctly.
      - Debit row appears in the list.
+     - `Amount` does not receive automatic focus before wallet selection.
 
 30. Debits list details flow works correctly
    - Steps:

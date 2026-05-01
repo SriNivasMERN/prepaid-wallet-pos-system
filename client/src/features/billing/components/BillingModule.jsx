@@ -11,6 +11,7 @@ import ModalDialog from "../../../components/common/ModalDialog";
 import SectionCard from "../../../components/common/SectionCard";
 import SearchableSelect from "../../../components/common/SearchableSelect";
 import StatusChip from "../../../components/common/StatusChip";
+import { LoadingState, TableEmptyState } from "../../../components/common/VisualStates";
 import { getTodayInputDateValue } from "../../../utils/dateFieldDefaults";
 import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
 import { revealFeedbackInContainer } from "../../../utils/revealFeedbackInContainer";
@@ -766,7 +767,7 @@ function BillingModule({ authToken, onMetricsChange, onRecordsChange }) {
           }
         >
           {billingSuccessMessage ? <div className="form-message">{billingSuccessMessage}</div> : null}
-          {isLoadingBills ? <div className="feedback-actions">Loading bills...</div> : null}
+          {isLoadingBills ? <LoadingState message="Loading bills..." /> : null}
           <div className="table-wrapper">
           <table className="data-table data-table--dense">
             <thead>
@@ -783,9 +784,11 @@ function BillingModule({ authToken, onMetricsChange, onRecordsChange }) {
             </thead>
             <tbody>
               {billRecords.length === 0 && !isLoadingBills ? (
-                <tr>
-                  <td colSpan="8">No bill records found.</td>
-                </tr>
+                  <TableEmptyState
+                    colSpan={8}
+                    title="No bill records found"
+                    message="Create a bill or adjust the billing filters."
+                  />
               ) : (
                 billRecords.map((bill) => (
                   <tr key={bill.id}>

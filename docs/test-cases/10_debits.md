@@ -5,6 +5,7 @@
 - Verify debit `View Details` flow behaves correctly while debit records remain immutable.
 - Verify debit validation, insufficient-balance handling, and balance deduction behavior.
 - Verify debit balance updates remain correct when multiple debit requests are submitted close together.
+- Verify wallet selection uses searchable lookup behavior and does not force focus to amount on page entry.
 
 ## Preconditions
 - Approved QA environment and approved QA test data are available for execution.
@@ -24,7 +25,7 @@
 2. Create debit with valid data and sufficient balance
    - Steps:
      1. Open `Debits`.
-     2. Select an eligible wallet with enough balance.
+     2. Search for and select an eligible wallet with enough balance.
      3. Enter a valid amount and reason.
      4. Optionally enter notes.
      5. Click `Create Debit`.
@@ -34,7 +35,17 @@
      - The new debit appears in the list after reload.
      - Wallet balance decreases by the debit amount.
 
-3. Search debits by member name, mobile number, card number, or reason
+3. Wallet lookup supports search before debit entry
+   - Steps:
+     1. Open `Debits`.
+     2. Click the `Wallet` search field.
+     3. Search by member name, mobile number, or card number.
+   - Expected Result:
+     - Matching eligible wallets are shown for selection.
+     - The user does not need to scroll through a long wallet dropdown.
+     - `Amount` does not receive automatic focus on page entry.
+
+4. Search debits by member name, mobile number, card number, or reason
    - Steps:
      1. Open `Debits`.
      2. Use `Search Debits`.
@@ -42,7 +53,7 @@
    - Expected Result:
      - Matching debit records are shown.
 
-4. Filter debits by reason
+5. Filter debits by reason
    - Steps:
      1. Open `Debits`.
      2. Enter a reason keyword in the `Reason` filter.
@@ -50,7 +61,7 @@
    - Expected Result:
      - Only debit records matching the reason filter are shown.
 
-5. Filter debits by cashier
+6. Filter debits by cashier
    - Steps:
      1. Open `Debits`.
      2. Select a staff record in the `Cashier` filter.
@@ -58,7 +69,7 @@
    - Expected Result:
      - Only debit records created by the selected cashier are shown.
 
-6. Filter debits by date
+7. Filter debits by date
    - Steps:
      1. Open `Debits`.
      2. Select a date in the `Date` filter.
@@ -66,7 +77,7 @@
    - Expected Result:
      - Only debit records created on the selected date are shown.
 
-7. Reset debit filters restores default listing
+8. Reset debit filters restores default listing
    - Steps:
      1. Apply one or more debit filters.
      2. Click `Reset`.
@@ -74,7 +85,7 @@
      - Filter inputs return to default values.
      - The debit list reloads without previous filters.
 
-8. Refresh reloads the debit list with current filters
+9. Refresh reloads the debit list with current filters
    - Steps:
      1. Apply one or more filters.
      2. Click `Refresh`.
@@ -82,7 +93,7 @@
      - The list reloads successfully.
      - Currently applied filters remain effective.
 
-9. View action opens debit details modal
+10. View action opens debit details modal
    - Steps:
      1. Open `Debits`.
      2. Click `View` on a debit row.

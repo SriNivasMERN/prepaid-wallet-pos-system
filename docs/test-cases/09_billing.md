@@ -7,6 +7,7 @@
 - Verify bill `View Details` flow behaves correctly while keeping completed bills immutable.
 - Verify frontend validation, duplicate-item protection, and backend billing validation behavior.
 - Verify billing wallet and stock updates remain consistent when billing actions occur close together.
+- Verify card number and product entry support searchable lookup behavior for faster bill creation.
 
 ## Preconditions
 - Approved QA environment and approved QA test data are available for execution.
@@ -32,9 +33,9 @@
 2. Create bill with valid card number and valid items
    - Steps:
      1. Open `Billing`.
-     2. Enter a valid linked card number.
+     2. Search for or enter a valid linked card number.
      3. Optionally click `Check Card`.
-     4. Add one or more valid products with valid quantities.
+     4. Search for and add one or more valid products with valid quantities.
      5. Optionally enter valid notes.
      6. Click `Create Bill`.
    - Expected Result:
@@ -43,7 +44,19 @@
      - The bills list reloads successfully.
      - A new completed bill appears in the list.
 
-3. Billing precheck shows readiness details for valid card
+3. Billing card and product lookup support search
+   - Steps:
+     1. Open `Billing`.
+     2. Type part of a linked card number in `Card Number`.
+     3. Select a matching card suggestion.
+     4. Type part of a product name or product code in `Product`.
+     5. Select a matching product suggestion.
+   - Expected Result:
+     - Matching card suggestions are shown while typing.
+     - Matching active products are shown without scrolling through a long product dropdown.
+     - Selected card and product values remain visible after selection.
+
+4. Billing precheck shows readiness details for valid card
    - Steps:
      1. Open `Billing`.
      2. Enter a valid linked card number.
@@ -53,7 +66,7 @@
      - Billing-ready state is shown clearly.
      - No blocking reason is shown when the card is ready for billing.
 
-4. Search bills by bill number, member name, or card number
+5. Search bills by bill number, member name, or card number
    - Steps:
      1. Open `Billing`.
      2. Use `Search Bill`.
@@ -61,7 +74,7 @@
    - Expected Result:
      - Matching bill records are shown.
 
-5. Filter bills by status
+6. Filter bills by status
    - Steps:
      1. Open `Billing`.
      2. Select `Completed` in the status filter.
@@ -69,7 +82,7 @@
    - Expected Result:
      - Only completed bill rows are shown.
 
-6. Filter bills by date
+7. Filter bills by date
    - Steps:
      1. Open `Billing`.
      2. Select a valid billing date in the `Date` filter.
@@ -77,7 +90,7 @@
    - Expected Result:
      - Only bills created on the selected date are shown.
 
-7. Reset billing filters restores default listing
+8. Reset billing filters restores default listing
    - Steps:
      1. Apply one or more billing filters.
      2. Click `Reset`.
@@ -85,7 +98,7 @@
      - Filter inputs return to default values.
      - The bills list reloads without previous filters.
 
-8. Refresh reloads the bills list with current filters
+9. Refresh reloads the bills list with current filters
    - Steps:
      1. Apply one or more filters.
      2. Click `Refresh`.
@@ -93,7 +106,7 @@
      - The list reloads successfully.
      - Currently applied filters remain effective.
 
-9. View action opens bill details modal
+10. View action opens bill details modal
    - Steps:
      1. Open `Billing`.
      2. Click `View` on a bill row.

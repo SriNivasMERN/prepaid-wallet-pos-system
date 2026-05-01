@@ -10,6 +10,7 @@ import IconButton from "../../../components/common/IconButton";
 import ModalDialog from "../../../components/common/ModalDialog";
 import SectionCard from "../../../components/common/SectionCard";
 import StatusChip from "../../../components/common/StatusChip";
+import { LoadingState, TableEmptyState } from "../../../components/common/VisualStates";
 import {
   createMemberRecord,
   fetchMemberOperationalProfile,
@@ -434,7 +435,7 @@ function MembersModule({ authToken, onMetricsChange, onRecordsChange }) {
           )}
         >
           {memberSuccessMessage ? <div className="form-message">{memberSuccessMessage}</div> : null}
-          {isLoadingMembers ? <div className="feedback-actions">Loading members...</div> : null}
+          {isLoadingMembers ? <LoadingState message="Loading members..." /> : null}
           <div className="table-wrapper">
           <table className="data-table data-table--dense">
             <thead>
@@ -449,9 +450,11 @@ function MembersModule({ authToken, onMetricsChange, onRecordsChange }) {
             </thead>
             <tbody>
               {memberRecords.length === 0 && !isLoadingMembers ? (
-                <tr>
-                  <td colSpan="6">No member records found.</td>
-                </tr>
+                  <TableEmptyState
+                    colSpan={6}
+                    title="No member records found"
+                    message="Create a member or adjust the current filters."
+                  />
               ) : (
                 memberRecords.map((member) => (
                   <tr key={member.id}>

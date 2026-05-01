@@ -6,6 +6,7 @@
 - Verify duplicate card number, invalid dates, and ineligible-member assignment are blocked.
 - Verify card detail, operational profile, and replacement flows behave correctly.
 - Verify generated editable card numbers and default one-year expiry behavior.
+- Verify eligible member selection uses searchable lookup behavior.
 
 ## Preconditions
 - Approved QA environment and approved QA test data are available for execution.
@@ -27,7 +28,7 @@
      1. Open `Cards`.
      2. Confirm `Card Number` is auto-filled.
      3. Keep the generated card number or edit it to another unique card number.
-     4. Select an eligible active member.
+     4. Search for and select an eligible active member.
      5. Confirm `Activated At` defaults to the current date.
      6. Confirm `Expires At` defaults to one year after activation.
      7. Click `Assign Card`.
@@ -37,7 +38,16 @@
      - The new card appears in the cards list after reload.
      - Generated or edited card number is saved correctly.
 
-3. Search cards by card number, member name, or mobile number
+3. Eligible member lookup supports search
+   - Steps:
+     1. Open `Cards`.
+     2. Click the `Member` search field.
+     3. Search by member name or mobile number.
+   - Expected Result:
+     - Matching eligible members are shown for selection.
+     - The user does not need to scroll through a long member dropdown.
+
+4. Search cards by card number, member name, or mobile number
    - Steps:
      1. Open `Cards`.
      2. Use `Search Cards`.
@@ -45,7 +55,7 @@
    - Expected Result:
      - Matching card records are shown in the list.
 
-4. Filter cards by status
+5. Filter cards by status
    - Steps:
      1. Open `Cards`.
      2. Select `Active` or `Inactive` in the status filter.
@@ -53,7 +63,7 @@
    - Expected Result:
      - The list shows only records matching the selected status.
 
-5. Filter cards by member
+6. Filter cards by member
    - Steps:
      1. Open `Cards`.
      2. Select a member in the member filter.
@@ -61,7 +71,7 @@
    - Expected Result:
      - The list shows only cards linked to the selected member.
 
-6. Reset card filters restores default listing
+7. Reset card filters restores default listing
    - Steps:
      1. Apply one or more card filters.
      2. Click `Reset`.
@@ -69,7 +79,7 @@
      - Filter inputs return to default values.
      - The cards list reloads without previous filters.
 
-7. Refresh reloads the cards list with current filters
+8. Refresh reloads the cards list with current filters
    - Steps:
      1. Apply one or more filters.
      2. Click `Refresh`.
@@ -77,7 +87,7 @@
      - The list reloads successfully.
      - Current filters remain effective.
 
-8. View action opens card details modal
+9. View action opens card details modal
    - Steps:
      1. Open `Cards`.
      2. Click `View` on a card row.
@@ -86,7 +96,7 @@
      - Card number, status, member, mobile number, dates, and operational note are shown.
      - Live readiness details such as expiry state, operational usability, and blocking reason are shown where applicable.
 
-9. Replace an eligible active card successfully through UI
+10. Replace an eligible active card successfully through UI
    - Steps:
      1. Open `Cards`.
      2. Click `Replace` on an active, non-expired card.
@@ -98,7 +108,7 @@
      - Replacement card becomes `Active`.
      - Member remains linked to the replacement card.
 
-10. Card operational profile is returned for usable active card
+11. Card operational profile is returned for usable active card
    - Steps:
      1. Use an active card linked to an active member and not expired.
      2. Request the card operational profile.

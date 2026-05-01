@@ -11,6 +11,7 @@ import ModalDialog from "../../../components/common/ModalDialog";
 import SectionCard from "../../../components/common/SectionCard";
 import SearchableSelect from "../../../components/common/SearchableSelect";
 import StatusChip from "../../../components/common/StatusChip";
+import { LoadingState, TableEmptyState } from "../../../components/common/VisualStates";
 import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
 import { revealFeedbackInContainer } from "../../../utils/revealFeedbackInContainer";
 import { scrollElementBelowHeader } from "../../../utils/scrollElementBelowHeader";
@@ -522,7 +523,7 @@ function WalletsModule({ authToken, onMetricsChange, onRecordsChange }) {
           }
         >
           {walletSuccessMessage ? <div className="form-message">{walletSuccessMessage}</div> : null}
-          {isLoadingWallets ? <div className="feedback-actions">Loading wallets...</div> : null}
+          {isLoadingWallets ? <LoadingState message="Loading wallets..." /> : null}
           <div className="table-wrapper">
           <table className="data-table data-table--dense">
             <thead>
@@ -538,9 +539,11 @@ function WalletsModule({ authToken, onMetricsChange, onRecordsChange }) {
             </thead>
             <tbody>
               {walletRecords.length === 0 && !isLoadingWallets ? (
-                <tr>
-                  <td colSpan="7">No wallet records found.</td>
-                </tr>
+                  <TableEmptyState
+                    colSpan={7}
+                    title="No wallet records found"
+                    message="Create a wallet or change the current filters."
+                  />
               ) : (
                 walletRecords.map((wallet) => (
                   <tr key={wallet.id}>

@@ -7,6 +7,7 @@
 import { useEffect, useState } from "react";
 
 import SectionCard from "../../../components/common/SectionCard";
+import { LoadingState, TableEmptyState } from "../../../components/common/VisualStates";
 import { getTodayInputDateValue } from "../../../utils/dateFieldDefaults";
 import { getApiErrorMessage } from "../../../utils/getApiErrorMessage";
 import { fetchTransactionList } from "../api/transactionApi";
@@ -204,7 +205,7 @@ function TransactionsModule({ authToken, onMetricsChange, onRecordsChange }) {
         }
       >
         {transactionRequestError ? <div className="form-message form-message--error">{transactionRequestError}</div> : null}
-        {isLoadingTransactions ? <div className="feedback-actions">Loading transactions...</div> : null}
+        {isLoadingTransactions ? <LoadingState message="Loading transactions..." /> : null}
         <div className="table-wrapper">
           <table className="data-table">
             <thead>
@@ -220,9 +221,11 @@ function TransactionsModule({ authToken, onMetricsChange, onRecordsChange }) {
             </thead>
             <tbody>
               {transactionRecords.length === 0 && !isLoadingTransactions ? (
-                <tr>
-                  <td colSpan="7">No transaction records found.</td>
-                </tr>
+                  <TableEmptyState
+                    colSpan={7}
+                    title="No transaction records found"
+                    message="Transactions will appear after recharge, debit, or billing activity."
+                  />
               ) : (
                 transactionRecords.map((transaction) => (
                   <tr key={transaction.id}>

@@ -11,6 +11,7 @@ import ModalDialog from "../../../components/common/ModalDialog";
 import SectionCard from "../../../components/common/SectionCard";
 import SearchableSelect from "../../../components/common/SearchableSelect";
 import StatusChip from "../../../components/common/StatusChip";
+import { LoadingState, TableEmptyState } from "../../../components/common/VisualStates";
 import {
   getOneYearLaterInputDateValue,
   getTodayInputDateValue
@@ -611,7 +612,7 @@ function CardsModule({ authToken, onMetricsChange, onRecordsChange }) {
           }
         >
           {cardSuccessMessage ? <div className="form-message">{cardSuccessMessage}</div> : null}
-          {isLoadingCards ? <div className="feedback-actions">Loading cards...</div> : null}
+          {isLoadingCards ? <LoadingState message="Loading cards..." /> : null}
           <div className="table-wrapper">
           <table className="data-table data-table--dense">
             <thead>
@@ -627,9 +628,11 @@ function CardsModule({ authToken, onMetricsChange, onRecordsChange }) {
             </thead>
             <tbody>
               {cardRecords.length === 0 && !isLoadingCards ? (
-                <tr>
-                  <td colSpan="7">No card records found.</td>
-                </tr>
+                  <TableEmptyState
+                    colSpan={7}
+                    title="No card records found"
+                    message="Assign a card or change the current filters."
+                  />
               ) : (
                 cardRecords.map((card) => (
                   <tr key={card.id}>

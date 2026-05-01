@@ -6,6 +6,7 @@
 
 import { Navigate, Route, Routes } from "react-router-dom";
 
+import { AppLoadingScreen } from "../components/common/VisualStates";
 import { hasRecognizedRole } from "../constants/accessControl";
 import { useAuthSession } from "../hooks/useAuthSession";
 import { useSetupStatus } from "../hooks/useSetupStatus";
@@ -60,10 +61,6 @@ function AuthorizationGuard({ currentStaff, children }) {
   return children;
 }
 
-function AppLoader() {
-  return <div className="app-loader">Loading</div>;
-}
-
 function AppRouter() {
   const {
     isLoading: isSetupLoading,
@@ -82,7 +79,7 @@ function AppRouter() {
   });
 
   if (isSetupLoading || isAuthLoading) {
-    return <AppLoader />;
+    return <AppLoadingScreen />;
   }
 
   return (

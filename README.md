@@ -65,6 +65,8 @@ The application is designed for small business counter operations where staff ne
 - Billing precheck, duplicate product protection, bill creation, and bill details.
 - Product create/edit supports generated editable product codes, `MRP`, optional description, and common units such as `kg`, litre, piece, bottle, pack, dozen, box, and case.
 - Card assignment supports generated editable card numbers and default one-year expiry to reduce manual entry.
+- Searchable selectors are used for high-volume lookups such as members, wallets, products, and card numbers.
+- Search-first forms avoid forced default cursor placement so users can choose when to start searching.
 - Atomic wallet and stock updates for billing, recharge, debit, and stock movement flows.
 - Stock opening guard, stock status visibility, and movement history.
 - Unified transaction ledger for credit/debit activity.
@@ -243,6 +245,7 @@ Error responses use the same structure with `success: false` and optional field-
 - Billing, recharge, debit, and stock records preserve before/after snapshots where applicable.
 - Financial and stock history are intentionally non-destructive through normal UI flows.
 - Stock filters are applied before pagination for filtered stock-list requests.
+- Large lookup fields use searchable entry points instead of long static dropdowns.
 
 ## Development Notes
 
@@ -298,4 +301,4 @@ They cover:
 
 ## Current Status
 
-The application includes the core operational modules required for the prepaid wallet POS workflow. It is ready for local demonstration, structured QA validation, and future enhancement. Production deployment should use environment-specific configuration, a managed MongoDB instance, and a strong JWT secret.
+The application includes the core operational modules required for the prepaid wallet POS workflow. It is ready for local demonstration, structured QA validation, and future enhancement, with searchable high-volume selectors and clearer form-focus behavior for operational screens. Production deployment should use environment-specific configuration, a managed MongoDB instance, and a strong JWT secret.
