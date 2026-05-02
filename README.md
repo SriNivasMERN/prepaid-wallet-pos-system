@@ -4,6 +4,10 @@ Prepaid Wallet POS System is a MERN-based business operations application for pr
 
 The application is designed for small business counter operations where staff need a controlled, auditable flow for members, cards, wallets, billing, stock, and reports from a single admin dashboard.
 
+## Live Demo
+
+- App URL: https://prepaid-wallet-pos-system.vercel.app/
+
 ## Product Summary
 
 - Card-linked member wallet operations.
