@@ -6,7 +6,13 @@ The application is designed for small business counter operations where staff ne
 
 ## Live Demo
 
-- App URL: https://prepaid-wallet-pos-system.vercel.app/
+* App URL: https://prepaid-wallet-pos-system.vercel.app/
+
+## Demo Video
+
+[![Watch Demo](https://img.youtube.com/vi/9pPpRox-WCc/0.jpg)](https://youtu.be/9pPpRox-WCc)
+
+> Click the thumbnail above to watch the full demo on YouTube.
 
 ## Product Summary
 
