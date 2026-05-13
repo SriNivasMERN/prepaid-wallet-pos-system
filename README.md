@@ -312,4 +312,8 @@ They cover:
 
 ## Current Status
 
-The application includes the core operational modules required for the prepaid wallet POS workflow. It is ready for local demonstration, structured QA validation, and future enhancement, with searchable high-volume selectors, blank list/report date filters, scroll-safe numeric inputs, and clearer form-focus behavior for operational screens. Production deployment should use environment-specific configuration, a managed MongoDB instance, and a strong JWT secret.
+The application includes the core operational modules required for the prepaid wallet POS workflow. It is now live and available for business use, with searchable high-volume selectors, blank list/report date filters, scroll-safe numeric inputs, and clearer form-focus behavior for operational screens.
+
+## Documentation
+
+- [Product Requirements Document](./PRD.md)
